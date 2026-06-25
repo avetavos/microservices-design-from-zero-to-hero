@@ -79,10 +79,10 @@ services:
 ขอบเขตนี้ยังเป็นขอบเขตของสิทธิ์ (permissions) ด้วย แม้ว่าใครบางคนจะรู้ hostname ของฐานข้อมูล orders แต่ credentials ก็ไม่มีอยู่ที่ใดเลยนอกเหนือจาก Order service:
 
 ```text
-order-service   ──owns──▶  orders DB        (order_user can connect)
-shipping-service ─owns──▶  shipping DB       (ship_user can connect)
-shipping-service ─calls─▶  Order API ──▶ orders DB   (allowed, indirect)
-shipping-service ─✗────▶  orders DB        (no route, no credentials)
+order-service     --owns-->   orders DB     (order_user can connect)
+shipping-service  --owns-->   shipping DB   (ship_user can connect)
+shipping-service  --calls-->  Order API --> orders DB   (allowed, indirect)
+shipping-service  --X-->      orders DB     (blocked: no route, no credentials)
 ```
 
 ## บริบทที่เป็นผลลัพธ์ (Resulting context)

@@ -79,10 +79,10 @@ services:
 The boundary is also a permissions boundary. Even if someone knows the orders database hostname, the credentials simply are not present anywhere outside the Order service:
 
 ```text
-order-service   ──owns──▶  orders DB        (order_user can connect)
-shipping-service ─owns──▶  shipping DB       (ship_user can connect)
-shipping-service ─calls─▶  Order API ──▶ orders DB   (allowed, indirect)
-shipping-service ─✗────▶  orders DB        (no route, no credentials)
+order-service     --owns-->   orders DB     (order_user can connect)
+shipping-service  --owns-->   shipping DB   (ship_user can connect)
+shipping-service  --calls-->  Order API --> orders DB   (allowed, indirect)
+shipping-service  --X-->      orders DB     (blocked: no route, no credentials)
 ```
 
 ## Resulting context
