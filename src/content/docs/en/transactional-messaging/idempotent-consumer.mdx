@@ -33,11 +33,11 @@ export const idempotentDiagram = `sequenceDiagram
   participant B as Message Broker
   participant C as Consumer
   participant DB as Consumer DB
-  B->>C: deliver msg #42
+  B->>C: deliver msg 42
   C->>DB: BEGIN; INSERT id 42; apply effect; COMMIT
   C-->>B: ack
-  B->>C: redeliver msg #42 (duplicate)
-  C->>DB: INSERT id 42 — already exists
+  B->>C: redeliver msg 42 (duplicate)
+  C->>DB: INSERT id 42 - already exists
   Note over C,DB: duplicate detected, effect skipped
   C-->>B: ack (no double effect)`;
 

@@ -1,8 +1,8 @@
-# Refactoring — From Zero to Hero
+# Microservices Design Patterns — From Zero to Hero
 
-A bilingual (EN/TH), standalone, beginner→advanced course on **refactoring** — improving the internal structure of code without changing what it does. The discipline (small behavior-preserving steps backed by tests), recognizing code smells, and a curated catalog of refactorings — each shown as a **before → after** in **TypeScript, Python, Go, and Rust**, with the smell it cures, mechanics, and trade-offs. Diagrams are **Mermaid**, and there's a **read-mode** toggle.
+A bilingual (EN/TH), standalone, beginner→advanced course on the **microservices pattern language**. When microservices help (and when they hurt), how to decompose a system, keep data consistent across services that each own their database, communicate reliably, observe a distributed system, and run it in production. Each pattern is presented as **Context → Problem → Solution** with an architecture/sequence/state diagram, an example, and the benefits and drawbacks it brings. Diagrams are **Mermaid**, and there's a **read-mode** toggle.
 
-All content is original: original explanations of the public refactoring catalog, original code, original diagrams.
+All content is original: original explanations of the public, well-known microservices patterns, original code/config examples, and original diagrams.
 
 ## Tech Stack
 
@@ -10,8 +10,8 @@ All content is original: original explanations of the public refactoring catalog
 | ----- | ---------- |
 | Site framework | [Astro 6](https://astro.build) + [Starlight 0.40](https://starlight.astro.build) |
 | UI islands | [Preact](https://preactjs.com) (via `@astrojs/preact`) |
-| Code examples | Starlight built-in `<Tabs syncKey="lang">` + `<TabItem>` — one fenced block per language (TypeScript, Python, Go, Rust), each showing a `before` and `after`, with expressive-code copy buttons. `syncKey` keeps the chosen language in sync across the page. |
-| Diagrams | Client-side, theme-aware **Mermaid** (`<Mermaid>` + `public/enhance.js`) |
+| Examples | Starlight built-in `<Tabs syncKey="lang">` + `<TabItem>` — for logic patterns (Saga, Circuit Breaker, Idempotent Consumer, …) a fenced block per language (TypeScript, Python, Go, Rust); for infrastructure patterns (API Gateway, Service Mesh, deployment, chassis) a single fenced YAML/Dockerfile/config block. Expressive-code copy buttons. |
+| Diagrams | Client-side, theme-aware **Mermaid** (`<Mermaid>` + `public/enhance.js`) — flowchart, sequenceDiagram, stateDiagram-v2 |
 | Reading | **Read-mode** toggle (hides sidebar/TOC, widens content) via `public/enhance.js` |
 | Unit tests | [Vitest](https://vitest.dev) + `@testing-library/preact` |
 | i18n | Starlight built-in, `defaultLocale: 'en'`, locales: `en` + `th` |
@@ -31,13 +31,14 @@ npm test           # Run Vitest unit tests
 ```
 src/content/docs/
   en/                              # English — served at /en/...
-    intro-and-principles/          # what refactoring is, why/when, small steps + tests, code smells
-    composing-methods/             # Extract/Inline Function, Extract Variable, Replace Temp with Query, Split Phase
-    moving-features/               # Move Function/Field, Extract/Inline Class, Hide Delegate
-    organizing-data/               # Encapsulate, Replace Magic Literal, Replace Primitive with Object, Type Code → Subclasses
-    simplifying-conditionals/      # Decompose/Consolidate, Guard Clauses, Polymorphism, Null Object
-    simplifying-apis/              # Rename, Parameterize, Parameter Object, Remove Flag Argument, Factory
-    generalization-and-inheritance/# Pull Up/Push Down, Extract Superclass/Interface, Replace Inheritance with Delegation
+    intro-and-principles/          # monolith vs microservices, benefits/drawbacks, when to use, the pattern language
+    decomposition/                 # by business capability, by subdomain (DDD), self-contained service, service per team
+    data-management/               # Database per Service, Saga, API Composition, CQRS, Event Sourcing
+    transactional-messaging/       # Transactional Outbox, log tailing, polling publisher, idempotent consumer
+    communication/                 # RPI (REST/gRPC), messaging, API Gateway, BFF, service discovery
+    reliability/                   # Circuit Breaker, retry + timeout, bulkhead, rate limiting
+    observability/                 # Health Check API, log aggregation, distributed tracing, metrics, audit logging
+    deployment-and-cross-cutting/  # Service per Container, serverless, service mesh, microservice chassis, externalized config
     index.mdx                      # EN landing (splash)
   th/                              # Thai — served at /th/...
     (same module directories)
@@ -50,16 +51,16 @@ src/content/docs/
 - **`Callout.astro`** `{ title }`, **`Quiz.tsx`** `{ id, questions }` (0-based `answer`, field `q`), **`ProgressTracker.tsx`** `{ id }`.
 - Multi-language code uses Starlight's **`{ Tabs, TabItem }`** from `@astrojs/starlight/components` — no custom component.
 
-Per-refactoring lesson order: frontmatter → imports → **Intent** → **The smell** → **Before → After** (`<Tabs syncKey="lang">` with TypeScript/Python/Go/Rust `<TabItem>`s) → **Mechanics** (small, test-backed steps) → **When to use / trade-offs** (and the inverse) → **Related** → `<Callout>` → `<Quiz>` → `<ProgressTracker>` (last). IDs follow `<module>/<slug>`.
+Per-pattern lesson order (Alexandrian pattern format): frontmatter → imports → **Context** → **Problem** → **Solution** → `<Mermaid>` → **Example** (`<Tabs>` for logic, fenced config for infra) → **Resulting context** (benefits/drawbacks) → **Related patterns** → `<Callout>` → `<Quiz>` → `<ProgressTracker>` (last). IDs follow `<module>/<slug>`.
 
 > **⚠️ Authoring notes:**
-> - **Code lives in fenced blocks inside `<TabItem>`** (literal — no `${`/backtick escaping). The four languages in order: TypeScript, Python, Go, Rust. (Go and Rust lack class inheritance — the Generalization module shows the idiomatic composition/embedding/trait equivalent and says so.)
-> - **Never a bare `{...}`/`${...}` in prose** — keep code in fenced blocks / Tabs; Mermaid source in `export const`. **Diagrams are Mermaid `flowchart`/`classDiagram`, not ASCII.**
-> - **Each lesson must end on its `<ProgressTracker .../>`** — no stray trailing tags.
-> - **Internal links include the base path** and the matching locale (`/refactoring-from-zero-to-hero/en/...` on EN, `/th/...` on TH).
+> - **Diagrams are Mermaid** (`flowchart` / `sequenceDiagram` / `stateDiagram-v2`), hoisted in `export const`. **No ASCII diagrams** (no box-drawing characters — use plain `-->` arrows in any text illustration).
+> - **Code/config lives in fenced blocks** (literal — no `${`/backtick escaping). Logic patterns → 4-language `<Tabs syncKey="lang">` (TypeScript, Python, Go, Rust); infra patterns → a single fenced YAML/Dockerfile/text block.
+> - **Never a bare `{...}`/`${...}` in prose** — keep code/JSON in fenced blocks / Tabs; Mermaid source in `export const`. Each lesson **ends on its `<ProgressTracker .../>`** — no stray trailing tags.
+> - **Internal links include the base path** and the matching locale (`/microservices-design-from-zero-to-hero/en/...` on EN, `/th/...` on TH).
 
 ## Deployment
 
-Fully static → `dist/`. Base path in `astro.config.mjs`: `site: 'https://avetavos.github.io'`, `base: '/refactoring-from-zero-to-hero'`.
+Fully static → `dist/`. Base path in `astro.config.mjs`: `site: 'https://avetavos.github.io'`, `base: '/microservices-design-from-zero-to-hero'`.
 
 Deployed to GitHub Pages via **branch-source** (`gh-pages`): build `dist/`, add `.nojekyll`, push to `gh-pages`, set **Settings → Pages → Source: Deploy from a branch → `gh-pages` / `/`**, then **request a Pages build** (`gh api -X POST repos/<owner>/<repo>/pages/builds`) — flipping the source alone does not trigger one. If you change `base`, update the base-prefixed links in `src/content/docs/{en,th}/index.mdx`.
