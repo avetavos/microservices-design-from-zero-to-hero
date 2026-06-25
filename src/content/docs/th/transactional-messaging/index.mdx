@@ -28,7 +28,7 @@ export const dualWriteDiagram = `sequenceDiagram
   participant S as Service
   participant DB as Database
   participant B as Message Broker
-  S->>DB: BEGIN; UPDATE order; COMMIT
+  S->>DB: BEGIN, UPDATE order, COMMIT
   Note over S,B: crash happens HERE
   S--xB: publish OrderConfirmed (never sent)
   Note over DB,B: DB says confirmed, broker never heard — lost event`;
