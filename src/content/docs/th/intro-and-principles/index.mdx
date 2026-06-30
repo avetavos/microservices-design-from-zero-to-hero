@@ -20,7 +20,7 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 คำนี้ถูกใช้อย่างหลวม ๆ ผู้คนหยิบมันมาใช้ในความหมายว่า "service ขนาดเล็ก" "service ที่คุยกันผ่าน HTTP" หรือเพียงแค่ "ระบบใหม่ที่เรากำลังสร้าง" ไม่มีนิยามไหนในนั้นแม่นยำพอที่จะใช้ตัดสินใจได้ ถ้า microservice หมายถึงแค่ service เล็ก ๆ แล้วต้องเล็กแค่ไหน? ถ้ามันหมายถึง service ที่คุยกันผ่าน HTTP แล้ว monolith ที่เรียก API ของบุคคลที่สามนับเป็น microservice ด้วยไหม?
 
-เราต้องการนิยามที่ระบุคุณสมบัติที่สำคัญจริง ๆ — คุณสมบัติที่เปลี่ยนวิธีที่คุณจัดระเบียบทีม deploy โค้ด และเก็บข้อมูล — มากกว่านิยามที่อิงกับจำนวนบรรทัดของโค้ดหรือ transport protocol
+เราต้องการนิยามที่ระบุคุณสมบัติที่สำคัญจริง ๆ — คุณสมบัติที่เปลี่ยนวิธีที่คุณจัดระเบียบทีม deploy code และเก็บข้อมูล — มากกว่านิยามที่อิงกับจำนวนบรรทัดของcodeหรือ transport protocol
 
 ## Solution
 
@@ -60,7 +60,7 @@ export const overviewDiagram = `flowchart TB
 
 สังเกตสิ่งที่ไดอะแกรม *ไม่ได้* แสดง นั่นคือ ไม่มีฐานข้อมูลกลางที่ทั้งสาม service ใช้ร่วมกัน และไม่มี service ใดล้วงข้ามไปยังตารางของอีก service หนึ่ง ลูกศรเส้นประคือ event แบบ asynchronous ไม่ใช่การเรียกตรงเข้าไปยังข้อมูลส่วนตัว การแยกออกจากกันนั้นคือหัวใจทั้งหมด — มันคือสิ่งที่ทำให้แต่ละกล่อง deploy, scale และล้มเหลวได้ด้วยตัวของมันเอง
 
-## คอร์สนี้ครอบคลุมอะไรบ้าง
+## What This Course Covers
 
 คอร์สนี้พาเดินผ่าน pattern language ของ microservices ในแปดโมดูล:
 
@@ -73,7 +73,7 @@ export const overviewDiagram = `flowchart TB
 7. **Observability** — การมองเห็นว่ากองทัพ service กำลังทำอะไรอยู่จริง ๆ
 8. **Deployment and Cross-cutting** — การส่งมอบ รัน และรักษาความปลอดภัยของ service บน production
 
-## pattern language สรุปในบรรทัดเดียว
+## Pattern Language in One Line
 
 ไม่มี pattern ใดที่ยืนอยู่ได้ลำพัง แต่ละ pattern แก้ปัญหาที่เกิดจากการเลือกในขั้นก่อนหน้า ดังนั้น pattern ทั้งหลายจึงก่อตัวเป็น *ภาษา* ที่เชื่อมโยงกัน มากกว่าจะเป็นเช็กลิสต์ เราจะ map ภาษานี้ออกมาให้ชัดเจนในบทเรียนสุดท้ายของโมดูลนี้
 
@@ -91,7 +91,7 @@ export const quizIndex = [
   {
     q: 'Which property best characterizes a microservices architecture?',
     options: [
-      'ทุก service มีโค้ดน้อยกว่าหนึ่งพันบรรทัด',
+      'ทุก service มีcodeน้อยกว่าหนึ่งพันบรรทัด',
       'service deploy ได้อย่างอิสระ, coupling แบบหลวม, จัดระเบียบรอบ business capability และเป็นเจ้าของข้อมูลของตัวเอง',
       'ทุก service สื่อสารกันผ่าน HTTP เท่านั้น',
       'ทุก service ใช้ฐานข้อมูลกลางร่วมกันหนึ่งตัวเพื่อความสอดคล้อง',

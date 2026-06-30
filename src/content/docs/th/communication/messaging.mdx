@@ -11,15 +11,15 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 เมื่อลูกค้าสั่งซื้อ มีหลายอย่างที่ต้องเกิดขึ้น: การเรียกเก็บเงินต้องตัดบัตร คลังสินค้าต้องเตรียมจัดส่ง และอีเมลยืนยันต้องถูกส่งออกไป ไม่มีอันใดเลยที่ต้องเสร็จก่อนที่ผู้ซื้อจะเห็นคำว่า "สั่งซื้อสำเร็จ" ถ้าบริการ Order เรียกแต่ละบริการปลายน้ำแบบ synchronous ผู้ให้บริการอีเมลที่ช้าอาจทำให้ขั้นตอนชำระเงินค้าง และบริการใดบริการหนึ่งล่มก็จะทำให้การขายล้มเหลวทันที
 
-## ปัญหา
+## Problem
 
 คุณต้องการให้บริการหนึ่งจุดชนวนงานในบริการอื่นโดยไม่ต้องรอพวกมัน และไม่ต้องผูกมัดกับว่าพวกมันพร้อมใช้งานอยู่หรือไม่ในขณะนั้น งานบางส่วนควรกระจายออกไป — event การสั่งซื้อหนึ่งครั้งควรขับเคลื่อนการเรียกเก็บเงิน การจัดส่ง และการแจ้งเตือนอย่างอิสระ และคุณอยากเพิ่มปฏิกิริยาที่สี่ในภายหลังได้โดยไม่ต้องแตะต้องบริการ Order เลย การเรียกแบบ synchronous โดยตรงไม่ให้สิ่งเหล่านี้เลย: มันบล็อก มันผูกมัดทั้งสองบริการในเชิงเวลา และมันรู้จักผู้รับเพียงหนึ่งเดียวเท่านั้น คุณจะให้บริการทำงานร่วมกันในขณะที่ยังคงลดการผูกมัดทั้งในเชิงเวลาและในเชิงตัวตนได้อย่างไร?
 
-## ทางออก
+## Solution
 
 **Messaging** คือรูปแบบ asynchronous แทนที่จะเรียกบริการ **producer** จะส่งข้อความให้ **message broker** — โครงสร้างพื้นฐานที่เก็บข้อความไว้อย่างคงทนและส่งต่อไปยัง **consumer** producer ไม่รอให้งานเสร็จและไม่จำเป็นต้องรู้ด้วยซ้ำว่าใครคือ consumer broker ลดการผูกมัดของทั้งสองฝั่งในเชิงเวลา: consumer ที่ล่มอยู่ก็เพียงประมวลผลงานที่ค้างอยู่เมื่อมันกลับมา
 
@@ -37,7 +37,7 @@ export const messagingFlow = `flowchart LR
 
 <Mermaid code={messagingFlow} title="Messaging — producer เผยแพร่ event หนึ่งไปยัง broker ซึ่งกระจายมันออกไปยัง consumer อิสระ" />
 
-## ตัวอย่าง
+## Example
 
 wrapper เล็ก ๆ ครอบ broker ที่เผยแพร่ event `OrderPlaced` และบริโภคมันที่อีกฝั่งหนึ่ง การเรียก publish จะคืนค่าทันทีที่ broker ได้รับข้อความ consumer จะ acknowledge ก็ต่อเมื่อทำงานเสร็จแล้วเท่านั้น ดังนั้นข้อความที่ยังไม่ถูกประมวลผลจะถูกส่งซ้ำ แต่ละตัวอย่างสมบูรณ์ในตัวเองและเป็นสำนวนของภาษานั้น ๆ
 
@@ -147,7 +147,7 @@ wrapper เล็ก ๆ ครอบ broker ที่เผยแพร่ even
   </TabItem>
 </Tabs>
 
-## บริบทผลลัพธ์
+## Resulting Context
 
 สิ่งที่คุณได้:
 
@@ -157,15 +157,48 @@ wrapper เล็ก ๆ ครอบ broker ที่เผยแพร่ even
 
 สิ่งที่คุณต้องจ่าย:
 
-- **broker เป็นโครงสร้างพื้นฐานที่สำคัญยิ่ง** ตอนนี้ทุกอย่างขึ้นอยู่กับการที่ broker พร้อมใช้งาน คงทน และถูกดำเนินการอย่างถูกต้อง มันต้องถูกทำเป็น cluster และถูกเฝ้าติดตาม และมันกลายเป็นสิ่งใหม่ที่อาจล้มเหลวได้
+- **broker เป็นโครงสร้างพื้นฐานที่สำคัญยิ่ง** ตอนนี้ทุกอย่างขึ้นอยู่กับการที่ broker พร้อมใช้งาน คงทน และถูกทำงานอย่างถูกต้อง มันต้องถูกทำเป็น cluster และถูกเฝ้าติดตาม และมันกลายเป็นสิ่งใหม่ที่อาจล้มเหลวได้
 - **Eventual consistency** เพราะงานเกิดขึ้นในภายหลัง จึงมีช่วงที่คำสั่งซื้อมีอยู่แล้วแต่อีเมลยังไม่ถูกส่ง ผู้เรียกไม่สามารถอ่านผลลัพธ์กลับมาได้ทันทีในแบบที่การเรียก synchronous คืนค่ามาให้
-- **ความซับซ้อนในการดำเนินการ (operational complexity)** คุณต้องจัดการกับการส่งซ้ำ (broker ส่วนใหญ่เป็นแบบ at-least-once ดังนั้น consumer ต้อง **idempotent**) ข้อความที่มาผิดลำดับ และ poison message ที่ต้องใช้ dead-letter queue การ debug flow ที่กระจายอยู่ในหลาย publisher และ subscriber ยากกว่าการไล่ตาม call stack เดียว
+- **ความซับซ้อนในการทำงาน (operational complexity)** คุณต้องจัดการกับการส่งซ้ำ (broker ส่วนใหญ่เป็นแบบ at-least-once ดังนั้น consumer ต้อง **idempotent**) ข้อความที่มาผิดลำดับ และ poison message ที่ต้องใช้ dead-letter queue การ debug flow ที่กระจายอยู่ในหลาย publisher และ subscriber ยากกว่าการไล่ตาม call stack เดียว
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Remote Procedure Invocation](/microservices/th/communication/remote-procedure-invocation/) — ทางเลือกแบบ synchronous เมื่อผู้เรียกต้องการคำตอบทันทีจริง ๆ
 - [Saga](/microservices/th/data-management/saga/) — ใช้ messaging เพื่อประสานทรานแซกชันที่ครอบหลายบริการ
 - [Event Sourcing](/microservices/th/data-management/event-sourcing/) — วิธีที่เชื่อถือได้ในการสร้าง event ที่คุณจะเผยแพร่
+
+| Benefits | Trade-offs |
+|---|---|
+| producer และ consumer decoupled — ไม่ต้องรู้จักกัน | eventual consistency — ข้อมูลไม่ sync ทันที |
+| ทนต่อ spike ของ traffic — queue รับ message สะสม | message ordering ซับซ้อน โดยเฉพาะ parallel consumer |
+| consumer ล้มได้โดยไม่กระทบ producer | debugging ยากกว่า synchronous call |
+| scale consumer อิสระตาม backlog | message schema เปลี่ยนต้องระวัง backward compatibility |
+
+## Common Mistakes
+
+**Chatty Messaging** — ส่ง message เล็ก ๆ จำนวนมากแทนที่จะ batch
+
+อาการ:
+- message broker ได้รับ event หลายพันตัวต่อวินาทีสำหรับ operation เดียว
+- consumer ประมวลผลไม่ทัน backlog สะสม
+- network overhead สูงเกินจำเป็น
+
+**Shared Schema Without Versioning** — เปลี่ยน message schema โดยไม่ manage version
+
+อาการ:
+- consumer เก่า deserialize message จาก producer ใหม่ไม่ได้
+- deploy producer ใหม่ทำให้ consumer crash พร้อมกัน
+
+> 💡 Real World Example
+>
+> **Uber:**
+> - ใช้ Kafka สำหรับ real-time event streaming ระหว่าง service
+> - driver location update ส่งเป็น event — ไม่ใช่ synchronous API call
+> - ทำให้ scale แต่ละ consumer (pricing, ETA, map) แยกกันได้
+>
+> **LinkedIn (ผู้สร้าง Kafka):**
+> - สร้าง Kafka เพื่อแก้ปัญหา messaging ภายใน
+> - ปัจจุบันประมวลผล trillions of messages ต่อวัน
 
 <Callout title="consumer ที่เป็น idempotent ไม่ใช่ทางเลือก">
 broker ส่วนใหญ่รับประกันการส่งแบบ at-least-once ซึ่งหมายความว่า consumer ของคุณจะได้เห็นข้อความเดิมซ้ำสองครั้งในที่สุด ถ้าการประมวลผล "ตัดเงินคำสั่งซื้อ 17" ไม่ idempotent การส่งซ้ำจะตัดเงินลูกค้าสองครั้ง ทำให้ consumer ปลอดภัยที่จะทำซ้ำได้ — ลบข้อมูลซ้ำโดยอ้างอิงจาก message id หรือออกแบบการทำงานให้การใช้สองครั้งมีผลเหมือนกับการใช้ครั้งเดียว
@@ -206,7 +239,7 @@ export const quizMessaging = [
     q: 'ข้อใดเป็นต้นทุนที่แท้จริงของการนำ messaging มาใช้?',
     options: [
       'มันทำให้ทุกการเรียกเป็น synchronous',
-      'broker กลายเป็นโครงสร้างพื้นฐานสำคัญที่ต้องพร้อมใช้งานสูงและดำเนินการอย่างระมัดระวัง',
+      'broker กลายเป็นโครงสร้างพื้นฐานสำคัญที่ต้องพร้อมใช้งานสูงและทำงานอย่างระมัดระวัง',
       'มันป้องกันการเพิ่ม consumer ใหม่',
       'มันขจัด eventual consistency',
     ],

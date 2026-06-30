@@ -10,17 +10,17 @@ import Callout from '../../../../components/Callout.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-## บริบท (Context)
+## Context
 
 คุณได้แยกระบบของคุณออกเป็นหลาย service ที่จัดเรียงตามความสามารถทางธุรกิจ — orders, inventory, payments, shipping แต่ละ service มี codebase ของตัวเองและทีมของตัวเอง ตอนนี้คุณต้องตัดสินใจว่าข้อมูลของแต่ละ service จะอยู่ที่ไหน เส้นทางที่ง่ายที่สุดคือชี้ทุกตัวไปที่ฐานข้อมูลเดียวกันที่คุณมีอยู่แล้ว มันใช้งานได้ในวันแรก และมันค่อย ๆ ทำลายทุกสิ่งที่การแยกส่วนควรจะมอบให้คุณอย่างเงียบ ๆ
 
-## ปัญหา (Problem)
+## Problem
 
 เมื่อ service ใช้ฐานข้อมูลร่วมกัน พวกมันก็ใช้ schema ร่วมกัน ทีม shipping เพิ่มคอลัมน์ลงในตาราง orders ทำให้ query ของทีม orders พัง ทีม inventory อยากเปลี่ยนตารางจาก PostgreSQL ไปเป็น document store แต่ทำไม่ได้ เพราะมีอีกสี่ service อ่านมันโดยตรง รายงานที่ทำงานช้าของ service หนึ่งดูด connection pool ที่ทุก service อื่นพึ่งพาจนหมด
 
 การใช้ฐานข้อมูลร่วมกันคือการสร้าง monolith ขึ้นมาใหม่ที่ชั้นข้อมูล ดังนั้นแรงที่กำลังทำงานอยู่คือ: คุณจะให้แต่ละ service พัฒนาโมเดลข้อมูลของตัวเอง เลือกเทคโนโลยีการจัดเก็บของตัวเอง และ scale ตามตารางเวลาของตัวเองได้อย่างไร โดยที่ service อื่นไม่แอบไปพึ่งพาตารางภายในของมัน?
 
-## วิธีแก้ (Solution)
+## Solution
 
 ให้แต่ละ service เป็นเจ้าของข้อมูลของตัวเองแต่เพียงผู้เดียว ข้อมูลอยู่ในฐานข้อมูลส่วนตัว — เป็น schema แยก เป็น database instance แยก หรือเป็น database server แยก ขึ้นอยู่กับว่าคุณต้องการการแยก (isolation) ที่แข็งแกร่งเพียงใด ไม่มี service อื่นได้รับอนุญาตให้เชื่อมต่อกับมัน วิธีเดียวที่จะอ่านหรือเปลี่ยนข้อมูลของ service คือการผ่าน API ที่ service นั้น publish ออกมา หรือการบริโภค event ที่มันส่งออกมา
 
@@ -43,7 +43,7 @@ export const dbPerServiceDiagram = `flowchart TB
 
 <Mermaid code={dbPerServiceDiagram} title="service หนึ่งอาจเรียก API ของอีก service ได้ แต่ห้ามเชื่อมต่อกับฐานข้อมูลของมันเด็ดขาด" />
 
-## ตัวอย่าง (Example)
+## Example
 
 pattern นี้เป็นเชิงโครงสร้างมากกว่าเชิงอัลกอริทึม ดังนั้นภาพประกอบที่ชัดเจนที่สุดคือการตั้งค่า (configuration) ด้านล่างนี้ มีสอง service ที่ถูกต่อสายไว้ให้แต่ละตัวถือ credentials สำหรับฐานข้อมูลของตัวเองเท่านั้น สังเกตว่า Shipping service ไม่มี connection string สำหรับฐานข้อมูล Orders เลย — มันมีเพียง URL ของ Order service เท่านั้น
 
@@ -85,7 +85,7 @@ shipping-service  --calls-->  Order API --> orders DB   (allowed, indirect)
 shipping-service  --X-->      orders DB     (blocked: no route, no credentials)
 ```
 
-## บริบทที่เป็นผลลัพธ์ (Resulting context)
+## Resulting Context
 
 สิ่งที่คุณได้รับ:
 
@@ -101,11 +101,43 @@ shipping-service  --X-->      orders DB     (blocked: no route, no credentials)
 
 ข้อคิดสำคัญ: Database per Service ไม่ได้แก้ปัญหาความสอดคล้องและการ query — มันจงใจเอาทางลัดออกไป เพื่อให้คุณแก้ปัญหาเหล่านั้นอย่างชัดเจนและเป็นราย service ซึ่งเป็นเหตุผลว่าทำไมส่วนที่เหลือของโมดูลนี้จึงมีอยู่
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Saga](/microservices/th/data-management/saga/) — ความสอดคล้องข้ามฐานข้อมูลส่วนตัวโดยไม่ต้องใช้ distributed transaction
 - [API Composition](/microservices/th/data-management/api-composition/) — การตอบ query ที่เคยเป็น join
 - [CQRS](/microservices/th/data-management/cqrs/) — read model ที่พาดข้าม service ได้อย่างมีประสิทธิภาพ
+
+| Benefits | Trade-offs |
+|---|---|
+| service เปลี่ยน database tech ได้อิสระ | query ข้าม service ต้องใช้ API Composition หรือ event |
+| schema เปลี่ยนโดยไม่กระทบ service อื่น | distributed transaction ซับซ้อน — ต้องใช้ Saga |
+| database ล้มกระทบแค่ service เดียว | data duplication ข้าม service เป็นเรื่องปกติ |
+| scale database แยกตาม load pattern | operational cost สูงกว่า — ดูแลหลาย database |
+
+## Common Mistakes
+
+**Shared Database** — หลาย service อ่านเขียน database เดียวกัน
+อาการ:
+- service A เปลี่ยน schema ทำให้ service B พัง
+- ไม่มี service ไหน "เป็นเจ้าของ" table ชัดเจน
+- deployment ต้อง coordinate ทุก service ที่ใช้ database นั้น
+
+**Database per Table** — แยก database ละเอียดเกินไปจนไม่คุ้ม
+อาการ:
+- service เล็กมากมี database ของตัวเองที่มีแค่ 1 table
+- operational overhead สูงกว่าประโยชน์ที่ได้
+
+> 💡 Real World Example
+>
+> **Amazon:**
+> - หนึ่งในกฎดังของ Amazon คือ "no shared databases"
+> - แต่ละ service เลือก database ที่เหมาะกับ use case: DynamoDB, RDS, ElasticSearch
+> - payment service ใช้ RDBMS สำหรับ ACID, recommendation ใช้ graph database
+>
+> **Netflix:**
+> - Cassandra สำหรับ viewing history (high write throughput)
+> - MySQL สำหรับ billing (ACID required)
+> - ElasticSearch สำหรับ search catalog
 
 <Callout title="กฎข้อเดียว">
 ถ้าคุณจำอะไรไม่ได้เลย: ฐานข้อมูลของ service เป็นของส่วนตัว วันที่ service ที่สองเปิดการเชื่อมต่อโดยตรงกับมัน คุณจะไม่มีสอง service อีกต่อไป — คุณมี distributed monolith หนึ่งตัวที่ติดป้ายชื่อสองอัน

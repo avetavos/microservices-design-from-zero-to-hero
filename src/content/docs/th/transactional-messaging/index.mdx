@@ -10,13 +10,13 @@ import Callout from '../../../../components/Callout.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-## บริบท
+## Context
 
 เซอร์วิสแทบไม่เคยทำงานเพียงลำพัง เมื่อ Order service ยืนยันคำสั่งซื้อ มันทำสองอย่าง: เขียนแถวลงฐานข้อมูลของตัวเอง และบอกระบบส่วนที่เหลือว่าคำสั่งซื้อนี้มีอยู่แล้ว — โดยทั่วไปคือการ publish ข้อความหรือ event ไปยัง broker เพื่อให้ Inventory, Payment และ Notification service ตอบสนองได้ ทั้ง saga, event sourcing และ event-driven read model ต่างพึ่งพาขั้นตอนที่สองนี้ให้เกิดขึ้นอย่างเชื่อถือได้
 
 ดังนั้นแทบทุก microservice ที่น่าสนใจจึงทำการกระทำคู่เดียวกันบน code path เดียวกัน นั่นคือ **commit การเปลี่ยนแปลงภายใน แล้ว publish ข้อความเกี่ยวกับมัน**
 
-## ปัญหา
+## Problem
 
 ปัญหาคือฐานข้อมูลกับ message broker เป็นสองระบบอิสระที่มีสอง transaction อิสระ ไม่มี commit ร่วมกัน นั่นทำให้เกิดช่องว่าง และไม่ว่าคุณจะเลือกลำดับแบบไหน การ crash ในช่องว่างนั้นก็ทำให้ระบบเสียหาย
 
@@ -35,7 +35,7 @@ export const dualWriteDiagram = `sequenceDiagram
 
 <Mermaid code={dualWriteDiagram} title="อันตรายของ dual-write — การ crash ระหว่าง commit และ publish ทำให้ event หายไป" />
 
-## วิธีแก้
+## Solution
 
 ทุกแพตเทิร์นในโมดูลนี้ตั้งอยู่บนความเข้าใจเดียวกัน: **เลิกพยายามเขียนลงสองระบบแบบ atomic** แทนที่จะทำเช่นนั้น ให้ทำให้ข้อความเป็นส่วนหนึ่งของ local database transaction เดียวกันกับที่บันทึกการเปลี่ยนแปลงทางธุรกิจ และย้ายงานในการนำมันไปส่งให้ broker ไปเป็นขั้นตอนแยกต่างหากที่ retry ได้ การ commit ของฐานข้อมูลกลายเป็น single source of truth และการส่งข้อความกลายเป็นผลลัพธ์ที่ตามมาจากมัน ไม่ใช่การเขียนครั้งที่สองที่แข่งกัน
 
@@ -46,11 +46,11 @@ export const dualWriteDiagram = `sequenceDiagram
 - **Polling Publisher** — สร้าง relay ด้วยการ query ตาราง outbox เป็นระยะเพื่อหาแถวที่ยังไม่ถูกส่งแล้ว publish ออกไป จัดการง่ายกว่า log tailing แต่แลกมาด้วย latency และภาระจากการ polling
 - **Idempotent Consumer** — เนื่องจาก relay ส่งแบบ *at-least-once* ข้อความเดียวกันจึงมาถึงได้สองครั้ง consumer ต้องตรวจจับและดูดซับ duplicate เพื่อให้การประมวลผลข้อความสองครั้งมีผลเหมือนกับการประมวลผลครั้งเดียว
 
-## โมดูลนี้ครอบคลุมอะไรบ้าง
+## What This Module Covers
 
-เราเริ่มจากตารางที่ทำให้การเขียนเป็น atomic (Transactional Outbox) จากนั้นดูสองวิธีในการ drain มัน (Transaction Log Tailing และ Polling Publisher) และจบที่ฝั่งรับ ซึ่งการส่งแบบ at-least-once บังคับให้ consumer ต้องเป็น idempotent แต่ละบทเรียนมีรูปแบบเดียวกัน: สถานการณ์ที่นำไปสู่แพตเทิร์น แรงที่ตึงเครียดกัน สิ่งที่แพตเทิร์นทำ ไดอะแกรม โค้ดตัวอย่างที่รันได้ และการมองอย่างตรงไปตรงมาว่าแพตเทิร์นนั้นมีต้นทุนอะไร
+เราเริ่มจากตารางที่ทำให้การเขียนเป็น atomic (Transactional Outbox) จากนั้นดูสองวิธีในการ drain มัน (Transaction Log Tailing และ Polling Publisher) และจบที่ฝั่งรับ ซึ่งการส่งแบบ at-least-once บังคับให้ consumer ต้องเป็น idempotent แต่ละบทเรียนมีรูปแบบเดียวกัน: สถานการณ์ที่นำไปสู่แพตเทิร์น แรงที่ตึงเครียดกัน สิ่งที่แพตเทิร์นทำ ไดอะแกรม codeตัวอย่างที่รันได้ และการมองอย่างตรงไปตรงมาว่าแพตเทิร์นนั้นมีต้นทุนอะไร
 
-## แพตเทิร์นที่เกี่ยวข้อง
+## Related
 
 - [Saga](/microservices/th/data-management/saga/) — พึ่งพาการ publish event ที่เชื่อถือได้ในทุกขั้นตอน
 - [Event Sourcing](/microservices/th/data-management/event-sourcing/) — อีกวิธีหนึ่งในการทำให้ event เป็นการเขียนเดียวกันกับการเปลี่ยนแปลง state

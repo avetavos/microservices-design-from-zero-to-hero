@@ -1,0 +1,105 @@
+---
+title: Glossary
+description: คำศัพท์ microservices ที่ใช้ตลอด course นี้ — รักษา terminology ภาษาอังกฤษตามที่ engineer ใช้จริงใน production
+sidebar:
+  order: 99
+---
+
+## Core Terminology
+
+| English | Thai Style | ความหมาย |
+|---|---|---|
+| Microservice | Microservice | service ขนาดเล็กที่ deploy ได้อิสระ รับผิดชอบ business capability เดียว |
+| Monolith | Monolith | ระบบที่ build และ deploy เป็นหน่วยเดียว |
+| Service | service | unit ของ functionality ที่ทำงานเป็น process แยก |
+| API Gateway | API Gateway | จุดเข้าจุดเดียวที่รับ request จาก client แล้วส่งต่อไปยัง service |
+| Service Discovery | Service Discovery | กลไกที่ service ค้นหาที่อยู่ของ service อื่นโดยอัตโนมัติ |
+| Service Mesh | Service Mesh | infrastructure layer ที่จัดการ communication ระหว่าง service |
+| Sidecar | Sidecar | proxy process ที่รันคู่กับ service เพื่อ handle cross-cutting concerns |
+| Circuit Breaker | Circuit Breaker | pattern ที่หยุดส่ง request ไปยัง dependency ที่ล้มเหลว |
+| Saga | Saga | pattern สำหรับ distributed transaction ผ่าน sequence ของ local transaction |
+| CQRS | CQRS | แยก read model (Query) ออกจาก write model (Command) |
+| Event Sourcing | Event Sourcing | เก็บ state เป็น sequence ของ event แทนที่จะเก็บค่าปัจจุบัน |
+
+## Messaging & Events
+
+| English | Thai Style | ความหมาย |
+|---|---|---|
+| Event | event | การแจ้งว่าบางอย่างเกิดขึ้นแล้ว — immutable fact |
+| Event Bus | Event Bus | channel กลางที่ producer ส่ง event และ consumer รับ |
+| Message Broker | Message Broker | ระบบกลางสำหรับส่ง message ระหว่าง service (Kafka, RabbitMQ) |
+| Queue | queue | โครงสร้างข้อมูลที่รับและส่ง message แบบ FIFO |
+| Topic | topic | ช่องทางใน message broker ที่ consumer สมัครรับ event |
+| Consumer | consumer | service ที่รับและประมวลผล message จาก queue หรือ topic |
+| Producer | producer | service ที่ส่ง message หรือ event ไปยัง broker |
+| Kafka | Kafka | distributed streaming platform สำหรับ high-throughput event streaming |
+| RabbitMQ | RabbitMQ | message broker ที่รองรับ AMQP protocol |
+
+## Infrastructure & Deployment
+
+| English | Thai Style | ความหมาย |
+|---|---|---|
+| Container | container | package ที่รวม application และ dependency ไว้ด้วยกัน (Docker) |
+| Docker | Docker | platform สำหรับสร้างและรัน container |
+| Kubernetes | Kubernetes | ระบบ orchestration สำหรับจัดการ container ใน cluster |
+| Pod | pod | unit ที่เล็กที่สุดที่ Kubernetes deploy — กลุ่มของ container |
+| Deployment | deployment | Kubernetes resource ที่กำหนดว่าจะรัน pod กี่ replica |
+| Replica | replica | สำเนาของ pod ที่รันพร้อมกันเพื่อ availability และ scaling |
+| Cluster | cluster | กลุ่มของ node ที่ Kubernetes ใช้รัน workload |
+| Namespace | namespace | partition เสมือนใน Kubernetes cluster สำหรับแยก environment |
+| Sidecar | sidecar | container ที่รันคู่กับ main container ใน pod เดียวกัน |
+
+## Observability
+
+| English | Thai Style | ความหมาย |
+|---|---|---|
+| Observability | observability | ความสามารถในการเข้าใจ state ของระบบจาก output ที่สังเกตได้ |
+| Metrics | metrics | ข้อมูลตัวเลขที่วัดได้ตลอดเวลา (latency, error rate, throughput) |
+| Logging | logging | บันทึก event ที่เกิดขึ้นใน service พร้อม timestamp |
+| Tracing | tracing | ติดตาม request ที่ข้าม service หลายตัว (distributed tracing) |
+| Telemetry | telemetry | ข้อมูล metrics, logs, traces ที่ส่งจาก service |
+
+## Resilience
+
+| English | Thai Style | ความหมาย |
+|---|---|---|
+| Resilience | resilience | ความสามารถของระบบในการทำงานต่อไปได้แม้มีส่วนที่ล้มเหลว |
+| Fault Tolerance | fault tolerance | ความสามารถในการรับมือกับ failure โดยไม่กระทบ availability |
+| Bulkhead | bulkhead | แยก resource pool เพื่อป้องกัน failure cascade |
+| Retry | retry | ลองส่ง request ใหม่เมื่อครั้งแรกล้มเหลว |
+| Timeout | timeout | จำกัดเวลารอ response จาก dependency |
+| Rate Limiting | rate limiting | จำกัดจำนวน request ต่อช่วงเวลาเพื่อป้องกัน overload |
+
+## Architecture Patterns
+
+| English | ความหมาย |
+|---|---|
+| Decompose by Business Capability | แบ่ง service ตาม business capability ขององค์กร |
+| Decompose by Subdomain | แบ่ง service ตาม domain model (DDD) |
+| Database per Service | แต่ละ service มี database เป็นของตัวเอง |
+| API Composition | รวมผลลัพธ์จากหลาย service ใน application layer |
+| Transactional Outbox | เขียน event ลง database ในธุรกรรมเดียวกับ business data |
+| Saga Pattern | จัดการ distributed transaction ผ่าน event chain |
+| Backends for Frontends | API Gateway เฉพาะสำหรับแต่ละ client type |
+| Self-contained Service | service ที่ตอบสนอง request ได้เองโดยไม่ต้องเรียก service อื่น synchronously |
+
+## ความแตกต่างของ Architecture
+
+| Architecture | ข้อดี | ข้อเสีย |
+|---|---|---|
+| Monolith | เรียบง่าย ง่ายต่อการ develop และ test | scale ทั้งหมดหรือไม่ scale เลย, deploy ช้า, team ชนกัน |
+| Modular Monolith | แยก concern ชัด ยัง deploy เป็นหน่วยเดียว | ยัง deploy พร้อมกัน, scaling ยังจำกัด |
+| Microservices | scale อิสระ, deploy อิสระ, team autonomy | infrastructure ซับซ้อน, distributed system, operational cost สูง |
+| Event-Driven | loose coupling, async, ทนต่อ spike | eventual consistency, debug ยาก, ordering ยุ่ง |
+
+## เมื่อ **ไม่** ควรใช้ Microservices
+
+- ทีมขนาดเล็ก (ต่ำกว่า 5 คน) — overhead สูงกว่าคุณค่าที่ได้
+- ยังไม่รู้ domain ดีพอ — แบ่ง boundary ผิดแล้วแก้ยาก
+- ไม่มี DevOps maturity — Kubernetes, monitoring, CI/CD ต้องพร้อม
+- ต้องการ strong consistency ตลอด — distributed transaction ซับซ้อนมาก
+- MVP หรือ prototype — เริ่มด้วย Monolith แล้วค่อย extract
+
+import ProgressTracker from '../../../components/ProgressTracker.tsx';
+
+<ProgressTracker client:visible id="glossary" />

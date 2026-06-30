@@ -11,13 +11,13 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 บริการของคุณติดต่อกับ dependency หลายตัว ตัวอย่างเช่น หน้า product page อาจเรียก catalog service, reviews service และ recommendations service เพื่อประกอบเป็น response เดียว การเรียกทั้งสามใช้ทรัพยากรชุดเดียวกันที่มีจำกัดภายใน process ของคุณ: thread pool เดียวกันที่จัดการ request ที่เข้ามา, connection pool ของฐานข้อมูลเดียวกัน, จำนวน HTTP connection ที่กำลังทำงานคงที่จำนวนเดียวกัน
 
 การแชร์นั้นมองไม่เห็นและสะดวก — จนกระทั่ง dependency ตัวหนึ่งมีพฤติกรรมผิดปกติ
 
-## ปัญหา
+## Problem
 
 สมมติว่า recommendations service — ตัวที่สำคัญน้อยที่สุดในสามตัว — เริ่มช้า ทุก request ที่เรียกมันจะจอด thread ทิ้งไว้ตลอด timeout เพราะ dependency ทั้งหมดดึงจาก pool ที่แชร์กันชุดเดียว thread ที่ถูกจอดไว้เหล่านั้นจึงไม่ใช่ "thread ของ recommendations" แต่มันคือ *thread* เดียวกับที่การเรียก catalog และ reviews ต้องการ เมื่อ recommendations request สะสมขึ้น มันก็กิน pool ทั้งหมด ตอนนี้ request สำหรับ **catalog** ซึ่งแข็งแรงดีก็ขอ thread ไม่ได้เช่นกัน ความล้มเหลวใน dependency ที่สำคัญน้อยที่สุดได้ล้มตัวที่สำคัญที่สุดลงไป
 
@@ -25,7 +25,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ดังนั้นแรงที่ตึงเครียดกันคือ: คุณมีทรัพยากรที่จำกัด มี dependency หลายตัวที่แย่งชิงมัน และคุณต้องการให้ความต้องการของ dependency ที่ช้าตัวหนึ่งถูกจำกัด เพื่อให้มันกินส่วนแบ่งที่งานอื่น ๆ ที่แข็งแรงดีพึ่งพาไม่ได้
 
-## วิธีแก้
+## Solution
 
 **bulkhead** แบ่งกั้นทรัพยากรเพื่อให้ dependency แต่ละตัวดึงจาก pool ที่มีขอบเขตของตัวเองแทนที่จะเป็น pool ที่แชร์กันชุดเดียว ชื่อนี้มาจากการต่อเรือ: ตัวเรือถูกแบ่งออกเป็นช่องกันน้ำด้วย bulkhead เพื่อให้รอยรั่วในช่องหนึ่งท่วมเฉพาะช่องนั้นและเรือยังคงลอยอยู่ ในซอฟต์แวร์ คุณมอบ thread pool, connection pool หรือ — อย่างง่ายที่สุด — **bounded semaphore** ให้ dependency แต่ละตัว ซึ่งจำกัดจำนวนการเรียกแบบ concurrent ที่ไปยัง dependency นั้นที่กำลังทำงานพร้อมกันได้
 
@@ -49,7 +49,7 @@ export const bulkheadDiagram = `flowchart TB
 
 <Mermaid code={bulkheadDiagram} title="dependency แต่ละตัวได้ช่องที่มีขอบเขตของตัวเอง ช่องที่อิ่มตัวจะปฏิเสธอย่างรวดเร็วโดยไม่แตะตัวอื่น" />
 
-## ตัวอย่าง
+## Example
 
 นี่คือ bulkhead ที่ implement เป็น bounded semaphore: การเรียกไปยัง dependency หนึ่งจะรันพร้อมกันได้มากที่สุด N ครั้ง และผู้เรียกที่ไม่สามารถได้ permit ทันทีจะถูกปฏิเสธแทนที่จะถูกปล่อยให้กองพะเนิน แต่ละตัวอย่างเป็นอิสระในตัวเองและเขียนตามแบบฉบับของแต่ละภาษา
 
@@ -197,7 +197,7 @@ export const bulkheadDiagram = `flowchart TB
   </TabItem>
 </Tabs>
 
-## บริบทที่เกิดขึ้นตามมา
+## Resulting Context
 
 สิ่งที่คุณได้รับ:
 
@@ -211,11 +211,41 @@ export const bulkheadDiagram = `flowchart TB
 - **การใช้งานสูงสุด (peak utilization) ลดลง** การสำรองกำลังต่อ dependency หมายความว่า permit บางส่วนจะนั่งว่างเมื่อ dependency ของมันเงียบ — คุณแลก throughput ดิบเล็กน้อยกับการแยกตัว ซึ่งปกติแล้วเป็นการแลกที่ดี แต่มันก็เป็นการแลก
 - **ชิ้นส่วนที่ขยับมากขึ้น** pool แยกตาม dependency เพิ่มพื้นผิวของการ config และการ monitoring แต่ละช่องคุ้มค่ากับ metric หนึ่งตัวเพื่อให้คุณเห็นว่าตัวไหนกำลังอิ่มตัว
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Circuit Breaker](/microservices/th/reliability/circuit-breaker/) — bulkhead ควบคุมความเสียหาย จากนั้น breaker จะหยุดเรียก dependency ที่พังโดยสิ้นเชิง
 - [Retry and Timeout](/microservices/th/reliability/retry-and-timeout/) — กำหนดขอบเขตว่าการเรียกแต่ละครั้งจะถือ permit ได้นานแค่ไหน ซึ่งกันไม่ให้ช่องเต็มอยู่ตลอดกาล
 - [Rate Limiting](/microservices/th/reliability/rate-limiting/) — จำกัด *อัตรา* ของงาน ในขณะที่ bulkhead จำกัด *ความ concurrency* ของงาน
+
+| Benefits | Trade-offs |
+|---|---|
+| ป้องกัน cascade failure — resource pool หนึ่งหมดไม่กระทบ pool อื่น | เพิ่ม resource ที่ต้องจัดสรรล่วงหน้า — อาจ underutilize บางส่วน |
+| isolate critical path จาก non-critical — ให้ priority ได้ | configuration ซับซ้อน — ต้องรู้จัก workload pattern |
+| ระบบยังทำงานได้บางส่วนแม้ dependency ล้ม | จำนวน pool มากเกินทำให้ manage ยาก |
+| ลด blast radius เมื่อ dependency ช้าหรือล้ม | ต้องทดสอบ failure scenario — hard ถ้าไม่มี chaos engineering |
+
+## Common Mistakes
+
+**Bulkhead ที่ Partition ผิด** — แบ่ง pool ตาม technical boundary ไม่ใช่ failure boundary
+อาการ:
+- แบ่ง pool ตาม thread type แต่ไม่แบ่งตาม dependency ที่อาจล้ม
+- failure ยังลาม เพราะ partition ไม่ตรงกับแหล่ง failure จริง
+
+**Pool ขนาดเดียวสำหรับทุกอย่าง** — ไม่ปรับ pool size ตาม traffic pattern
+อาการ:
+- critical payment flow ได้ thread เท่ากับ batch report
+- payment ช้าเพราะแย่งกับ non-critical workload
+
+> 💡 Real World Example
+>
+> **Netflix:**
+> - ใช้ Hystrix (thread pool isolation) สำหรับทุก external call
+> - แต่ละ dependency มี thread pool ของตัวเอง
+> - recommendation service ล้ม → thread pool ของมันเต็ม → ไม่กระทบ payment thread pool
+>
+> **Resilience4j (successor ของ Hystrix):**
+> - semaphore-based bulkhead สำหรับ reactive systems
+> - ใช้แพร่หลายในระบบที่ใช้ Spring Boot + reactive programming
 
 <Callout title="ขีดจำกัดความ concurrency ไม่ใช่ rate limit">
 bulkhead จำกัดจำนวนการเรียกที่รัน *ในเวลาเดียวกัน* ไม่ใช่จำนวนต่อวินาที สองอย่างนี้มักถูกสับสน bulkhead ขนาดสองปล่อยให้การเรียกที่รวดเร็วหนึ่งพันครั้งไหลผ่านได้ในหนึ่งวินาทีหากแต่ละครั้งเสร็จเร็ว — มันจะ block ก็ต่อเมื่อมีมากกว่าสองครั้งกำลังทำงานพร้อมกันเท่านั้น เลือกใช้ bulkhead เมื่อคุณต้องการควบคุมว่า dependency หนึ่งจะถือทรัพยากรที่แชร์กันได้มากเพียงใดในคราวเดียว เลือกใช้ rate limiting เมื่อคุณต้องการจำกัด throughput ตามเวลา

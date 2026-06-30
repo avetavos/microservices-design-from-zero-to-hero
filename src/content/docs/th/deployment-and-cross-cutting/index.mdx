@@ -11,13 +11,13 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 คุณได้แยก monolith ออกเป็นชิ้น ๆ วาด service boundary ที่สะอาด มอบฐานข้อมูลของตัวเองให้แต่ละ service และเดินสายเรื่อง communication, reliability และ observability เรียบร้อยแล้ว บนกระดานไวท์บอร์ดระบบดูเหมือนเสร็จสมบูรณ์ แต่พอคุณลองรันมันจริง ๆ จากที่ monolith เคยเป็นเพียง process เดียวที่คุณ deploy ครั้งเดียว ตอนนี้คุณมียี่สิบ service แต่ละตัวอาจเขียนด้วยภาษาที่ต่างกัน แต่ละตัวต้องเริ่มทำงานในสภาพแวดล้อมที่รู้แน่ชัด หา dependency ของตัวเองเจอ และทำงานเหมือนกันทั้งใน staging และ production
 
 งานได้เปลี่ยนไปแล้ว การเขียน service ไม่ใช่ส่วนที่แพงอีกต่อไป การ package มัน วางมันลงบนเครื่อง มอบ configuration ที่ถูกต้องให้ ทำให้ traffic ระหว่าง service ปลอดภัย และทำให้ทุก service เปิดเผย health check และ metric ในแบบเดียวกัน — นั่นต่างหากที่ทีมส่วนใหญ่ทุ่มเทแรงด้าน operation ลงไปในตอนนี้
 
-## ปัญหา
+## Problem
 
 คำถามไม่กี่ข้อตัดสินว่าการรันหลาย service จะยั่งยืนหรือกลายเป็นไฟไหม้ประจำวัน:
 
@@ -25,7 +25,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ถ้าแต่ละทีมตอบคำถามเหล่านี้ต่างกัน คุณจะได้กองทัพของ snowflake: service ที่เริ่มทำงานในแบบที่ต่างกันเล็กน้อย ตั้งค่าตัวเองจากกลไกนับสิบแบบ และแต่ละตัวก็ implement เรื่อง security และ observability ผิดไปนิดหน่อย
 
-## ทางออก
+## Solution
 
 โมดูลนี้จัดกลุ่ม pattern ออกเป็นสองชั้น ชั้นแรกว่าด้วย **วิธีที่ service รัน** — การ package และ runtime ของมัน ชั้นที่สองว่าด้วย **cross-cutting baseline** ที่ทุก service ที่กำลังรันแชร์ร่วมกัน — networking, plumbing ส่วนกลาง และ configuration
 
@@ -56,11 +56,11 @@ pattern ทั้งห้าในโมดูลนี้ประกอบเ
 - **Microservice Chassis** — เริ่มทุก service ใหม่บน framework หรือฐานร่วมที่เดินสายเรื่อง configuration, logging, metric, health check และ service discovery ไว้ให้แล้ว เพื่อให้ทีมเขียน business logic แทน plumbing
 - **Externalized Configuration** — เก็บ endpoint, credential และ feature flag ไว้นอก image และ inject เข้าไปตอน runtime เพื่อให้ artifact ที่ไม่เปลี่ยนแปลงเพียงชิ้นเดียวรันได้โดยไม่ต้องแก้ในทุกสภาพแวดล้อม
 
-## โมดูลนี้ครอบคลุมอะไรบ้าง
+## What This Module Covers
 
 เราเริ่มจากโมเดล runtime สองแบบ — container และ serverless — เพราะทุกอย่างที่เหลือต้องสมมติว่ามีวิธีรัน service จริง ๆ ก่อน จากนั้นเราครอบคลุม cross-cutting concerns ที่เปลี่ยนกอง process ที่กำลังรันให้กลายเป็นกองทัพที่ operate ได้: mesh เพื่อ networking ที่สอดคล้องกัน, chassis เพื่อ plumbing ใน process ที่สอดคล้องกัน และ externalized configuration เพื่อให้ artifact เดียวเป็นกลางต่อทุกสภาพแวดล้อม แต่ละบทเรียนคงรูปแบบเดียวกัน: สถานการณ์ที่นำไปสู่ pattern, แรงที่ขัดแย้งกัน, pattern ทำอะไร, ไดอะแกรม, ตัวอย่าง config ที่เป็นรูปธรรม และการมองตามความจริงว่า pattern นั้นทำให้คุณต้องเสียอะไรบ้าง
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Service per Container](/microservices/th/deployment-and-cross-cutting/service-per-container/) — เริ่มที่นี่ มันคือวิธีเริ่มต้นที่ service รันกันในปัจจุบัน
 - [Externalized Configuration](/microservices/th/deployment-and-cross-cutting/externalized-configuration/) — pattern ที่ทำให้ artifact ที่ build แล้วเพียงชิ้นเดียวรันได้ทุกที่

@@ -11,15 +11,15 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 คุณนำ [API Gateway](/microservices/th/communication/api-gateway/) มาใช้และมันได้ผล แต่ client ของคุณไม่เหมือนกัน web app ทำงานบนการเชื่อมต่อที่เร็วและต้องการการตอบกลับที่ละเอียดสมบูรณ์เพื่อแสดง dashboard ที่กว้าง mobile app ทำงานบนสัญญาณมือถือที่ไม่เสถียรและต้องการการตอบกลับที่เล็กกระชับ มีเฉพาะ field ที่หน้าจอเล็กแสดงเท่านั้น third-party integration ต้องการ endpoint ที่เสถียร อนุรักษ์นิยม มีเวอร์ชัน และเปลี่ยนแปลงน้อย gateway เดียวที่พยายามตอบสนองทั้งสามฝ่ายก็จะเติบโต logic แบบมีเงื่อนไขและกรณีพิเศษ "ใส่ field นี้เฉพาะ mobile" เพิ่มขึ้นเรื่อย ๆ
 
-## ปัญหา
+## Problem
 
 gateway เดียวที่ใช้ร่วมกันโดย client ทุกชนิดจะกลายเป็นองค์ประกอบที่ถูกแย่งชิงและเติบโตไม่หยุด ทีม client ทุกทีมต้องประสานงานการเปลี่ยนแปลงของตนผ่าน codebase ที่ใช้ร่วมกันตัวเดียวนั้น ดังนั้นทีม mobile จึงต้องรอทีม web และในทางกลับกัน API ก็เลื่อนไหลไปสู่รูปร่างแบบหารร่วมน้อยที่สุดที่ไม่เข้ากับ client ใดได้ดี — หนักเกินไปสำหรับ mobile บางเกินไปสำหรับ web และความเป็นเจ้าของก็คลุมเครือ: ใครเป็นเจ้าของ gateway เมื่อสามทีมพึ่งพามัน? คุณจะรักษาประโยชน์ของจุดเข้าจุดเดียวไว้ในขณะที่ให้ client แต่ละตัวพัฒนา API ของตัวเองได้ตามจังหวะของตัวเองได้อย่างไร?
 
-## ทางออก
+## Solution
 
 **Backends for Frontends (BFF)** นำ gateway pattern มาใช้หนึ่งครั้งต่อ client หนึ่งชนิด แทนที่จะมี gateway เดียว คุณรัน **gateway แยกต่างหากสำหรับ client แต่ละชนิด** — web BFF, mobile BFF, third-party BFF แต่ละ BFF เปิดเผย API ที่ถูกปรับรูปร่างให้เหมาะกับ client ของมันอย่างแม่นยำ: mobile BFF คืน payload ที่ถูกตัดทอน web BFF คืนผลรวมที่ละเอียดสมบูรณ์ third-party BFF เปิดเผย contract ที่เสถียรและเปลี่ยนเวอร์ชันช้า ๆ
 
@@ -38,7 +38,7 @@ export const bffDiagram = `flowchart LR
 
 <Mermaid code={bffDiagram} title="Backends for Frontends — gateway ที่ปรับแต่งหนึ่งตัวต่อ client หนึ่งชนิด แต่ละตัวเป็นเจ้าของโดยทีมของ client นั้น เหนือบริการภายในที่ใช้ร่วมกัน" />
 
-## ตัวอย่าง
+## Example
 
 แต่ละ BFF เป็น deployable ของตัวเองพร้อม configuration ของตัวเองที่ปรับให้เข้ากับ client ของมัน นี่คือ configuration ของ route สอง BFF เหนือบริการภายในเดียวกัน — สังเกตว่า mobile BFF ตัด field และเข้มงวด limit ในขณะที่ web BFF คืนผลรวมที่ละเอียดสมบูรณ์
 
@@ -74,7 +74,7 @@ routes:
       requests_per_minute: 240
 ```
 
-## บริบทผลลัพธ์
+## Resulting Context
 
 สิ่งที่คุณได้:
 
@@ -85,14 +85,47 @@ routes:
 สิ่งที่คุณต้องจ่าย:
 
 - **มีการทำซ้ำบ้าง** กฎการจัดเส้นทาง การเชื่อมต่อการยืนยันตัวตน และ logic การรวมผลลัพธ์เกิดซ้ำกันในหลาย BFF concern ที่ใช้ร่วมกันสามารถถูกแยกออกไปเป็น library ที่ใช้ร่วมกันได้ แต่คุณยอมรับว่ามีชิ้นส่วนเคลื่อนไหวมากกว่า gateway เดียว
-- **มีองค์ประกอบให้ดำเนินการมากขึ้น** BFF หลายตัวหมายถึงหลายสิ่งที่ต้อง deploy เฝ้าติดตาม และทำให้พร้อมใช้งาน แทนที่จะเป็นเพียงตัวเดียว
+- **มีองค์ประกอบให้ทำงานมากขึ้น** BFF หลายตัวหมายถึงหลายสิ่งที่ต้อง deploy เฝ้าติดตาม และทำให้พร้อมใช้งาน แทนที่จะเป็นเพียงตัวเดียว
 - **มีขอบเขตที่ต้องคอยควบคุม** แต่ละ BFF ต้องคงสภาพเป็นชั้นปรับแต่งบาง ๆ ถ้า BFF เฉพาะ client เริ่มดูดซับ business logic คุณก็จะสร้างปัญหา God-object ที่ pattern นี้ตั้งใจจะแก้ขึ้นมาใหม่ — เพียงแต่กระจายอยู่ในหลายที่
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [API Gateway](/microservices/th/communication/api-gateway/) — pattern แบบ gateway เดียวที่ BFF ทำให้พิเศษขึ้นต่อ client หนึ่งชนิด
 - [Service Discovery](/microservices/th/communication/service-discovery/) — วิธีที่แต่ละ BFF ค้นหาตำแหน่งของบริการภายในที่มันเรียก
 - [API Composition](/microservices/th/data-management/api-composition/) — การรวมผลลัพธ์ที่แต่ละ BFF ทำเพื่อประกอบการตอบกลับที่ปรับให้เข้ากับ client
+
+| Benefits | Trade-offs |
+|---|---|
+| แต่ละ client type ได้ API ที่ optimize ให้ตัวเอง | เพิ่มจำนวน backend ที่ต้องดูแล — N client types = N BFF |
+| mobile client ไม่ต้องรับ payload ที่ออกแบบสำหรับ web | logic ซ้ำระหว่าง BFF ถ้าไม่ระวัง |
+| team ของแต่ละ frontend ดูแล BFF ของตัวเองได้ | BFF อาจกลายเป็น fat middleware ถ้าใส่ business logic |
+| เปลี่ยน frontend โดยไม่กระทบ BFF ของ client อื่น | เพิ่ม hop ใน request chain — latency สูงขึ้นเล็กน้อย |
+
+## Common Mistakes
+
+**Shared BFF** — BFF เดียวสำหรับทุก client type ทำให้กลับไปเป็นปัญหาเดิม
+
+อาการ:
+- BFF มีเงื่อนไข if mobile / if web ปะปนกัน
+- ทีม mobile และ web ทะเลาะกันเรื่อง API shape
+- release ของ BFF กระทบทุก client พร้อมกัน
+
+**Business Logic BFF** — ใส่ business rule ไว้ใน BFF แทน service
+
+อาการ:
+- pricing logic, discount rule อยู่ใน BFF
+- เปลี่ยน business rule ต้อง deploy BFF ใหม่ทุกตัว
+
+> 💡 Real World Example
+>
+> **SoundCloud:**
+> - เป็นผู้บัญญัติคำว่า "Backend for Frontend" ในปี 2015
+> - มี BFF แยกสำหรับ web, mobile, และ public API
+> - แต่ละ BFF ดูแลโดย frontend team ของตัวเอง
+>
+> **Netflix:**
+> - มี BFF แยกสำหรับ Smart TV, Mobile, Browser
+> - แต่ละ device type ได้ response format ที่ optimize สำหรับ screen size และ bandwidth
 
 <Callout title="BFF เป็น pattern ที่ปรับรูปทีมพอ ๆ กับที่เป็นเรื่องทางเทคนิค">
 ชัยชนะที่แท้จริงของ BFF ไม่ใช่ payload ที่เล็กลง — แต่คือการขจัดคอขวดในการประสานงาน เมื่อทีม mobile เป็นเจ้าของ BFF ของตน มันก็ส่งงานได้ตามจังหวะของตัวเองโดยไม่ต้องเข้าคิวรออยู่หลังทีม client อื่นทุกทีม ถ้าองค์กรของคุณมีทีม platform เดียวที่จะเป็นเจ้าของ BFF ทั้งหมดอยู่แล้ว gateway เดียวที่ถูกแยกองค์ประกอบมาอย่างดีอาจให้บริการคุณได้ดีกว่า; BFF ให้ผลคุ้มค่าเมื่อทีม client แยกจากกันชัดเจนและต้องการความเป็นอิสระ

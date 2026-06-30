@@ -11,17 +11,17 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
-คุณมี [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/) และคุณต้องการ relay เพื่อส่งแถวของมัน [Transaction Log Tailing](/microservices/th/transactional-messaging/transaction-log-tailing/) มีประสิทธิภาพแต่นำ CDC stack มาด้วย — replication slot, connector, log retention — ที่อาจมากเกินกว่าที่ทีมของคุณอยากรัน โดยเฉพาะในช่วงแรก คุณต้องการ relay ที่คุณสร้างและดำเนินการได้ด้วยเพียงแอปพลิเคชันและฐานข้อมูลของมันเท่านั้น
+คุณมี [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/) และคุณต้องการ relay เพื่อส่งแถวของมัน [Transaction Log Tailing](/microservices/th/transactional-messaging/transaction-log-tailing/) มีประสิทธิภาพแต่นำ CDC stack มาด้วย — replication slot, connector, log retention — ที่อาจมากเกินกว่าที่ทีมของคุณอยากรัน โดยเฉพาะในช่วงแรก คุณต้องการ relay ที่คุณสร้างและทำงานได้ด้วยเพียงแอปพลิเคชันและฐานข้อมูลของมันเท่านั้น
 
-## ปัญหา
+## Problem
 
 หากไม่มีสิทธิ์เข้าถึง transaction log วิธีเดียวที่จะรู้เกี่ยวกับแถว outbox ใหม่คือการถามฐานข้อมูล แต่ loop แบบไร้เดียงสามีหลุมพราง: มันสามารถหยิบแถวเดียวกันสองครั้งถ้ามี relay สองตัวรันอยู่ มันสามารถ publish แถวแล้วลืมทำเครื่องหมายว่าส่งแล้ว และมันสามารถกระหน่ำฐานข้อมูลถ้า poll หนักเกินไป
 
 ดังนั้นแรงต่าง ๆ คือ: คุณต้องการ relay ที่ง่ายที่สุดเท่าที่จะเป็นไปได้โดยไม่มี infrastructure เพิ่ม คุณยังต้อง publish ทุกแถวอย่างน้อยหนึ่งครั้งและหลีกเลี่ยงการ publish แถวสองครั้งจาก relay เดียว และคุณต้องการให้ต้นทุนและ latency ของการ polling อยู่ในระดับที่สมเหตุสมผล
 
-## วิธีแก้
+## Solution
 
 รัน **polling publisher**: background loop ที่ในช่วงเวลาคงที่ เลือกชุดของแถวที่ยังไม่ถูกส่งจาก outbox (เก่าสุดก่อน) publish แต่ละอันไปยัง broker และทำเครื่องหมายว่าส่งแล้วเมื่อ broker ตอบรับ เลือกด้วย row lock ที่ข้ามแถวที่ถูก lock อยู่แล้ว เพื่อให้ relay หลายตัวรันได้อย่างปลอดภัยโดยไม่อ้างสิทธิ์แถวเดียวกัน หลังจาก publish ให้ลบแถวหรือตั้ง timestamp `published_at` เพื่อไม่ให้มันถูกหยิบขึ้นมาอีก
 
@@ -41,7 +41,7 @@ export const pollingDiagram = `sequenceDiagram
 
 <Mermaid code={pollingDiagram} title="relay poll outbox เป็นช่วง ๆ publish แถวที่ยังไม่ถูกส่ง แล้วทำเครื่องหมายว่าส่งแล้ว" />
 
-## ตัวอย่าง
+## Example
 
 loop อ้างสิทธิ์ชุดด้วย `FOR UPDATE SKIP LOCKED` เพื่อไม่ให้ relay ที่ทำงานพร้อมกันชนกัน publish แต่ละแถว และทำเครื่องหมายว่าส่งแล้วใน transaction เดียวกันกับที่ lock มันไว้
 
@@ -184,7 +184,7 @@ loop อ้างสิทธิ์ชุดด้วย `FOR UPDATE SKIP LOCKED
   </TabItem>
 </Tabs>
 
-## บริบทที่เป็นผลลัพธ์
+## Resulting Context
 
 สิ่งที่คุณได้:
 
@@ -200,11 +200,42 @@ loop อ้างสิทธิ์ชุดด้วย `FOR UPDATE SKIP LOCKED
 
 กฎเชิงปฏิบัติ: เริ่มด้วย **polling publisher** เพราะมันง่ายและไม่มี dependency แล้วย้ายไปใช้ **transaction log tailing** เมื่อ latency หรือภาระจากการ polling กลายเป็นปัญหาจริง
 
-## แพตเทิร์นที่เกี่ยวข้อง
+## Related
 
 - [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/) — ผลิตแถวที่ relay นี้ poll
 - [Transaction Log Tailing](/microservices/th/transactional-messaging/transaction-log-tailing/) — relay ที่ latency ต่ำกว่าแต่ซับซ้อนกว่า
 - [Idempotent Consumer](/microservices/th/transactional-messaging/idempotent-consumer/) — จำเป็นเพราะ polling ส่งแบบ at least once
+
+| Benefits | Trade-offs |
+|---|---|
+| ไม่ต้องการ database feature พิเศษ — ทำงานกับ database ใด ๆ | polling เพิ่ม load บน database ตลอดเวลา |
+| publish event reliable — เชื่อมโยงกับ database transaction | latency สูงกว่า transaction log tailing — ขึ้นกับ polling interval |
+| simple กว่า transaction log tailing — ไม่ต้อง access DB internals | ต้องจัดการ outbox table ที่โตขึ้น — cleanup เป็นสิ่งจำเป็น |
+| เหมาะกับ low-to-medium throughput | polling interval ที่ผิด — สั้นเกิน = load สูง, นานเกิน = latency สูง |
+
+## Common Mistakes
+
+**Outbox ที่ไม่ Cleanup** — event ที่ publish แล้วยังค้างใน outbox table
+อาการ:
+- outbox table ใหญ่ขึ้นเรื่อย ๆ จนกระทบ performance
+- query ช้าเมื่อต้อง scan หา unpublished event
+- เพิ่ม cleanup job ที่ลบ published event หลังจาก retention period
+
+**Polling ถี่เกิน** — poll ทุก 100ms บน database ที่มี write heavy workload
+อาการ:
+- database CPU สูงจาก polling
+- เพิ่ม load ที่ไม่จำเป็นบน production database
+- ปรับ interval ตาม latency tolerance — 1-5 วินาทีมักเพียงพอ
+
+> 💡 Real World Example
+>
+> **ระบบ Banking เก่า:**
+> - ใช้ polling publisher เพราะ infrastructure ไม่รองรับ CDC (Change Data Capture)
+> - poll outbox table ทุก 30 วินาที — ยอมรับ latency ได้สำหรับ batch settlement
+>
+> **Debezium (alternative):**
+> - polling publisher เป็น simpler alternative ก่อน adopt Debezium
+> - migration path: polling publisher → transaction log tailing เมื่อ throughput สูงขึ้น
 
 <Callout title="ทำเครื่องหมายว่าส่งแล้วใน transaction เดียวกันกับที่ publish">
 เวอร์ชันที่อันตรายของแพตเทิร์นนี้ publish แถวแล้วทำเครื่องหมายว่าส่งแล้วในขั้นตอนแยกต่างหาก จงทำการอ้างสิทธิ์และการทำเครื่องหมายใน transaction เดียวด้วย `FOR UPDATE SKIP LOCKED` และยอมรับว่าการ crash กลาง loop จะ publish แถวซ้ำ การพยายามทำให้ polling เป็น exactly-once มักแค่ย้าย race ไปอยู่ที่ที่แยบยลกว่า — พึ่งพา idempotent consumer แทน

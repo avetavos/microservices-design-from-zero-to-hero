@@ -11,19 +11,19 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 ทุก service ที่คุณ build ต้องการเครื่องจักรไม่หรูหราชุดเดียวกันก่อนที่มันจะทำอะไรที่มีประโยชน์ได้ มันต้องโหลด configuration ของมัน ตั้งค่า structured logging พร้อม request correlation เปิดเผย metric ในรูปแบบที่ระบบ monitoring ของคุณคาดหวัง ตอบ health และ readiness probe ให้ orchestrator และ register ตัวเองเพื่อให้ถูกค้นพบ ไม่มีอะไรในนี้เป็น business logic แต่มันเป็นเงื่อนไขเบื้องต้นให้ business logic รันได้อย่างปลอดภัย
 
 ตอนคุณเขียน service เดียว คุณประกอบ plumbing นี้ครั้งเดียว พอถึง service ที่สิบ คุณสังเกตว่า code หลายร้อยบรรทัดเดียวกันถูก copy, paste และค่อย ๆ แตกต่างไปเงียบ ๆ: service หนึ่งเปิดเผย `/healthz` อีกตัว `/health` ตัวหนึ่ง log เป็น JSON อีกตัวเป็น plain text metric ถูกตั้งชื่อไม่สอดคล้องกัน cross-cutting baseline ถูก implement ใหม่ ต่างกันเล็กน้อย ในทุก service
 
-## ปัญหา
+## Problem
 
 คุณต้องการให้ทุก service ใหม่เริ่มต้นชีวิตด้วย configuration, logging, metric, health check และ discovery ที่เดินสายไว้แล้วและสอดคล้องกันทั้งกองทัพ — เพื่อให้ service เปิดเผย health endpoint เดียวกัน ปล่อย log ในรูปทรงเดียวกัน และรายงาน metric ด้วยชื่อเดียวกันกับทุก service อื่น คุณต้องการให้ developer ที่สร้าง service ใหม่เขียน business logic ตั้งแต่วันแรก ไม่ใช่ใช้เวลาหนึ่งสัปดาห์ประกอบ boilerplate ใหม่ และคุณต้องการ upgrade baseline นั้นในที่เดียวแทนที่จะใน repository ยี่สิบแห่ง
 
 ดังนั้นแรงที่ขัดแย้งกันคือ: operational baseline ที่สอดคล้องกันและสำเร็จรูปในทุก service โดยใช้แรงต่อ service น้อยที่สุดและมีที่เดียวให้พัฒนามัน
 
-## ทางออก
+## Solution
 
 build **microservice chassis**: framework, library หรือฐานที่รวม cross-cutting concerns เข้าด้วยกันเพื่อให้ service ใหม่สืบทอดมัน chassis เป็นเจ้าของ plumbing — มันอ่าน configuration, ตั้งค่า structured logging, register metric endpoint, ติดตั้ง health และ readiness probe และจัดการ discovery registration — และเปิดเผยผิวสัมผัสเล็ก ๆ ที่คุณเสียบ business logic เข้าไป
 
@@ -48,7 +48,7 @@ export const chassisDiagram = `flowchart TB
 
 <Mermaid code={chassisDiagram} title="chassis ห่อหุ้ม business logic โดยให้ config, logging, metric, health และ discovery; developer เพิ่มเพียง domain code" />
 
-## ตัวอย่าง
+## Example
 
 ที่นี่ service ถูกสร้างบน chassis การเรียก bootstrap ครั้งเดียวเดินสาย config, logging, metric, health และ discovery สิ่งเดียวที่ developer เพิ่มคือ route ที่มีความหมายเชิงธุรกิจ แต่ละตัวอย่างเป็นแบบ idiomatic ตามภาษาของมัน
 
@@ -132,7 +132,7 @@ export const chassisDiagram = `flowchart TB
   </TabItem>
 </Tabs>
 
-## บริบทที่ได้
+## Resulting Context
 
 สิ่งที่คุณได้:
 
@@ -148,11 +148,42 @@ export const chassisDiagram = `flowchart TB
 
 ข้อสังเกตที่ใช้ได้จริง: chassis จัดการเรื่อง *in-process* (config, logging, metric, health) ในขณะที่ [Service Mesh](/microservices/th/deployment-and-cross-cutting/service-mesh/) จัดการ networking *between-process* หลายทีมใช้ทั้งสองอย่าง
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Externalized Configuration](/microservices/th/deployment-and-cross-cutting/externalized-configuration/) — chassis มักเป็นตัวที่อ่านและใช้ externalized config
 - [Service Mesh](/microservices/th/deployment-and-cross-cutting/service-mesh/) — จัดการ networking cross-cutting concerns ที่ chassis ปล่อยให้ sidecar ทำ
 - [Service per Container](/microservices/th/deployment-and-cross-cutting/service-per-container/) — service ที่ build บน chassis ก็ยังถูก package และรันแบบหนึ่ง service ต่อหนึ่ง container
+
+| Benefits | Trade-offs |
+|---|---|
+| cross-cutting concerns (logging, health check, metrics) ทำครั้งเดียว | chassis กลายเป็น dependency ที่ทุก service ผูกกัน |
+| ทุก service มี baseline ของ observability และ security เหมือนกัน | อัปเดต chassis ต้อง rebuild และ redeploy ทุก service |
+| new service เริ่มต้นได้เร็ว — clone chassis แล้วเพิ่ม business logic | chassis อาจ bloat ถ้าใส่ฟีเจอร์มากเกิน |
+| standard ชัดเจน — ทุกทีมทำงานแบบเดียวกัน | หลาย language stack = หลาย chassis |
+
+## Common Mistakes
+
+**Fat Chassis** — ใส่ business logic ลงใน chassis
+อาการ:
+- chassis มี auth logic, pricing logic, หรือ domain rule
+- ทุก service ได้รับ code ที่ส่วนใหญ่ไม่ต้องการ
+- chassis กลายเป็น monolith ที่แชร์ข้าม service
+
+**Chassis ที่ไม่ Update** — chassis เก่าแต่ service ใหม่ยังคง base บน version เก่า
+อาการ:
+- vulnerability ใน logging library แก้ใน chassis ใหม่ แต่ service เก่ายังใช้ version เก่า
+- ไม่มี automated update mechanism
+
+> 💡 Real World Example
+>
+> **Netflix OSS:**
+> - สร้าง Spring Cloud Netflix เป็น chassis สำหรับ Java service
+> - รวม Eureka (discovery), Hystrix (circuit breaker), Ribbon (load balancing) ไว้ใน chassis
+> - ทีมใหม่ใช้ starter project แล้วได้ baseline observability ทันที
+>
+> **Uber:**
+> - มี internal framework "DOSA" เป็น chassis สำหรับ Go service
+> - ทุก service ใหม่เริ่มจาก template ที่มี logging, tracing, metrics พร้อม
 
 <Callout title="chassis เป็นจุดเริ่มต้น ไม่ใช่กรงขัง">
 เป้าหมายคือการกำจัด plumbing ที่ไม่สร้างความแตกต่าง ไม่ใช่การกำหนดว่าทุก service ต้อง build อย่างไร จงให้ chassis โฟกัสที่ cross-cutting concerns จริง ๆ — config, logging, metric, health, discovery — และปล่อยให้ service มีอิสระเหนือการออกแบบ domain วันที่ chassis เริ่มสั่งว่าคุณต้อง model order อย่างไร มันก็ล้ำเส้นไปแล้ว

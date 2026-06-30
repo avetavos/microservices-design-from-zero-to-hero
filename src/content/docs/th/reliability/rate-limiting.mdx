@@ -11,23 +11,23 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 ทุกบริการมีเพดาน instance หนึ่งสามารถรับ request ได้เพียงจำนวนหนึ่งต่อวินาทีก่อนที่ CPU จะอิ่มตัว connection pool เต็ม หรือหน่วยความจำพุ่งสูง ส่วนใหญ่คุณทำงานอยู่ต่ำกว่าเพดานนั้นอย่างสบาย ๆ แต่ traffic ไม่ราบเรียบ: อีเมลการตลาดถูกส่งออกไป client ยอดนิยม deploy retry loop ที่แน่นเกินไป scraper ค้นพบ API ของคุณ หรือเหตุล่มที่ต้นทางจู่ ๆ เปลี่ยนทิศทาง request จำนวนมหาศาลมาทางคุณ
 
 pattern ก่อนหน้าในโมดูลนี้ปกป้องคุณจากการที่ *dependency ของคุณ* ล้มเหลว rate limiting ปกป้องคุณจาก *ผู้เรียกของคุณ* — และจากความสำเร็จของคุณเอง
 
-## ปัญหา
+## Problem
 
 เมื่อ demand เกินกำลัง บริการไม่ได้ล้มเหลวอย่างนุ่มนวลด้วยตัวเอง มันคว่ำ เมื่อ request มาถึงเร็วกว่าที่ทำเสร็จ คิวก็โต latency พุ่ง timeout ทำงาน และ client retry — เพิ่มภาระ *มากขึ้น* ให้บริการที่รับภาระเกินอยู่แล้ว เลยจุดพลิกผัน throughput ไม่ได้แค่หยุดนิ่ง แต่มันพังทลายลง เพราะเซิร์ฟเวอร์ใช้เวลาไปกับการจัดการ backlog ที่มันไม่มีวันเคลียร์ได้ บริการที่รับ request ได้สบาย ๆ 1,000 ครั้งต่อวินาทีอาจกลายเป็นรับได้ *ศูนย์* ภายใต้น้ำท่วม 5,000 ครั้ง เพราะทุก request timeout ก่อนที่จะเสร็จ
 
 ดังนั้นแรงที่ตึงเครียดกันคือ: คุณมีกำลังที่จำกัด demand อาจพุ่งสูงเกินกว่านั้นอย่างคาดเดาไม่ได้ และการให้บริการ *ทุกอย่างได้แย่* แย่กว่าการให้บริการ *สิ่งส่วนใหญ่ได้ดี* — คุณต้องรักษาให้บริการทำงานอยู่ภายในกรอบที่ปลอดภัยแม้เมื่อมีงานเข้ามามากกว่าที่มันรับไหว
 
-## วิธีแก้
+## Solution
 
 **rate limiting** จำกัดว่าบริการจะรับงานได้มากเพียงใดตามเวลา รักษาให้มันอยู่ภายในกรอบที่ปลอดภัย เมื่อ request มาถึงเร็วกว่าขีดจำกัดที่กำหนด ส่วนเกินจะถูก **shed** (ปฏิเสธทันที โดยปกติด้วย HTTP `429 Too Many Requests`) หรือ **เข้าคิว** ชั่วครู่เพื่อปรับช่วง burst สั้น ๆ ให้ราบรื่น ไม่ว่าจะแบบไหน งานที่ *ได้รับ* เข้ามาก็จะได้รับการให้บริการที่ดี
 
-กลไกที่พบบ่อยที่สุดคือ **token bucket** ถัง (bucket) เก็บ token ได้สูงสุด `capacity` token และเติม (refill) ในอัตราคงที่ `refillPerSecond` token ทุก request ต้องหยิบ token หนึ่งตัวเพื่อดำเนินการ หากถังว่าง request จะถูกปฏิเสธ เพราะถังสามารถเก็บ token สำรองได้ มันจึงอนุญาตให้เกิด **burst** สั้น ๆ (ใช้ token ที่สะสมไว้) ในขณะที่ยังบังคับอัตราเฉลี่ยในระยะยาว (อัตรา refill) การผสานนั้น — burst ในระดับเล็ก มีขอบเขตในระดับใหญ่ — สอดคล้องกับพฤติกรรมจริงของ traffic
+กลไกที่พบบ่อยที่สุดคือ **token bucket** ถัง (bucket) เก็บ token ได้สูงสุด `capacity` token และเติม (refill) ในอัตราคงที่ `refillPerSecond` token ทุก request ต้องหยิบ token หนึ่งตัวเพื่อทำงาน หากถังว่าง request จะถูกปฏิเสธ เพราะถังสามารถเก็บ token สำรองได้ มันจึงอนุญาตให้เกิด **burst** สั้น ๆ (ใช้ token ที่สะสมไว้) ในขณะที่ยังบังคับอัตราเฉลี่ยในระยะยาว (อัตรา refill) การผสานนั้น — burst ในระดับเล็ก มีขอบเขตในระดับใหญ่ — สอดคล้องกับพฤติกรรมจริงของ traffic
 
 export const tokenBucket = `flowchart LR
   REF["Refill: +r tokens / second"] --> B
@@ -41,7 +41,7 @@ export const tokenBucket = `flowchart LR
 
 <Mermaid code={tokenBucket} title="token bucket — การ refill คงที่อนุญาตอัตราที่ยั่งยืน capacity ที่เก็บไว้ดูดซับ burst สั้น ๆ เมื่อว่างหมายถึง shed" />
 
-## ตัวอย่าง
+## Example
 
 นี่คือ limiter แบบ token-bucket มัน refill แบบ lazy ตามเวลาที่ผ่านไป จากนั้นจึงรับ request ก็ต่อเมื่อมี token พร้อมใช้ แต่ละตัวอย่างเป็นอิสระในตัวเองและเขียนตามแบบฉบับของแต่ละภาษา
 
@@ -189,7 +189,7 @@ export const tokenBucket = `flowchart LR
   </TabItem>
 </Tabs>
 
-## บริบทที่เกิดขึ้นตามมา
+## Resulting Context
 
 สิ่งที่คุณได้รับ:
 
@@ -203,11 +203,42 @@ export const tokenBucket = `flowchart LR
 - **การ return สัญญาณที่ถูกต้อง** request ที่ถูกปฏิเสธควร return `429 Too Many Requests` ในอุดมคติพร้อม header `Retry-After` เพื่อให้ client ที่มีพฤติกรรมดีถอยกลับแทนที่จะกระหน่ำ error เปล่า ๆ เป็นการเชื้อเชิญให้ retry ทันทีซึ่งทำลายล้าง limiter
 - **การประสานงานแบบกระจาย (distributed coordination)** limiter ใน instance หนึ่งเห็นเฉพาะ traffic ของ instance นั้น การบังคับขีดจำกัดแบบ global ข้ามหลาย instance ต้องใช้สถานะที่แชร์กัน (central store เช่น Redis) ซึ่งเพิ่ม dependency และ latency บ้างใน hot path
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Circuit Breaker](/microservices/th/reliability/circuit-breaker/) — ปกป้อง *คุณ* จาก dependency ที่ล้มเหลว ส่วน rate limiting ปกป้องบริการจาก *ผู้เรียกของมัน*
 - [Bulkhead](/microservices/th/reliability/bulkhead/) — จำกัดความ concurrency ในขณะที่ rate limiting จำกัด throughput ทั้งสองประกอบกันได้ดี
 - [Retry and Timeout](/microservices/th/reliability/retry-and-timeout/) — `429` พร้อม `Retry-After` บอกตรรกะการ retry ของ client อย่างชัดเจนว่าควรถอยกลับนานเท่าใด
+
+| Benefits | Trade-offs |
+|---|---|
+| ป้องกัน overload จาก traffic spike หรือ abusive client | legitimate user อาจถูก limit โดยไม่ตั้งใจ |
+| protect upstream service จาก cascade load | distributed rate limiting ซับซ้อน — ต้อง coordinate ข้าม instance |
+| enforce fair usage ระหว่าง tenant หรือ API tier | rate limit ที่ strict เกินทำให้ user experience แย่ |
+| ลด cost จาก excessive API usage | ต้องตั้ง limit ที่เหมาะสม — ยากถ้าไม่รู้ traffic pattern |
+
+## Common Mistakes
+
+**Global Rate Limit แทน Per-client** — limit รวมทั้งหมด ไม่แบ่งตาม client
+อาการ:
+- client หนึ่งส่ง request เยอะทำให้ client อื่นถูก limit ด้วย
+- ใช้ per-API-key หรือ per-user-ID แทน global counter
+
+**Rate Limit ที่ไม่มี Retry-After Header** — reject request โดยไม่บอก client ว่ารอเท่าไร
+อาการ:
+- client retry ทันที ทำให้ rate limit แย่ลงกว่าเดิม
+- ส่ง `Retry-After` header เพื่อให้ client รู้ว่ารอนานแค่ไหน
+
+> 💡 Real World Example
+>
+> **GitHub API:**
+> - rate limit 5000 requests/hour สำหรับ authenticated user
+> - 60 requests/hour สำหรับ unauthenticated
+> - response header บอก remaining request และ reset time
+>
+> **Stripe:**
+> - rate limit ตาม API key
+> - exponential backoff แนะนำให้ client ใช้เมื่อถูก limit
+> - test mode และ live mode มี limit แยกกัน
 
 <Callout title="การ shed load เป็นฟีเจอร์ ไม่ใช่ความล้มเหลว">
 การปฏิเสธ request รู้สึกเหมือนการยอมแพ้ แต่ที่ขอบของกำลัง มันคือทางเลือกที่รับผิดชอบ บริการที่รับทุกอย่างแล้ว timeout กับทุกอย่างให้บริการ *ใครไม่ได้เลย* บริการที่ shed ส่วนล้นและ return `429` ที่ชัดเจนยังคงให้บริการคนส่วนใหญ่ได้ดีและบอกที่เหลือให้กลับมาในไม่ช้า การตัดสินใจว่าจะ shed *อะไร* ก่อน — traffic ที่มีลำดับความสำคัญต่ำ ผู้ใช้ที่ไม่ระบุตัวตน client ที่เสียงดังที่สุด — เปลี่ยนการ shed load จากเครื่องมือทื่อ ๆ ให้กลายเป็นกลยุทธ์การเสื่อมประสิทธิภาพที่จงใจ

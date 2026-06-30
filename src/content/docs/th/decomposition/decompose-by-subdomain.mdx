@@ -10,17 +10,17 @@ import Callout from '../../../../components/Callout.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-## บริบท (Context)
+## Context
 
 คุณมีการแบ่ง service ครั้งแรกแล้ว — อาจวาดด้วย business capability — และเส้นแบ่งก็รู้สึกถูกต้องพอประมาณ แต่ *โมเดล* รั่วไหลข้ามเส้นเหล่านั้น คำว่า "customer" หมายถึง billing account ใน service หนึ่ง, ผู้รับสินค้าในอีก service หนึ่ง, และ marketing lead ในอันที่สาม แต่ทั้งหมดกลับพยายามใช้ object `Customer` ที่อ้วนบวมตัวเดียวร่วมกัน ทุกทีมที่ไปแตะมันต้องเข้าใจกฎของทุกทีมอื่น คุณต้องการวิธีที่มีวินัยมากกว่าในการตัดสินไม่เพียงว่า service อยู่ตรงไหน แต่ว่าโมเดลของแต่ละ service จริง ๆ แล้ว *คือ* อะไร
 
-## ปัญหา (Problem)
+## Problem
 
 domain model เดียวที่ครอบคลุมทั้งระบบนั้นน่าหลงใหลและแทบจะเป็นกับดักเสมอ เมื่อมีแนวคิดและกฎเพิ่มขึ้นเรื่อย ๆ บน entity ที่ใช้ร่วมกัน โมเดลก็ยิ่งคลุมเครือ คำเดียวกันมีความหมายต่างกันสำหรับส่วนต่าง ๆ ของธุรกิจ และการพยายามประนีประนอมพวกมันก็ให้ class ที่ไม่ทำให้ใครพอใจและเปลี่ยนแปลงตลอดเวลา นี่คือปัญหา *large monolithic domain model* ความคลุมเครือไม่ใช่อุบัติเหตุที่จะมาเก็บกวาดทีหลัง มันสะท้อนข้อเท็จจริงแท้จริงที่ว่าส่วนต่าง ๆ ของธุรกิจคิดเกี่ยวกับคำเดียวกันในแบบที่ต่างกันอย่างชอบธรรม
 
 ดังนั้นแรงต่าง ๆ คือ คุณต้องการให้แต่ละ service มีโมเดลที่ชัดเจน สอดคล้องกันภายใน และเล็กพอที่จะใช้เหตุผลกับมันได้ — แต่คุณก็ต้องยอมรับด้วยว่าไม่มีโมเดลเดียวใดที่จะรับใช้ทั้งธุรกิจได้โดยไม่กลายเป็นสิ่งไร้ความหมาย
 
-## วิธีแก้ (Solution)
+## Solution
 
 **Domain-Driven Design (DDD)** ให้คำศัพท์แก่ปัญหานี้ พื้นที่ปัญหาโดยรวม — ทุกอย่างที่ธุรกิจเกี่ยวข้องด้วย — คือ *domain* มันถูกแบ่งออกเป็น **subdomain** ต่าง ๆ ซึ่งเป็นพื้นที่ความเชี่ยวชาญที่แตกต่างกันภายในนั้น เช่น การรับ order, inventory, billing, การจัดส่ง subdomain มาในหลายรูปแบบที่ชี้นำการลงทุน คือ subdomain แบบ **core** เป็นสิ่งที่สร้างความแตกต่างให้ธุรกิจและสมควรได้วิศวกรที่ดีที่สุดของคุณ, subdomain แบบ **supporting** จำเป็นแต่ไม่โดดเด่น, และ subdomain แบบ **generic** (เช่น authentication หรือ payments) มักซื้อได้แทนที่จะสร้างเอง
 
@@ -49,7 +49,7 @@ export const contextDiagram = `flowchart TB
 
 <Mermaid code={contextDiagram} title="แต่ละ bounded context เป็นเจ้าของโมเดลที่สอดคล้องกันหนึ่งเดียว คำว่า 'customer' มีความหมายที่แม่นยำภายในแต่ละอัน และการแปลระหว่างกันนั้นชัดเจน" />
 
-## เปรียบเทียบกับการ decompose ด้วย business capability
+## Compared with Decompose by Business Capability
 
 สองกลยุทธ์นี้เสริมกันมากกว่าจะแข่งกัน และมักเห็นพ้องกัน ทั้งคู่มักให้ชุด service ที่คล้ายกัน เพราะ business capability และ subdomain มักบรรยายส่วนเดียวกันของธุรกิจจากสองมุมมอง — capability ถามว่า "ธุรกิจ *ทำ* อะไร?" ส่วน subdomain ถามว่า "นั่นต้องใช้ *พื้นที่ความรู้ใด* และโมเดลใดมีผลที่นั่น?" ความแตกต่างในทางปฏิบัติเป็นเรื่องของความเข้มงวดและการเน้นย้ำ
 
@@ -58,7 +58,7 @@ export const contextDiagram = `flowchart TB
 
 แนวทางที่พบบ่อยและได้ผลคือใช้ capability สำหรับร่างแรก และใช้ DDD เพื่อทำให้มันละเอียดขึ้น โดยเฉพาะรอบ ๆ core subdomain ที่การวางโมเดลให้ถูกต้องมีความสำคัญมากที่สุด
 
-## บริบทที่ได้ตามมา (Resulting context)
+## Resulting Context
 
 สิ่งที่คุณได้:
 
@@ -72,11 +72,43 @@ export const contextDiagram = `flowchart TB
 - **งานแปล** เพราะแต่ละ context ปกป้องโมเดลของตัวเอง การร่วมมือข้าม context จึงต้องการการแมปอย่างชัดเจน — published contract หรือ anti-corruption layer — ซึ่งเป็นความพยายามล่วงหน้าที่มากกว่าการใช้โมเดลเดียวร่วมกัน
 - **เส้นแบ่งก็ยังขยับได้** subdomain ชัดเจนกว่า capability แต่ก็ไม่ได้ภูมิคุ้มกันต่อการเปลี่ยนแปลงเมื่อความเข้าใจ domain ลึกซึ้งขึ้น คุณควรคาดหวังว่าจะต้องปรับ context ขณะที่คุณเรียนรู้
 
-## pattern ที่เกี่ยวข้อง
+## Related
 
 - [Decompose by Business Capability](/microservices/th/decomposition/decompose-by-business-capability/) — กลยุทธ์เสริมที่ให้การแบ่งครั้งแรกอย่างรวดเร็ว แล้ว DDD จึงทำให้มันละเอียดขึ้น
 - [Self-Contained Service](/microservices/th/decomposition/self-contained-service/) — bounded context ให้โมเดลในที่ (local model) ที่แต่ละ service ต้องใช้ในการตอบ request ด้วยตัวเอง
 - [ภาพรวมการ decompose](/microservices/th/decomposition/) — กลยุทธ์นี้อยู่ตรงไหนในภาพใหญ่
+
+| Benefits | Trade-offs |
+|---|---|
+| service boundary มาจาก domain model — สะท้อน business reality | ต้องการ Domain-Driven Design expertise |
+| Ubiquitous Language ชัดเจนในแต่ละ service | bounded context analysis ใช้เวลา |
+| ลด impedance mismatch ระหว่าง business และ code | subdomain อาจ overlap — ต้องตัดสินใจว่า capability ใดอยู่ subdomain ไหน |
+| เหมาะกับ domain ซับซ้อนที่มี business rule เยอะ | ไม่เหมาะถ้าทีมไม่มี DDD background |
+
+## Common Mistakes
+
+**Subdomain = Table** — map database table หนึ่งตัวเป็น service หนึ่งตัว
+อาการ:
+- มี UserService, AddressService, PhoneService แยกกัน
+- operation ง่าย ๆ ต้องเรียก 3 service
+- ไม่ใช่ subdomain decomposition แต่เป็น database decomposition
+
+**Ignoring Anti-corruption Layer** — รับ model จาก subdomain อื่นมาตรงโดยไม่ transform
+อาการ:
+- change ใน Order subdomain ส่งผลถึง Inventory subdomain โดยตรง
+- boundary แยกอยู่แต่ concept รั่วข้าม
+
+> 💡 Real World Example
+>
+> **Zalando:**
+> - ใช้ DDD + subdomain decomposition สำหรับ e-commerce platform
+> - subdomain: catalog, checkout, fulfillment, returns, customer
+> - แต่ละ subdomain มี Ubiquitous Language ของตัวเอง — "article" ใน catalog ≠ "item" ใน fulfillment
+>
+> **Shopify:**
+> - core domain: commerce (checkout, payment)
+> - supporting domain: inventory, shipping
+> - generic domain: authentication, notification
 
 <Callout title="ปล่อยให้คำเดียวกันมีความหมายต่างกัน">
 แนวคิดที่ปลดปล่อยที่สุดเพียงหนึ่งเดียวใน pattern นี้คือการอนุญาตให้คำหนึ่งมีความหมายต่างกันใน context ที่ต่างกัน คำนิยามที่ "ถูกต้อง" ร่วมกันของ `Customer` ทั่วทั้งบริษัทไม่ใช่เป้าหมายที่ควรค่าแก่การไล่ตาม มันคือสิ่งที่สร้างโมเดล monolithic ขึ้นมาเสียเอง bounded context ปล่อยให้ billing, ordering, และ delivery ต่างเก็บความหมายที่แม่นยำที่มันต้องการจริง ๆ ไว้ และเปลี่ยนรอยต่อระหว่างกันให้เป็น contract ที่จงใจและนิยามไว้อย่างดี

@@ -11,19 +11,19 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 ตอนนี้คุณ package แต่ละ service เป็น image ที่ไม่เปลี่ยนแปลงและเลื่อน image ตัวนั้นเป๊ะ ๆ จาก development ผ่าน staging ไปยัง production แต่ service ต้องการการตั้งค่าที่ต่างกันในแต่ละที่เหล่านั้น: database URL ที่ต่างกัน, ที่อยู่ message-broker ที่ต่างกัน, credential ที่ต่างกัน และ feature flag ที่เปิดใน staging และปิดใน production
 
 ถ้าการตั้งค่าเหล่านั้นถูกฝังเข้าไปใน image คุณก็ไม่มี artifact เดียวอีกต่อไป — คุณมี image หนึ่งตัวต่อหนึ่งสภาพแวดล้อม แต่ละตัว build จาก code เดียวกันแต่มีค่าต่างกัน compile เข้าไป image ที่คุณทดสอบใน staging ไม่ใช่ image ที่คุณรันใน production แย่กว่านั้น การฝัง database password เข้าไปหมายความว่า secret ของคุณตอนนี้นั่งอยู่ใน image layer ใน registry อ่านได้โดยใครก็ตามที่ pull มันได้
 
-## ปัญหา
+## Problem
 
 คุณต้องการให้ image ที่ build แล้วเพียงตัวเดียวรันได้โดยไม่ต้องแก้ในทุกสภาพแวดล้อม เพื่อให้สิ่งที่คุณทดสอบเป็นสิ่งที่คุณส่งมอบเป๊ะ ๆ นั่นหมายความว่าค่าที่เฉพาะสภาพแวดล้อม — endpoint, credential, feature flag — ไม่สามารถอยู่ภายใน image ได้ พวกมันต้องมาจากภายนอก ส่งให้เมื่อ service เริ่มทำงานในที่ใดที่หนึ่ง และค่าที่อ่อนไหว เช่น password และ token ต้องถูกจัดการเป็น secret ไม่ใช่ plain text ที่นั่งอยู่ใน image หรือ repository
 
 ดังนั้นแรงที่ขัดแย้งกันคือ: artifact หนึ่งชิ้นที่ไม่เปลี่ยนแปลงและเป็นกลางต่อสภาพแวดล้อม แต่มีการตั้งค่าที่ถูกต้อง เฉพาะสภาพแวดล้อม และปลอดภัยต่อ secret ตอน runtime
 
-## ทางออก
+## Solution
 
 รับเอา **externalized configuration** มาใช้: image บรรจุเฉพาะ code และค่าเริ่มต้นที่สมเหตุสมผล และทุกค่าที่เฉพาะสภาพแวดล้อมถูก **inject ตอน runtime** service อ่าน configuration ของมันเมื่อเริ่มทำงาน (และสำหรับบางแหล่ง ขณะที่มันรัน) แทนที่จะอ่านจากค่าคงที่ที่ compile เข้าไปในการ build
 
@@ -49,7 +49,7 @@ export const configDiagram = `flowchart LR
 
 <Mermaid code={configDiagram} title="image ที่ไม่เปลี่ยนแปลงตัวเดียว; environment variable, config server และ secrets store inject ค่าต่อสภาพแวดล้อมตอนเริ่มทำงาน" />
 
-## ตัวอย่าง
+## Example
 
 image ไม่พ่วงค่า environment ใด ๆ การ deploy สำหรับแต่ละสภาพแวดล้อมจะ inject พวกมันเข้าไป: การตั้งค่าธรรมดามาจาก environment variable ในขณะที่ database password ถูกอ้างอิงจาก secret เพื่อให้มันไม่ปรากฏใน manifest หรือใน image
 
@@ -73,7 +73,7 @@ env:
 
 service อ่านสิ่งเหล่านี้ตอนเริ่มทำงาน การเลื่อนขึ้น production หมายถึงการ deploy image *ตัวเดียวกัน* ด้วย manifest นี้แทนที่จะเป็นของ staging password ถูก resolve จาก secrets store ตอน launch และไม่เคยลงไปอยู่ใน image layer
 
-## บริบทที่ได้
+## Resulting Context
 
 สิ่งที่คุณได้:
 
@@ -87,11 +87,43 @@ service อ่านสิ่งเหล่านี้ตอนเริ่ม
 - **dependency ตอนเริ่มทำงาน** ถ้า service ดึง config จาก server หรือ secrets store แหล่งนั้นจะกลายเป็นสิ่งที่ service พึ่งพาเพื่อเริ่มทำงาน มันต้องมีความพร้อมใช้งานสูงและมี fallback ที่สมเหตุสมผล
 - **การกระจัดกระจายและ drift ของ config** การตั้งค่าที่กระจายข้าม env var, config server และ secret สามารถ drift ระหว่างสภาพแวดล้อมได้ คุณต้องมีข้อตกลง, การ validate ตอนเริ่มทำงาน และแหล่งความจริงเดียวต่อแต่ละเรื่อง
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Service per Container](/microservices/th/deployment-and-cross-cutting/service-per-container/) — externalized configuration คือสิ่งที่ทำให้ container image ที่ไม่เปลี่ยนแปลงเป็นกลางต่อสภาพแวดล้อมอย่างแท้จริง
 - [Microservice Chassis](/microservices/th/deployment-and-cross-cutting/microservice-chassis/) — chassis มักเป็น component ที่อ่านและ validate configuration ที่ inject เข้ามา
 - [Serverless Deployment](/microservices/th/deployment-and-cross-cutting/serverless-deployment/) — function รับการตั้งค่าในแบบเดียวกัน จากค่าที่ inject เข้ามาแทนที่จะเป็นค่าคงที่ที่ฝังไว้
+
+| Benefits | Trade-offs |
+|---|---|
+| เปลี่ยน config โดยไม่ต้อง rebuild หรือ redeploy | config store เพิ่มเติมที่ต้องดูแล — อีก component ที่ล้มได้ |
+| config แตกต่างระหว่าง environment โดยไม่ต้องแก้ code | secret management ซับซ้อนขึ้น — ต้องป้องกัน secret ใน config store |
+| rollback config ได้โดยไม่ rollback code | config ที่ผิดทำให้ service พังทั้งหมดพร้อมกัน |
+| audit trail ว่า config เปลี่ยนเมื่อไรและโดยใคร | ต้องมี fallback ถ้า config store ไม่ available ตอน start |
+
+## Common Mistakes
+
+**Secret ใน Environment Variable ธรรมดา** — ส่ง secret ผ่าน env var โดยไม่ encrypt
+อาการ:
+- secret อยู่ใน docker-compose.yml ที่ commit ใน git
+- process list บน server แสดง secret ใน command line argument
+- ใช้ secret manager จริง ๆ (AWS Secrets Manager, Vault) แทน
+
+**Config Drift** — config ระหว่าง environment ต่างกันโดยไม่ตั้งใจ
+อาการ:
+- ทำงานใน staging แต่พังใน production
+- timeout ใน dev ต่างจาก production ทำให้ load test ไม่ reflect ความเป็นจริง
+
+> 💡 Real World Example
+>
+> **Netflix:**
+> - ใช้ Archaius สำหรับ dynamic configuration
+> - เปลี่ยน config ได้ใน runtime โดยไม่ restart service
+> - ใช้สำหรับ feature flag และ A/B testing config
+>
+> **Kubernetes:**
+> - ConfigMap สำหรับ non-secret config
+> - Secret object สำหรับ sensitive data (encrypted at rest)
+> - environment เปลี่ยน config โดยการ swap ConfigMap — ไม่ต้อง rebuild image
 
 <Callout title="build artifact ครั้งเดียว ตั้งค่ามันต่อที่">
 วินัยพูดได้ง่าย: code และค่าเริ่มต้นเข้าไปใน image; ทุกอย่างที่เปลี่ยนระหว่างสภาพแวดล้อมมาจากภายนอกมัน ทำสิ่งนี้ให้ถูก แล้ว artifact ที่ทดสอบแล้วเพียงชิ้นเดียวจะไหลจาก staging ไป production โดยไม่ถูกแตะต้อง โดยมี secret ส่งให้อย่างปลอดภัยที่ขอบ ฝัง configuration เข้าไป แล้วคุณก็ยกคำมั่นสำคัญของ immutable deploy ทิ้งไป

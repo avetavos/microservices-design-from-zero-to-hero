@@ -11,19 +11,19 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 ทุกบริการเขียน logs — นิสัยนั้นรอดมาได้อย่างไม่บุบสลายเมื่อย้ายมาสู่ microservices สิ่งที่เปลี่ยนไปคือที่ที่ logs เหล่านั้นอยู่ ใน monolith มีโปรเซสเดียวและ `app.log` เดียว; `grep` บนไฟล์นั้นคือ debugger ของคุณ ตอนนี้คำขอเชิงตรรกะเดียวกันแตะห้าบริการ แต่ละบริการรัน replica หลายตัว แต่ละตัวเขียนลง local file หรือ standard output ของตัวเองภายใน container ที่ scheduler อาจทำลายได้ทุกเมื่อ
 
 ลูกค้ารายงานว่า checkout ของพวกเขาล้มเหลวตอน 14:32 บรรทัดที่เกี่ยวข้องกระจัดกระจายอยู่ตาม order replica ที่จัดการคลิก, payment replica ที่มันเรียก และ inventory replica ที่มันเรียกหลังจากนั้น — สามไฟล์บนสามเครื่อง ซึ่งสองในนั้นถูกรีไซเคิลไปแล้วและหายไป
 
-## ปัญหา
+## Problem
 
 ไม่มีที่เดียวให้มองหา และต่อให้คุณล็อกอินเข้าไปทุกเครื่องได้ logs ก็จะไม่เชื่อมต่อกัน order service log ข้อผิดพลาดหนึ่ง, payment service log timeout หนึ่ง, inventory service ไม่ได้ log อะไรเลย — แต่ไม่มีอะไรในบรรทัดเหล่านั้นบอกคุณว่ามันเป็นของคำขอ *เดียวกัน* คุณถูกทิ้งให้นั่งเทียบเคียงด้วย timestamp และการเดา ข้ามไฟล์ที่อาจ rotate ออกไปจากการมีอยู่แล้ว
 
 แล้วคุณจะทำให้บรรทัด log จากคำขอเดียว ที่กระจายอยู่ตาม replica ที่อายุสั้นจำนวนมาก ทั้ง *ค้นหาเจอได้ในที่เดียว* และ *เชื่อมโยงถึงกัน* ได้อย่างไร
 
-## ทางออก
+## Solution
 
 **Log aggregation** มีสองส่วน และคุณต้องการทั้งสอง
 
@@ -45,7 +45,7 @@ export const pipelineDiagram = `flowchart LR
 
 <Mermaid code={pipelineDiagram} title="แต่ละ replica ปล่อย structured logs ไปยัง collector ซึ่งส่งต่อไปยัง store กลางที่ค้นหาได้และเชื่อมโยงด้วย request id" />
 
-## ตัวอย่าง
+## Example
 
 บรรทัด structured log ที่ payment service ปล่อยออกมาในขณะจัดการ checkout มันเป็น JSON object เดียวต่อบรรทัด ที่มีชื่อ field คงที่และ correlation id ที่ผูกมันเข้ากับทุกบรรทัดอื่นของคำขอเดียวกัน:
 
@@ -69,7 +69,7 @@ export const pipelineDiagram = `flowchart LR
 
 การค้นหา store กลางด้วย `correlationId = "c1f4e9a2-8b3d-4e77-9a01-2f6c5d8e1b04"` จะคืนค่าบรรทัดนี้พร้อมกับบรรทัดของ order service ที่เริ่มคำขอ และบรรทัดของ inventory service ที่ตามมา — เรื่องราวเต็มของ checkout เดียว ประกอบขึ้นใหม่จากสามบริการ
 
-## บริบทที่ได้ผลลัพธ์
+## Resulting Context
 
 สิ่งที่คุณได้รับ:
 
@@ -83,10 +83,42 @@ export const pipelineDiagram = `flowchart LR
 - **ปริมาณและต้นทุน** การรวมศูนย์ทุกบรรทัดจากทุก replica ผลิตข้อมูลจำนวนมาก คุณจะต้องมี log level ที่สมเหตุสมผล, sampling สำหรับ debug log ที่มีปริมาณสูง และนโยบาย retention ไม่เช่นนั้นทั้งบิลและเสียงรบกวนก็จะโตอย่างไม่มีขอบเขต
 - **ระเบียบวินัยเรื่อง field** คุณค่ามาจากชื่อ field ที่ *สอดคล้องกัน* ข้ามบริการ หากไม่มี logging convention ที่ใช้ร่วมกัน `userId` ที่นี่และ `user_id` ที่นั่นก็จะทำลาย query ของคุณอย่างเงียบ ๆ
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Distributed Tracing](/microservices/th/observability/distributed-tracing/) — trace id คือแนวคิดเดียวกันที่ถูกขยายต่อไป โดยเพิ่ม causal spans และ timing ทับลงบน correlation
 - [Audit Logging](/microservices/th/observability/audit-logging/) — record แยกต่างหากที่คงทนสำหรับการกำกับดูแล แตกต่างจาก operational debug logs เหล่านี้
+
+| Benefits | Trade-offs |
+|---|---|
+| log จากทุก service อยู่ที่เดียว — search ง่าย | log volume สูงมากใน production — storage cost |
+| correlate log ข้าม service ด้วย trace ID | latency จาก log shipping ทำให้ log ไม่ real-time 100% |
+| ค้นหา error pattern ข้าม deployment ได้ | sensitive data ใน log ต้องจัดการก่อน aggregate |
+| audit และ compliance ใน central location | setup ELK/Loki stack ซับซ้อน |
+
+## Common Mistakes
+
+**Log ทุกอย่างด้วย DEBUG level ใน Production**
+อาการ:
+- log volume 100x เกินความจำเป็น
+- search ใน Kibana ช้าเพราะ index ใหญ่มาก
+- cost สูงโดยไม่จำเป็น — ใช้ INFO ใน production, DEBUG เฉพาะเมื่อ debug
+
+**Log โดยไม่มี Correlation ID**
+อาการ:
+- ติดตาม request เดียวข้าม 5 service ต้องเดาว่า log ไหนเกี่ยวกัน
+- incident investigation ใช้เวลาชั่วโมงแทนที่จะเป็นนาที
+- inject trace/request ID ทุก log line
+
+> 💡 Real World Example
+>
+> **Elastic (ELK Stack):**
+> - Elasticsearch + Logstash + Kibana เป็น stack ที่ใช้แพร่หลายที่สุด
+> - Netflix, LinkedIn, Goldman Sachs ล้วนใช้ Elasticsearch สำหรับ log aggregation
+>
+> **Grafana Loki:**
+> - log aggregation ที่ integrate กับ Prometheus และ Grafana
+> - ไม่ index content — ถูกกว่า Elasticsearch สำหรับ high-volume log
+> - Grafana, GitLab ใช้ Loki ใน production
 
 <Callout title="Logs คือ interface ไม่ใช่ของที่นึกถึงทีหลัง">
 ในวินาทีที่ logs กลายเป็น record ที่มีโครงสร้างที่ระบบอื่น parse, query และตั้ง alert ชื่อ field ของมันก็กลายเป็น contract การเปลี่ยนชื่อ `correlationId` หรือเปลี่ยนความหมายของ level สามารถทำให้ dashboard และ alert ที่พึ่งพามันพังอย่างเงียบ ๆ ปฏิบัติต่อ log schema ของคุณด้วยความใส่ใจเดียวกับที่คุณให้กับ API คือ ตกลงชื่อ field ข้ามทีม, version การเปลี่ยนแปลง และต้านทานการ log ความลับหรือ payload เต็มลงใน store ที่คนจำนวนมากอ่านได้

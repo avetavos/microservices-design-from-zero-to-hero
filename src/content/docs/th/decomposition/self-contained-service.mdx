@@ -10,17 +10,17 @@ import Callout from '../../../../components/Callout.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-## บริบท (Context)
+## Context
 
 service ของคุณมีเส้นแบ่งที่ดี แต่ละตัวเป็นเจ้าของข้อมูลของตัวเอง ตอนนี้พวกมันต้องทำงานร่วมกัน Order service เพื่อจะแสดง order หนึ่งต้องใช้ชื่อของลูกค้าและชื่อสินค้า — ข้อมูลที่ Customer และ Catalog service เป็นเจ้าของ การกระทำที่ชัดเจนคือเรียก service เหล่านั้นแบบ synchronous ทุกครั้งที่ render order มันทำงานได้ตอน development ที่ทุก service เปิดอยู่และเครือข่ายเป็น loopback แล้วคุณก็ขึ้น production
 
-## ปัญหา (Problem)
+## Problem
 
 ทันทีที่ service หนึ่งต้องเรียก service อื่นแบบ synchronous เพื่อทำงานของตัวเอง มันก็รับเอา availability ของ service อื่นนั้นมา — รวมถึง latency ของมันด้วย ต่อการเรียกแบบนี้สักสองสามครั้งแล้วคณิตศาสตร์ก็กลายเป็นศัตรู ถ้าสี่ service แต่ละตัวมี availability ที่ยอดเยี่ยม 99.9% request ที่ขึ้นกับทั้งสี่ตัวแบบ synchronous จะพร้อมใช้งานเพียงประมาณ 99.6% ของเวลา และ dependency ที่ช้าตัวใดตัวหนึ่งก็ลาก latency ของทั้งสายให้สูงขึ้น ความล้มเหลวหรือความช้าที่ใดก็ตามในสายกลายเป็นความล้มเหลวทุกที่ที่อยู่เหนือมันขึ้นไป คุณได้สร้าง service ที่ deploy ได้อย่างอิสระแต่ *รัน* อย่างอิสระไม่ได้ — distributed system ที่เปราะบางกว่า monolith ที่มันมาแทนที่
 
 ดังนั้นแรงต่าง ๆ คือ service หนึ่งต้องการข้อมูลที่ service อื่นเป็นเจ้าของ แต่มันต้องไม่ยอมสละ availability และความตอบสนองของตัวเองให้ service อื่นนั้นทุกครั้งที่มันให้บริการ request
 
-## วิธีแก้ (Solution)
+## Solution
 
 **self-contained service** จัดการแต่ละ request ด้วยตัวมันเองทั้งหมด โดยไม่เรียก service อื่นใดแบบ synchronous ในเส้นทางของ request มันทำได้ด้วยการเก็บ **สำเนาในที่ (local replica)** ของข้อมูลที่มันต้องการจากที่อื่น — แค่ส่วนที่มันใช้จริง ๆ — และทำให้สำเนานั้นสดใหม่ *แบบ asynchronous* ด้วยการ subscribe ไปยัง event ที่ service เจ้าของข้อมูลเผยแพร่
 
@@ -47,7 +47,7 @@ export const selfContainedDiagram = `flowchart TB
 
 <Mermaid code={selfContainedDiagram} title="บน: สาย synchronous รับเอา availability ของทุก dependency มา ล่าง: self-contained service ให้บริการจากสำเนาในที่ที่อัปเดตให้สดใหม่ด้วย event" />
 
-## บริบทที่ได้ตามมา (Resulting context)
+## Resulting Context
 
 สิ่งที่คุณได้:
 
@@ -61,11 +61,40 @@ export const selfContainedDiagram = `flowchart TB
 - **ข้อมูลที่ทำสำเนาไว้ที่ต้องจัดการ** ตอนนี้คุณเก็บและดูแลสำเนาของข้อมูลของ service อื่น ซึ่งหมายถึง storage ที่มากขึ้น, วินัยในการทำให้สำเนาเล็กที่สุด, และความระมัดระวังในการจัดการ event ที่มาผิดลำดับหรือซ้ำซ้อนแบบ idempotent
 - **event backbone ที่คุณต้องรัน** pattern นี้สันนิษฐานว่ามีการเผยแพร่และบริโภค event ที่เชื่อถือได้ — message broker และวุฒิภาวะเชิงปฏิบัติการที่จะรักษาให้มันมีสุขภาพดี — ซึ่งเป็น infrastructure จริง ๆ ที่ต้องสร้างและเป็นเจ้าของ
 
-## pattern ที่เกี่ยวข้อง
+## Related
 
 - [Decompose by Subdomain](/microservices/th/decomposition/decompose-by-subdomain/) — bounded context ที่ชัดเจนทำให้เห็นชัดว่าส่วนใดของข้อมูลภายนอกที่ service ต้องทำสำเนาจริง ๆ
 - [Saga](/microservices/th/data-management/saga/) — สไตล์แบบ asynchronous ที่ขับเคลื่อนด้วย event ซึ่ง self-contained service พึ่งพาสำหรับการเขียนข้าม service
 - [CQRS](/microservices/th/data-management/cqrs/) — การสร้าง local read model จาก event เป็นกลไกเดียวกับที่ทำให้สำเนาของ self-contained service สดใหม่
+
+| Benefits | Trade-offs |
+|---|---|
+| ตอบ request ได้เองโดยไม่ block รอ service อื่น | ต้อง replicate ข้อมูลจาก service อื่น — eventual consistency |
+| resilient — service อื่นล้มไม่กระทบ request | data sync complexity สูงขึ้น |
+| latency ต่ำกว่าเพราะไม่มี synchronous hop | ข้อมูลที่ replicate มาอาจ stale |
+| scale ได้อิสระจาก service ที่เป็น dependency | ใช้ storage เพิ่มจาก data replication |
+
+## Common Mistakes
+
+**Premature Self-containment** — replicate ข้อมูลทุกอย่างโดยไม่มีเหตุผล
+อาการ:
+- service replicate data จาก 10 service เพราะ "อยากเป็น self-contained"
+- sync overhead สูงกว่า synchronous call ที่หลีกเลี่ยงได้
+
+**Self-contained แต่ Data เก่า** — ไม่มี mechanism sync data ที่ดี
+อาการ:
+- service แสดง price เก่าเพราะ replication lag
+- user เห็น stock มีแต่พอ checkout ก็หมด
+
+> 💡 Real World Example
+>
+> **Netflix:**
+> - recommendation service เป็น self-contained — มี local copy ของ catalog metadata
+> - ถ้า catalog service ล้ม recommendation ยังทำงานได้ด้วยข้อมูลเก่า
+>
+> **Grab:**
+> - pricing service cache rider data ไว้ local
+> - ทำให้คำนวณ fare ได้เองโดยไม่ต้องเรียก rider service ทุก request
 
 <Callout title="self-contained เป็นเรื่องของเส้นทาง request">
 self-contained service ไม่ได้ห้ามการสื่อสารทั้งหมดกับ service อื่น — มันห้ามการเรียกแบบ synchronous *บนเส้นทางของการให้บริการ request* ข้อมูลก็ยังไหลเข้ามา แต่แบบ asynchronous และล่วงหน้า ผ่าน event การทดสอบที่ใช้นั้นง่าย คือ เมื่อ service นี้จัดการ request มันต้องรอใครคนอื่นตอบกลับหรือไม่? ถ้าคำตอบคือไม่ มันก็เป็น self-contained และ availability ของมันก็เป็นของมันเองที่จะรักษาไว้

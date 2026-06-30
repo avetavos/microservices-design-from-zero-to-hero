@@ -11,17 +11,17 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท (Context)
+## Context
 
 query ข้าม service ของคุณเริ่มต้นจากการเป็น API composition ง่าย ๆ และในช่วงหนึ่งมันก็โอเค จากนั้น query ก็เริ่มมีเขี้ยว: dashboard ที่แสดง order มูลค่าสูงสุดต่อภูมิภาค ช่อง search ที่ filter ลูกค้าตามยอดใช้จ่ายข้ามหลาย service รายงานที่ sort และแบ่งหน้าจากข้อมูลนับล้าน row การ compose สิ่งเหล่านี้ตอน request หมายถึงการดึงผลลัพธ์ชุดมหึมาจากแต่ละ service มา join ใน memory ทุกครั้งที่โหลดหน้า มันช้าเกินไป และมันพึ่งพา service ที่ไม่เคยถูกสร้างมาเพื่อตอบคำถามนั้น
 
-## ปัญหา (Problem)
+## Problem
 
 โมเดลข้อมูลเดียวกันมักไม่ได้รับใช้ทั้งสองงานได้ดี write model ถูก normalize และจัดรูปร่างเพื่อบังคับใช้กฎทางธุรกิจทีละ record query ที่เรียกร้องสูงต้องการข้อมูลที่ pre-join ไว้ denormalize ทำ index และบางครั้งก็พาดข้ามสิ่งที่หลาย service เป็นเจ้าของ การบังคับให้โมเดลเดียวทำทั้งสองอย่างทำให้การเขียนเก้กังและการอ่านช้า
 
 คุณจะรับใช้ query ที่แพง พาดข้ามหลายด้าน หรือมีรูปร่างแปลก ๆ ได้อย่างมีประสิทธิภาพได้อย่างไร โดยไม่บิดเบือนโมเดลที่จัดการการเขียนของคุณ?
 
-## วิธีแก้ (Solution)
+## Solution
 
 **CQRS** — Command Query Responsibility Segregation — แยกโมเดลออกเป็นสองส่วน **ฝั่ง command** จัดการการเขียน: มันเป็นเจ้าของสถานะที่เป็นต้นฉบับ บังคับใช้ invariant และทุกครั้งที่มีการเปลี่ยนแปลงก็ publish domain event ออกมา **ฝั่ง query** ดูแล **read model** หนึ่งหรือหลายตัว — view แบบ denormalized ที่จัดรูปร่างมาให้ตรงกับ query ที่มันรับใช้พอดี read model ถูกสร้างขึ้นโดยการ subscribe event เหล่านั้นแล้ว project พวกมันลงในที่จัดเก็บของตัวเอง query จึงเข้าหา view ที่ pre-join ไว้นี้โดยตรง
 
@@ -38,7 +38,7 @@ export const cqrsDiagram = `flowchart LR
 
 <Mermaid code={cqrsDiagram} title="การเขียนไหลผ่านฝั่ง command และส่ง event ออกมา; projection สร้าง read model ที่ฝั่ง query ใช้รับใช้" />
 
-## ตัวอย่าง (Example)
+## Example
 
 ด้านล่างนี้ command handler อัปเดตสถานะที่เป็นต้นฉบับและส่ง event ออกมา projection แยกต่างหากบริโภค event นั้นและ upsert row แบบ denormalized ฝั่ง query เพียงแค่อ่าน row นั้น สองครึ่งนี้ไม่เคยใช้โมเดลร่วมกันเลย
 
@@ -163,7 +163,7 @@ export const cqrsDiagram = `flowchart LR
   </TabItem>
 </Tabs>
 
-## บริบทที่เป็นผลลัพธ์ (Resulting context)
+## Resulting Context
 
 สิ่งที่คุณได้รับ:
 
@@ -179,11 +179,41 @@ export const cqrsDiagram = `flowchart LR
 
 เพราะ overhead นี้ คว้า CQRS มาใช้เฉพาะเมื่อ query จำเป็นต้องใช้มันจริง ๆ สำหรับ query ข้าม service ที่ไม่ใหญ่นัก [API Composition](/microservices/th/data-management/api-composition/) ที่ง่ายกว่ามักเป็นตัวเลือกที่ดีกว่า
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [API Composition](/microservices/th/data-management/api-composition/) — ทางเลือกที่ง่ายกว่า ให้ใช้มันก่อนจนกว่า query จะพิสูจน์ว่าแพงเกินกว่าจะ compose สด ๆ
 - [Event Sourcing](/microservices/th/data-management/event-sourcing/) — แหล่งที่มาตามธรรมชาติของ event ที่ป้อนให้ CQRS projection
 - [Saga](/microservices/th/data-management/saga/) — read model มักเปิดเผยสถานะกลางที่ saga สร้างขึ้น
+
+| Benefits | Trade-offs |
+|---|---|
+| optimize read model แยกจาก write model ได้อย่างอิสระ | eventual consistency ระหว่าง write และ read model |
+| scale read และ write แยกกัน | complexity สูง — ต้องดูแล model สองชุด |
+| read query ไม่กระทบ write performance | synchronization delay — read อาจเห็นข้อมูลเก่า |
+| เหมาะกับระบบที่ read มากกว่า write มาก | ไม่คุ้มถ้า read/write pattern ไม่ต่างกันมาก |
+
+## Common Mistakes
+
+**CQRS ทุกที่** — apply CQRS กับทุก service โดยไม่ดูความจำเป็น
+อาการ:
+- service ที่ read/write เท่ากันก็ใช้ CQRS
+- complexity เพิ่มโดยไม่ได้ประโยชน์จาก separate model
+- ทีมใช้เวลา maintain sync logic มากกว่า build feature
+
+**Read Model Staleness ที่ไม่ Communicate** — user เห็นข้อมูลเก่าโดยไม่รู้ว่ามันเก่า
+อาการ:
+- submit form แล้ว list ยังไม่อัปเดต user งง
+- ไม่มี UI indicator ว่า "กำลัง sync"
+
+> 💡 Real World Example
+>
+> **Microsoft (Azure Cosmos DB):**
+> - CQRS built-in ผ่าน change feed — write ไปที่ primary, read จาก replica
+> - change feed trigger sync read model อัตโนมัติ
+>
+> **Grab:**
+> - order service ใช้ CQRS: driver app (write-heavy) แยก model จาก passenger tracking (read-heavy)
+> - read model optimize สำหรับ geospatial query
 
 <Callout title="CQRS ไม่ต้องการ Event Sourcing (และในทางกลับกัน)">
 สอง pattern นี้จับคู่กันได้สวยงามแต่เป็นอิสระต่อกัน คุณสามารถทำ CQRS โดยการ publish event จากการเขียน CRUD ธรรมดาได้ และคุณสามารถทำ Event Sourcing โดยไม่เคยแยกการอ่านออกจากการเขียนเลยก็ได้ จงนำแต่ละตัวมาใช้ด้วยเหตุผลของมันเอง และผสมพวกมันเข้าด้วยกันเฉพาะเมื่อเหตุผลทั้งสองเข้าเงื่อนไขเท่านั้น

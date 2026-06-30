@@ -84,6 +84,41 @@ export const compareDiagram = `flowchart TB
 - [Benefits and Drawbacks](/microservices/th/intro-and-principles/benefits-and-drawbacks/) — trade-off ที่พิจารณาอย่างละเอียด
 - [When to Use Microservices](/microservices/th/intro-and-principles/when-to-use-microservices/) — การเลือกว่าคุณควรอยู่ฝั่งไหนของไดอะแกรม
 
+| | Monolith | Microservices |
+|---|---|---|
+| เหมาะกับ | ทีมเล็ก, domain ยังไม่ชัด, MVP | ทีมใหญ่, domain ชัดเจน, scale requirement สูง |
+| Deploy | ทั้งหมดพร้อมกัน | แยก service อิสระ |
+| Scale | ทั้งระบบ | เฉพาะ service ที่ต้องการ |
+| Debug | ง่าย — stack trace เดียว | ยาก — ต้อง distributed tracing |
+| Team | ทีมเดียว access ทุกอย่าง | ownership แยกตาม service |
+| Consistency | Strong (ACID transaction) | Eventual (ต้องออกแบบ) |
+
+## Common Mistakes
+
+**ย้ายไป Microservices ก่อน Domain ชัดเจน** — decompose ผิด boundary แล้วต้อง refactor ใหม่
+
+อาการ:
+- service ที่แยกออกมาต้องเรียกกัน synchronous ใน 80% ของ operation
+- ทุก feature ใหม่ต้องแก้หลาย service พร้อมกัน
+- ควร start ด้วย Modular Monolith ก่อน แล้ว extract เมื่อ boundary ชัด
+
+**Microservices ที่ Scale ก่อนจำเป็น** — เตรียม infrastructure สำหรับ 1M users ตอนมี 1000 users
+
+อาการ:
+- ทีมเสียเวลา 70% กับ infrastructure ไม่ใช่ product
+- ปัญหาจริงที่เจอยังไม่ใช่ scale แต่เป็น feature velocity
+
+> 💡 Real World Example
+>
+> **Stack Overflow:**
+> - รัน monolith มาตลอดและ serve request 1.3B ครั้งต่อเดือน
+> - ทีมเพียง ~10 คน
+> - พิสูจน์ว่า monolith ที่ optimize ดีเอาชนะ microservices ที่ implement ไม่ดีได้
+>
+> **Segment:**
+> - migrate ไป microservices → complexity ระเบิด → migrate กลับ monolith (2020)
+> - บทเรียน: microservices คุ้มเมื่อ team scale ไม่ใช่เพราะ architecture fashion
+
 <Callout title="จงเป็นธรรมกับ monolith">
 monolith ไม่ใช่ความผิดพลาดที่คุณกำลังหนีออกมา มันคือค่าเริ่มต้นที่สมเหตุสมผลซึ่งคุณอาจเติบโตจนเกินมันไปในที่สุด ผลิตภัณฑ์ส่วนใหญ่ไม่เคยไปถึง scale ที่ต้นทุนของมันมากเกินกว่าความเรียบง่ายของมัน จงปฏิบัติต่อการย้ายไปสู่ microservices ในฐานะการตอบสนองต่อความเจ็บปวดที่เฉพาะเจาะจงและสังเกตเห็นได้ — ทีมขนาดใหญ่ที่ติดอยู่กับ pipeline เดียว component ที่ต้อง scale แยกกัน — ไม่ใช่ในฐานะเครื่องหมายของวุฒิภาวะทางสถาปัตยกรรม
 </Callout>
@@ -92,7 +127,7 @@ export const quizCompare = [
   {
     q: 'What defines a monolithic architecture?',
     options: [
-      'แอปพลิเคชันที่เขียนโค้ดไว้ไม่ดี',
+      'แอปพลิเคชันที่เขียนcodeไว้ไม่ดี',
       'แอปพลิเคชันที่ถูกบรรจุและ deploy เป็นหน่วยเดียว โดยทั่วไปอยู่บนฐานข้อมูลที่ใช้ร่วมกันหนึ่งตัว',
       'แอปพลิเคชันที่ใช้ภาษาโปรแกรมเพียงภาษาเดียว',
       'แอปพลิเคชันที่ไม่มี automated test',

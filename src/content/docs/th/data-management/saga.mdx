@@ -11,17 +11,17 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท (Context)
+## Context
 
 ตอนนี้แต่ละ service เป็นเจ้าของฐานข้อมูลของตัวเองแล้ว แต่การสั่งซื้อหนึ่งครั้งเป็นการดำเนินงานทางธุรกิจหนึ่งเดียวที่พาดข้ามถึงสามตัว: Order service บันทึก order, Customer service จองเครดิตของผู้ซื้อ และ Inventory service กันสต๊อกไว้ ใน monolith นี่เป็น transaction เดียว — การเปลี่ยนแปลงทั้งสามอย่าง commit พร้อมกัน หรือไม่มีอะไร commit เลย เมื่อมีฐานข้อมูลส่วนตัวสามตัว transaction เดียวนั้นเป็นไปไม่ได้
 
-## ปัญหา (Problem)
+## Problem
 
 คุณอาจคว้า distributed transaction มาใช้ กลไกคลาสสิกอย่าง two-phase commit (2PC) สั่งให้ผู้เข้าร่วมทุกคน prepare แล้วบอกให้ทุกคน commit มันให้ atomicity กับคุณจริง แต่ด้วยราคาที่แพง: ผู้เข้าร่วมทุกคนถือ lock ไว้ตลอดระยะเวลา ผู้เข้าร่วมที่ช้าหรือ crash เพียงหนึ่งรายทำให้ทุกคนค้าง และ data store และ message broker สมัยใหม่จำนวนมากไม่รองรับมันเลย 2PC แลก availability และ scalability กับ strong consistency — ตรงข้ามกับสิ่งที่คุณแยกระบบออกมาเพื่อให้ได้
 
 ดังนั้นแรงที่ขัดแย้งกันคือ: คุณต้องการให้การดำเนินงานที่พาดหลาย service ทำสำเร็จทั้งหมด หรือย้อนกลับทั้งหมด แต่คุณถือ global lock ไม่ได้ คุณสมมติไม่ได้ว่าทุก service ใช้ transaction manager ร่วมกัน และคุณต้องคง available ไว้แม้ตอนที่ service หนึ่งช้า
 
-## วิธีแก้ (Solution)
+## Solution
 
 **saga** คือลำดับของ local transaction แต่ละ step ทำงานทั้งหมดภายใน service เดียว commit ลงฐานข้อมูลของ service นั้นเอง แล้วจึง trigger step ถัดไป เพราะแต่ละ step commit อย่างอิสระ จึงไม่มี global lock และไม่มี transaction manager ร่วม
 
@@ -81,7 +81,7 @@ export const orchestrationDiagram = `sequenceDiagram
 
 <Mermaid code={orchestrationDiagram} title="Orchestration saga — ตัวประสานงานส่วนกลางออกคำสั่งและ trigger การ compensate เมื่อล้มเหลว" />
 
-## ตัวอย่าง (Example)
+## Example
 
 นี่คือ orchestration saga สำหรับ flow การสั่งซื้อ orchestrator รัน step ไปข้างหน้าตามลำดับ ถ้า step ใด throw มันจะรัน compensation สำหรับ step ที่สำเร็จไปแล้ว ในลำดับย้อนกลับ แต่ละตัวอย่างเป็นอิสระในตัวเองและเขียนตามแนวทางเฉพาะของภาษานั้น ๆ
 
@@ -273,7 +273,7 @@ export const orchestrationDiagram = `sequenceDiagram
   </TabItem>
 </Tabs>
 
-## บริบทที่เป็นผลลัพธ์ (Resulting context)
+## Resulting Context
 
 สิ่งที่คุณได้รับ:
 
@@ -288,11 +288,40 @@ export const orchestrationDiagram = `sequenceDiagram
 
 กฎเชิงปฏิบัติ: ใช้ **choreography** สำหรับ flow ที่สั้นและเรียบง่ายโดยมีผู้เข้าร่วมไม่กี่ตัว และใช้ **orchestration** เมื่อ flow มี branch มีหลาย step หรือต้องการให้คิดวิเคราะห์ในภาพรวมได้
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Database per Service](/microservices/th/data-management/database-per-service/) — ขอบเขตที่ทำให้ saga จำเป็น
 - [Event Sourcing](/microservices/th/data-management/event-sourcing/) — วิธีที่น่าเชื่อถือในการ publish event ที่ saga พึ่งพา
 - [CQRS](/microservices/th/data-management/cqrs/) — มักใช้เพื่อ query สถานะกลางที่ saga สร้างขึ้น
+
+| Benefits | Trade-offs |
+|---|---|
+| จัดการ distributed transaction โดยไม่ต้องใช้ 2-phase commit | eventual consistency — state อาจไม่ consistent ชั่วคราว |
+| service ยังคง autonomous — ไม่มี global lock | compensating transaction ซับซ้อน โดยเฉพาะถ้า fail กลางคัน |
+| ทนต่อ partial failure — rollback ได้ผ่าน compensating event | debug ยากเมื่อ saga ล้มเหลว — ต้อง trace ข้าม service |
+| scale ได้ดี — ไม่มี global coordinator lock ทั้งระบบ | idempotency ของทุก step เป็นสิ่งจำเป็น |
+
+## Common Mistakes
+
+**Saga ที่ไม่ Idempotent** — step ใน saga ทำซ้ำไม่ได้โดยปลอดภัย
+อาการ:
+- retry ทำให้เกิด double charge ใน payment
+- compensating transaction ทำงานผิดเพราะ state ไม่คาดเดาได้
+
+**Saga ที่ยาวเกินไป** — saga มีมากกว่า 7-10 step
+อาการ:
+- compensating logic ซับซ้อนมาก ทีมไม่มั่นใจว่า rollback ถูก
+- failure ตรงกลาง saga ทำให้ระบบอยู่ใน inconsistent state นาน
+
+> 💡 Real World Example
+>
+> **Uber Eats:**
+> - order placement เป็น saga: validate order → charge payment → notify restaurant → assign driver
+> - ถ้า driver หาไม่ได้ → refund payment → notify customer
+>
+> **Airbnb:**
+> - booking saga: reserve listing → charge card → send confirmation
+> - compensating: refund → release listing → send cancellation notification
 
 <Callout title="การ compensate ไม่ใช่การ rollback">
 compensating transaction เป็น business action ใหม่ ไม่ใช่ `ROLLBACK` ของฐานข้อมูล การปล่อยเครดิตที่จองไว้ การยกเลิก shipment หรือการคืนเงิน ทิ้งร่องรอยไว้ใน audit log — และบางครั้งคุณก็ไม่สามารถยกเลิก step หนึ่งได้อย่างสมบูรณ์จริง ๆ (อีเมลถูกส่งออกไปแล้ว) การออกแบบ compensation ที่ดี และการยอมรับว่าบางตัวเป็นเพียงค่าประมาณ คืองานจริงของการสร้าง saga

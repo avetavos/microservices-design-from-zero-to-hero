@@ -11,19 +11,19 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 บริการของคุณเรียก dependency ในทุก ๆ request — สมมติว่าเป็น pricing service ที่ flow ของ checkout ต้องปรึกษาก่อนจะคำนวณยอดรวมได้ ส่วนใหญ่การเรียกนั้นรวดเร็วและสำเร็จ แต่ pricing service เพิ่งเริ่มล้มเหลว: อาจรับภาระเกิน อาจมีฐานข้อมูลปลายทางที่ timeout หรืออาจอยู่ระหว่าง deploy ตอนนี้การเรียกแต่ละครั้งจึงไม่ error หลังจากรอนาน ก็ค้างจนกระทั่ง timeout ของคุณทำงาน
 
 แม้จะมี timeout ในแต่ละการเรียก (ซึ่งคุณควรมี) พฤติกรรมแบบไร้เดียงสาคือการพยายามต่อไป checkout request ที่เข้ามาทุกครั้งจะเรียก pricing service ที่พังอย่างซื่อสัตย์ รอจน timeout ล้มเหลว และจับ thread หรือ connection ไว้ตลอดเวลานั้น
 
-## ปัญหา
+## Problem
 
 การส่ง request ไปยัง dependency ที่คุณรู้อยู่แล้วว่ากำลังล้มเหลวคือความสูญเปล่าล้วน ๆ และแย่ยิ่งกว่าสูญเปล่า — มันเป็นอันตรายอย่างจริงจัง การเรียกที่ไร้ความหวังแต่ละครั้งครอบครอง thread หนึ่งตัว connection หนึ่งตัว และหน่วยความจำบางส่วนตลอดระยะเวลาของ timeout ภายใต้ภาระ ทรัพยากรที่ถูกครอบครองเหล่านั้นจะกองเพิ่มขึ้นเร็วกว่าที่ถูกปล่อย และบริการของคุณเองก็หมดกำลังที่จะรองรับ *ทุก* request รวมถึง request ที่ไม่เกี่ยวอะไรกับ dependency ที่ล้มเหลวเลย การ retry ยังเพิ่มภาระให้ dependency ที่กำลังดิ้นรนอยู่แล้ว ทำให้มันฟื้นตัวช้าลงไปอีก
 
 ดังนั้นแรงที่ตึงเครียดกันคือ: คุณอยากใช้ dependency ที่ปกติแล้วแข็งแรงต่อไป คุณต้องไม่กระหน่ำมันในขณะที่มันพังอย่างชัดเจน และคุณต้องสังเกตได้โดยอัตโนมัติเมื่อมันฟื้นตัวแล้ว — โดยไม่ต้องมีคนมาสับสวิตช์
 
-## วิธีแก้
+## Solution
 
 **circuit breaker** คือตัวห่อหุ้มที่มีสถานะรอบ ๆ การเรียก remote ซึ่งคอยเฝ้าดูว่าการเรียกเป็นอย่างไร และเมื่อความล้มเหลวข้ามเกณฑ์ มันจะ *หยุดปล่อยให้การเรียกผ่าน* ไปชั่วระยะพักตัว เหมือนกับ breaker ไฟฟ้าที่มันถูกตั้งชื่อตาม มันจะ trip เพื่อปกป้องระบบ แล้ว reset เมื่อสภาวะดูปลอดภัย
 
@@ -47,7 +47,7 @@ export const breakerStates = `stateDiagram-v2
 
 <Mermaid code={breakerStates} title="สถานะของ circuit breaker — Closed นับความล้มเหลว, Open fail fast, Half-Open ตรวจวัดเพื่อหาการฟื้นตัว" />
 
-## ตัวอย่าง
+## Example
 
 นี่คือ breaker ที่ห่อหุ้มการเรียกแบบ asynchronous เพียงครั้งเดียว มันติดตามความล้มเหลวที่ติดต่อกันในขณะ Closed เปิด (open) เมื่อมันข้ามเกณฑ์ fail fast ในขณะ Open จนกระทั่งการพักตัวหมดลง และอนุญาตให้ probe หนึ่งครั้งใน Half-Open เพื่อตัดสินว่าจะ close อีกครั้งหรือไม่ แต่ละตัวอย่างเป็นอิสระในตัวเองและเขียนตามแบบฉบับของแต่ละภาษา
 
@@ -271,7 +271,7 @@ export const breakerStates = `stateDiagram-v2
   </TabItem>
 </Tabs>
 
-## บริบทที่เกิดขึ้นตามมา
+## Resulting Context
 
 สิ่งที่คุณได้รับ:
 
@@ -285,11 +285,42 @@ export const breakerStates = `stateDiagram-v2
 - **คุณต้องมีแผนเรื่อง fallback** breaker เพียงแค่ fail fast — *อะไร* ที่มัน return เมื่อ Open คือการตัดสินใจของคุณ cache ที่เก่า ค่าเริ่มต้นที่สมเหตุสมผล หรือ response บางส่วน ช่วยให้ประสบการณ์ผู้ใช้ยังใช้งานได้ ส่วน error ที่ไม่ได้จัดการแค่ย้ายความล้มเหลวไปไว้ที่อื่น
 - **สถานะที่แชร์กันข้าม instance** แต่ละ instance ของบริการมักมี breaker ของตัวเอง ดังนั้น dependency หนึ่งอาจ "open" บน instance หนึ่งและ "closed" บนอีก instance หนึ่ง ซึ่งยอมรับได้สำหรับระบบส่วนใหญ่ แต่พึงระลึกว่ามุมมองเรื่องสุขภาพนั้นเป็นแบบต่อ instance เว้นแต่คุณจะแชร์มัน
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
-- [Retry and Timeout](/microservices/th/reliability/retry-and-timeout/) — timeout คือสิ่งที่เปลี่ยนการค้างให้กลายเป็นความล้มเหลวที่นับได้ซึ่ง breaker สามารถนำไปดำเนินการต่อได้
+- [Retry and Timeout](/microservices/th/reliability/retry-and-timeout/) — timeout คือสิ่งที่เปลี่ยนการค้างให้กลายเป็นความล้มเหลวที่นับได้ซึ่ง breaker สามารถนำไปทำงานต่อได้
 - [Bulkhead](/microservices/th/reliability/bulkhead/) — ควบคุมทรัพยากรที่ dependency สามารถกินได้ตั้งแต่ก่อนที่ breaker จะ trip ด้วยซ้ำ
 - [Rate Limiting](/microservices/th/reliability/rate-limiting/) — ปกป้อง dependency ที่อยู่ปลายทางที่รับการเรียกซึ่ง breaker ควบคุมอยู่
+
+| Benefits | Trade-offs |
+|---|---|
+| ป้องกัน cascade failure — หยุดส่ง request ไป dependency ที่ล้มแล้ว | fallback ที่ไม่ดีทำให้ user experience แย่กว่า error ตรง ๆ |
+| fail fast — ไม่เสียเวลารอ timeout ทุก request | threshold ที่ผิดทำให้ circuit เปิดโดยไม่จำเป็น |
+| ให้เวลา dependency ฟื้นตัว — ไม่กระหน่ำระบบที่กำลัง recover | Half-Open probe ที่ผิด config ทำให้ recovery ช้า |
+| metrics ที่ circuit เก็บช่วย observability | complexity เพิ่มในการ test — ต้อง simulate failure |
+
+## Common Mistakes
+
+**Circuit Breaker ที่ Threshold ต่ำเกิน** — เปิด circuit เพราะ error rate 1%
+อาการ:
+- circuit เปิดบ่อยจาก transient error ธรรมดา
+- service ปฏิเสธ request โดยไม่จำเป็น
+- ตั้ง threshold ตาม normal error baseline ไม่ใช่ absolute low value
+
+**ไม่มี Fallback** — circuit เปิดแล้ว throw error ธรรมดา
+อาการ:
+- user เห็น error 500 แทนที่จะเห็น degraded experience
+- ควรมี fallback: cached data, default response, หรือ "try again later" message
+
+> 💡 Real World Example
+>
+> **Netflix (Hystrix):**
+> - ใช้ Circuit Breaker สำหรับทุก external call — รวมถึงระหว่าง internal service
+> - Hystrix dashboard แสดง circuit state ของทุก dependency แบบ real-time
+> - เมื่อ recommendation service ล้ม → fallback คือ popular content แทน personalized
+>
+> **Resilience4j:**
+> - มาแทน Hystrix ใน Netflix OSS
+> - lightweight, functional style, รองรับ reactive programming
 
 <Callout title="breaker ต้องมี timeout จึงจะทำงานได้">
 circuit breaker นับความล้มเหลว และการเรียกที่ค้างยังไม่ถือเป็นความล้มเหลวจนกว่าจะมีอะไรมาประกาศให้มันเป็น หากไม่มี timeout ต่อการเรียก dependency ที่ช้าจะทำให้ทุก probe รอไปอย่างไม่มีกำหนด จำนวนความล้มเหลวจะไม่เพิ่มขึ้น และ breaker จะไม่มีวัน trip จับคู่ breaker กับ timeout ที่เข้มงวดบนการเรียกที่มันห่อหุ้มเสมอ — timeout เป็นตัวสร้างความล้มเหลวที่ breaker ถูกออกแบบมาให้นับ

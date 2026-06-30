@@ -47,7 +47,7 @@ export const tradeoffDiagram = `flowchart LR
 ### ประโยชน์
 
 - **การ deploy และ scale อย่างอิสระ** แต่ละ service ship ตามตารางของตัวเอง ดังนั้นการเปลี่ยนแปลงเล็ก ๆ ใน service หนึ่งไม่จำเป็นต้อง deploy ใหม่ทั้งระบบ คุณยังสามารถรัน instance ของเฉพาะ service ที่ต้องการเพิ่มได้ แทนที่จะ scale ทั้งแอปพลิเคชัน
-- **ความเป็นอิสระของทีม** ทีมหนึ่งสามารถเป็นเจ้าของ service ตั้งแต่ต้นจนจบ — โค้ดของมัน ข้อมูลของมัน release pipeline ของมัน — และตัดสินใจในระดับท้องถิ่นได้โดยไม่ต้องประสานงาน codebase ที่ใช้ร่วมกันหรือ deploy ที่ใช้ร่วมกันกับคนอื่นทุกคน
+- **ความเป็นอิสระของทีม** ทีมหนึ่งสามารถเป็นเจ้าของ service ตั้งแต่ต้นจนจบ — codeของมัน ข้อมูลของมัน release pipeline ของมัน — และตัดสินใจในระดับท้องถิ่นได้โดยไม่ต้องประสานงาน codebase ที่ใช้ร่วมกันหรือ deploy ที่ใช้ร่วมกันกับคนอื่นทุกคน
 - **fault isolation** ความล้มเหลวสามารถถูกจำกัดให้อยู่ใน service เดียวได้ ถ้า recommendations service ล้มลง checkout service ก็ยังรับ order ต่อได้ ตราบใดที่คุณออกแบบขอบเขตให้เสื่อมสภาพอย่างนุ่มนวล (degrade gracefully)
 - **ความหลากหลายทางเทคโนโลยี** แต่ละ service สามารถเลือกภาษา framework หรือ datastore ที่เหมาะกับงานของมัน และคุณสามารถรับเทคโนโลยีใหม่มาใช้ใน service เดียวได้โดยไม่ต้องเขียนทุกอย่างใหม่
 
@@ -60,7 +60,7 @@ export const tradeoffDiagram = `flowchart LR
 
 ## Resulting context
 
-บทสรุปที่ซื่อตรงคือ microservices ย้ายความซับซ้อน มันไม่ได้กำจัดมัน ใน monolith ความซับซ้อนอยู่ภายในโค้ด ที่ซึ่ง compiler และ debugger ช่วยคุณได้ ใน microservices ส่วนใหญ่ของมันย้ายไปอยู่ในพื้นที่ *ระหว่าง* service — เครือข่าย ข้อมูล การดำเนินงาน — ที่ซึ่งเครื่องมือของคุณอ่อนแอกว่าและ failure mode ของคุณยุ่งเหยิงกว่า
+บทสรุปที่ซื่อตรงคือ microservices ย้ายความซับซ้อน มันไม่ได้กำจัดมัน ใน monolith ความซับซ้อนอยู่ภายในcode ที่ซึ่ง compiler และ debugger ช่วยคุณได้ ใน microservices ส่วนใหญ่ของมันย้ายไปอยู่ในพื้นที่ *ระหว่าง* service — เครือข่าย ข้อมูล การดำเนินงาน — ที่ซึ่งเครื่องมือของคุณอ่อนแอกว่าและ failure mode ของคุณยุ่งเหยิงกว่า
 
 การแลกเปลี่ยนนั้นคุ้มที่จะทำเมื่อประโยชน์พุ่งเป้าไปยังปัญหาที่คุณมีจริง: ทีมที่ติดขัดเพราะกันและกัน component ที่มีความต้องการ scale ต่างกันสุดขั้ว หรือข้อกำหนดเรื่อง fault isolation ที่คุณไม่สามารถทำได้ใน process เดียว มันเป็นการแลกเปลี่ยนที่แย่เมื่อคุณรับต้นทุนมาเพื่อไล่ตามประโยชน์ที่คุณยังไม่ต้องการ บทเรียนถัดไปจะแปลงการพิจารณานี้ให้เป็นการตัดสินใจที่เป็นรูปธรรม
 
@@ -70,8 +70,43 @@ export const tradeoffDiagram = `flowchart LR
 - [When to Use Microservices](/microservices/th/intro-and-principles/when-to-use-microservices/) — การแปลงบัญชีนี้ให้เป็นการตัดสินใจ
 - [Data Management](/microservices/th/data-management/) — โมดูลที่อุทิศให้กับต้นทุนเรื่องความสอดคล้อง
 
+| Benefits | Trade-offs |
+|---|---|
+| deploy แต่ละ service อิสระ — release cycle เร็วขึ้น | distributed system complexity — network failure, partial failure |
+| scale เฉพาะ service ที่ต้องการ — ประหยัด cost | operational complexity สูง — ต้องการ DevOps maturity |
+| technology diversity — เลือก stack ที่เหมาะสมแต่ละ service | consistency ยากกว่า — eventual consistency แทน ACID |
+| fault isolation — service หนึ่งล้มไม่ทำให้ทั้งระบบหยุด | distributed tracing และ debugging ซับซ้อนมาก |
+
+## Common Mistakes
+
+**Microservices เป็นคำตอบของทุกปัญหา** — adopt microservices โดยไม่ประเมิน context
+
+อาการ:
+- startup 3 คนใช้ microservices ตั้งแต่วันแรก
+- ใช้เวลา configure Kubernetes มากกว่า build product
+- monolith ที่ดี deliver faster ในระยะแรก
+
+**Distributed Monolith** — แยก service แต่ยัง deploy พร้อมกันและ share database
+
+อาการ:
+- service A เรียก service B แบบ synchronous ใน critical path ทุกครั้ง
+- database เดียวสำหรับทุก service
+- ได้ทั้ง complexity ของ distributed system และ coupling ของ monolith
+
+> 💡 Real World Example
+>
+> **Amazon (2002):**
+> - Jeff Bezos ออก mandate: ทุกทีมต้อง expose data และ functionality ผ่าน service interface
+> - ไม่อนุญาต direct database access ข้าม team
+> - นี่คือจุดเริ่มต้นของ microservices ที่ Amazon ก่อน Martin Fowler บัญญัติคำ
+>
+> **Netflix (2008):**
+> - database corruption ครั้งใหญ่ทำให้ streaming หยุด 3 วัน
+> - ตัดสินใจ migrate จาก monolith ไป microservices บน AWS
+> - ใช้เวลา 7 ปีจึง complete migration
+
 <Callout title="microservices ย้ายความซับซ้อน มันไม่ได้ลบมันทิ้ง">
-ความซับซ้อนไม่ได้หายไปเมื่อคุณ decompose มันย้ายที่จากภายในโค้ดของคุณไปยังเครือข่าย ข้อมูล และการดำเนินงานของคุณ จงรับ microservices มาใช้เมื่อการย้ายที่นั้นซื้อบางสิ่งที่เป็นรูปธรรมให้คุณ — การ scale อย่างอิสระ, fault isolation, ความเป็นอิสระของทีม — และเฉพาะหลังจากที่คุณมี automation พอจะจ่ายค่าใช้จ่ายด้านการดำเนินงานแล้วเท่านั้น มิฉะนั้นคุณจะเก็บความซับซ้อนทั้งหมดไว้และสูญเสีย debugger ไป
+ความซับซ้อนไม่ได้หายไปเมื่อคุณ decompose มันย้ายที่จากภายในcodeของคุณไปยังเครือข่าย ข้อมูล และการดำเนินงานของคุณ จงรับ microservices มาใช้เมื่อการย้ายที่นั้นซื้อบางสิ่งที่เป็นรูปธรรมให้คุณ — การ scale อย่างอิสระ, fault isolation, ความเป็นอิสระของทีม — และเฉพาะหลังจากที่คุณมี automation พอจะจ่ายค่าใช้จ่ายด้านการดำเนินงานแล้วเท่านั้น มิฉะนั้นคุณจะเก็บความซับซ้อนทั้งหมดไว้และสูญเสีย debugger ไป
 </Callout>
 
 export const quizTradeoff = [
@@ -99,7 +134,7 @@ export const quizTradeoff = [
     q: 'What is the most honest summary of the microservices trade-off?',
     options: [
       'microservices กำจัดความซับซ้อนออกจากระบบของคุณ',
-      'microservices ย้ายความซับซ้อนจากภายในโค้ดไปยังเครือข่าย ข้อมูล และการดำเนินงานระหว่าง service',
+      'microservices ย้ายความซับซ้อนจากภายในcodeไปยังเครือข่าย ข้อมูล และการดำเนินงานระหว่าง service',
       'microservices มีประโยชน์แต่ไม่มีข้อเสียที่แท้จริง',
       'microservices ช้ากว่า monolith เสมอ',
     ],

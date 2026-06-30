@@ -11,17 +11,17 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 logs และ traces มีรายละเอียดและเป็นราย ๆ คำขอ — เหมาะอย่างยิ่งเมื่อคุณรู้แล้วว่ามีอะไรผิดและอยากสืบสวนคำขอหนึ่ง แต่มันตอบคำถามผิดสำหรับงานปฏิบัติการอีกครึ่งหนึ่ง คือ *ระบบแข็งแรงอยู่ตอนนี้โดยรวมหรือไม่?* คุณไม่สามารถเฝ้าดู log นับล้านบรรทัดต่อนาทีเพื่อสังเกตว่า error rate เพิ่งเพิ่มเป็นสองเท่า และคุณไม่สามารถเปิด trace เพื่อรู้ว่า p99 latency ทั้ง fleet กำลังค่อย ๆ ไต่ขึ้นตลอดบ่ายหรือไม่ คุณต้องการบทสรุปที่พอดีกับหน้าจอ และตัวเลขที่เครื่องสามารถเทียบกับ threshold ได้
 
-## ปัญหา
+## Problem
 
-สัญญาณที่มีรายละเอียดไม่ aggregate อย่างราคาถูก การนับ error ด้วยการ tail logs นั้นช้าและเปราะบาง; การคำนวณ latency percentile ข้ามทุก replica ด้วยการอ่าน traces นั้นแพงและเป็นการทำหลังเหตุการณ์ และคุณต้องการมากกว่า snapshot ปัจจุบัน — คุณต้องการ trend ตามเวลา เพื่อให้คุณเห็นการเสื่อมสภาพที่กำลังก่อตัวและ alert *ก่อน* ที่มันจะกลายเป็นเหตุขัดข้อง แทนที่จะอ่านเกี่ยวกับมันหลังจากนั้น
+สัญญาณที่มีรายละเอียดไม่ aggregate อย่างราคาถูก การนับ error ด้วยการ tail logs นั้นช้าและเปราะบาง; การคำนวณ latency percentile ข้ามทุก replica ด้วยการอ่าน traces นั้นแพงและเป็นการทำหลัง event และคุณต้องการมากกว่า snapshot ปัจจุบัน — คุณต้องการ trend ตามเวลา เพื่อให้คุณเห็นการเสื่อมสภาพที่กำลังก่อตัวและ alert *ก่อน* ที่มันจะกลายเป็นเหตุขัดข้อง แทนที่จะอ่านเกี่ยวกับมันหลังจากนั้น
 
 แล้วคุณจะผลิตบทสรุปเชิงตัวเลขที่ราคาถูก อัปเดตอย่างต่อเนื่องของพฤติกรรมบริการของคุณได้อย่างไร — request rate, errors, latency, การใช้ทรัพยากร — ที่ dashboard สามารถวาดกราฟและระบบ alerting สามารถเฝ้าดูได้
 
-## ทางออก
+## Solution
 
 **Application metrics** คือการวัดเชิงตัวเลขที่บริการของคุณรักษาไว้ในหน่วยความจำและเปิดเผยให้ระบบ monitoring เก็บไป มันมาในสามรูปทรงหลัก:
 
@@ -43,9 +43,9 @@ export const metricsDiagram = `flowchart LR
 
 <Mermaid code={metricsDiagram} title="บริการอัปเดต metrics ในหน่วยความจำและเปิดเผยมัน; scraper poll และจัดเก็บ time series ที่ป้อนให้ dashboards และ alerts" />
 
-## ตัวอย่าง
+## Example
 
-สองการดำเนินการที่คุณหยิบใช้บ่อยที่สุด: เพิ่มค่า counter เมื่อคำขอเสร็จสิ้น (ติด label ตามผลลัพธ์) และสังเกต latency ของมันใน histogram สิ่งเหล่านี้ใช้ client สไตล์ Prometheus ซึ่งเป็น pattern โดยพฤตินัยข้ามภาษา
+สองการทำงานที่คุณหยิบใช้บ่อยที่สุด: เพิ่มค่า counter เมื่อคำขอเสร็จสิ้น (ติด label ตามผลลัพธ์) และสังเกต latency ของมันใน histogram สิ่งเหล่านี้ใช้ client สไตล์ Prometheus ซึ่งเป็น pattern โดยพฤตินัยข้ามภาษา
 
 <Tabs syncKey="lang">
   <TabItem label="TypeScript">
@@ -158,7 +158,7 @@ export const metricsDiagram = `flowchart LR
   </TabItem>
 </Tabs>
 
-## บริบทที่ได้ผลลัพธ์
+## Resulting Context
 
 สิ่งที่คุณได้รับ:
 
@@ -172,10 +172,41 @@ export const metricsDiagram = `flowchart LR
 - **ค่า aggregate ซ่อนรายตัว** metric บอกคุณว่า error rate เพิ่มขึ้น; มันบอกคุณไม่ได้ว่า *คำขอใด* ล้มเหลวหรือทำไม คุณยังต้องการ logs และ traces เพื่อเจาะลึก metrics ชี้; สัญญาณอื่นอธิบาย
 - **Percentile ต้องการ histogram ไม่ใช่ค่าเฉลี่ย** latency เฉลี่ยที่ดูดีสามารถซ่อน p99 ที่แย่ได้ เลือก histogram bucket ที่ครอบคลุม service-level objective ของคุณ ไม่เช่นนั้น percentile ของคุณจะหยาบเกินไปจนไร้ประโยชน์
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Distributed Tracing](/microservices/th/observability/distributed-tracing/) — เมื่อ latency metric พุ่งขึ้น trace แสดงให้คุณเห็นว่า hop ใดก่อให้เกิดมัน
 - [Health Check API](/microservices/th/observability/health-check-api/) — health เป็นการตรวจแบบ binary; metrics เผยให้เห็นการเสื่อมถอยแบบค่อยเป็นค่อยไปที่นำหน้ามัน
+
+| Benefits | Trade-offs |
+|---|---|
+| รู้ health ของระบบแบบ real-time โดยไม่ต้อง tail log | ต้องเลือก metric ที่ใช่ — metric มากเกินทำให้ noise สูง |
+| trigger alert เมื่อ metric เกิน threshold ได้อัตโนมัติ | cardinality สูง (เช่น tag ด้วย user_id) ทำให้ storage พุ่ง |
+| ดู trend ข้ามเวลา — เห็น degradation ก่อนที่จะพัง | metric ไม่บอก "ทำไม" — ต้องใช้ log และ trace ช่วย |
+| ใช้ตัดสินใจ capacity planning และ scaling | instrumenting code เพิ่ม complexity เล็กน้อย |
+
+## Common Mistakes
+
+**Metric Explosion (High Cardinality)** — ใช้ dynamic value เป็น label/tag
+อาการ:
+- label ด้วย `user_id`, `request_id`, หรือ `url_path` แบบ raw
+- Prometheus หรือ metric store ใช้ memory พุ่งสูง
+- query ช้ามากเพราะ series count ระเบิด
+
+**Vanity Metrics** — track metric ที่ไม่ได้บอกอะไรเกี่ยวกับ health จริง ๆ
+อาการ:
+- นับ request count แต่ไม่นับ error rate หรือ latency percentile
+- dashboard สวยแต่ไม่ได้ช่วย debug incident
+
+> 💡 Real World Example
+>
+> **Netflix:**
+> - ใช้ Atlas เป็น in-house time-series metric system
+> - track ล้าน metric series ต่อวินาที
+> - RED method: Rate, Errors, Duration สำหรับทุก service
+>
+> **Airbnb:**
+> - ใช้ Prometheus + Grafana
+> - SLO-based alerting — alert เมื่อ error budget หมด ไม่ใช่เมื่อ metric เกิน threshold เดี่ยว ๆ
 
 <Callout title="เลือกสัญญาณที่ถูกต้องสำหรับคำถาม">
 หยิบ metrics มาตอบคำถาม "ระบบโดยรวมเป็นอย่างไรตามเวลา?" และเพื่อขับเคลื่อน alerts หยิบ traces และ logs มาตอบคำถาม "เกิดอะไรขึ้นกับคำขอเดียวนี้?" anti-pattern ที่พบบ่อยคือการพยายามกู้คืนรายละเอียดราย ๆ คำขอจาก metrics ด้วยการเพิ่ม label ที่ high-cardinality — มันทำให้ metrics store ของคุณล้มละลายโดยไม่ให้สิ่งที่ logs และ traces ให้อยู่แล้ว ปล่อยให้แต่ละสัญญาณทำหน้าที่ของมัน

@@ -11,17 +11,17 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 logs ที่ถูกรวบรวมและเชื่อมโยงทำให้คุณค้นหาทุกบรรทัดของคำขอหนึ่งและอ่านมันตามลำดับได้ นั่นตอบว่า *เกิดอะไรขึ้น* แต่มีคำถามที่ logs ตอบได้ไม่ดี คือ *เวลาหายไปที่ไหน?* checkout ที่ใช้เวลาสี่วินาทีข้าม gateway, order service, payment service และ inventory service แต่ละตัวอาจเรียก database หรือ cache ด้วย ที่ไหนสักแห่งในต้นไม้ของการเรียกที่ซ้อนกันนั้น สามในสี่วินาทีถูกใช้ไป — แต่รายการบรรทัด log แบบแบน ๆ ต่อให้เชื่อมโยงได้อย่างสมบูรณ์แบบ ก็ไม่แสดงรูปร่างของต้นไม้หรือระยะเวลาของแต่ละกิ่งให้คุณดู
 
-## ปัญหา
+## Problem
 
 correlation id บอกคุณว่า log บรรทัดชุดหนึ่งเป็นพวกเดียวกัน แต่ไม่ได้บอกว่ามัน *เกี่ยวข้องกัน* อย่างไร มันไม่ได้บอกว่าการเรียก payment เกิดขึ้น *ภายใน* การเรียก order, ว่าการเรียก inventory รัน *หลังจาก* payment คืนค่ากลับ หรือว่า database query ใต้ inventory ใช้เวลา 2.8 จาก 4 วินาทีของคำขอ หากปราศจากโครงสร้างที่เป็นเชิงสาเหตุและมี timing นั้น คุณก็กลับไปเพ่งมอง timestamp ข้ามบริการเพื่อเดา critical path — และ timestamp จากเครื่องที่ต่างกันก็ไม่ได้ตรงกันเป๊ะ ๆ ด้วยซ้ำ
 
 แล้วคุณจะสร้าง nested call tree เต็มของคำขอหนึ่งขึ้นใหม่ได้อย่างไร พร้อมระยะเวลาของทุก hop ข้ามบริการที่แต่ละตัวเห็นเฉพาะส่วนของตัวเองเท่านั้น
 
-## ทางออก
+## Solution
 
 **Distributed tracing** สร้างแบบจำลองคำขอเป็น **trace** ที่ประกอบขึ้นจาก **spans** trace คือการเดินทางทั้งหมดของคำขอจากภายนอกหนึ่งคำขอ; span คือหน่วยงานเดียวภายในนั้น — คำขอขาเข้าที่ถูกจัดการ, การเรียกขาออกที่ถูกทำ, query ที่ถูกรัน แต่ละ span บันทึก start time, duration และชื่อ และพก id สองตัว คือ **trace id** ที่ทุก span ในคำขอใช้ร่วมกัน และ **span id** ที่ไม่ซ้ำเป็นของตัวมันเอง แต่ละ span ยังระบุ **parent span id** ของมันด้วย และ parent link เหล่านั้นคือสิ่งที่สร้างต้นไม้ขึ้นใหม่
 
@@ -44,7 +44,7 @@ export const traceDiagram = `sequenceDiagram
 
 <Mermaid code={traceDiagram} title="แต่ละ hop อ่าน traceparent ขาเข้า, เริ่ม child span และ propagate trace พร้อม span id ของตัวเองต่อไป — collector สร้างต้นไม้ขึ้นใหม่จาก trace id และ parent link" />
 
-## ตัวอย่าง
+## Example
 
 หัวใจของ tracing คือ propagation: อ่าน trace context จากคำขอขาเข้า และฉีดมันลงในทุกการเรียกขาออก ตัวอย่างเหล่านี้อ่าน `traceparent` header ขาเข้าและส่งต่อมันไป ซึ่งเป็นขั้นต่ำที่ทำให้ trace ไม่ขาดข้าม hop
 
@@ -159,7 +159,7 @@ export const traceDiagram = `sequenceDiagram
 
 ในทางปฏิบัติคุณแทบไม่ต้องเขียน propagation นี้ด้วยมือ: instrumentation library (เช่นที่สร้างบน OpenTelemetry) ฉีดและ extract trace context, จับเวลา span และ export มันให้คุณ การเข้าใจกลไกนี้มีความสำคัญที่สุดเมื่อ trace ขาดอย่างลึกลับที่ hop ใด hop หนึ่ง
 
-## บริบทที่ได้ผลลัพธ์
+## Resulting Context
 
 สิ่งที่คุณได้รับ:
 
@@ -173,13 +173,43 @@ export const traceDiagram = `sequenceDiagram
 - **Sampling มักเป็นข้อบังคับ** การบันทึกทุก span ของทุกคำขอที่ทราฟฟิกสูงนั้นแพง คุณจึง sample เลือกกลยุทธ์ sampling ของคุณอย่างตั้งใจ เพราะ head-based sample อาจพลาดคำขอที่ล้มเหลวซึ่งหายากแต่คุณอยากเห็นที่สุด
 - **ความพยายามในการ instrument** ทุกบริการ, client library และขอบเขต async ต้องมีส่วนร่วม; ภาษาและ framework ที่ปะปนกันทำให้การครอบคลุมที่สม่ำเสมอเป็นงานจริง ๆ
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Log Aggregation](/microservices/th/observability/log-aggregation/) — ใส่ trace id ลงในทุกบรรทัด log แล้ว traces และ logs ก็อ้างอิงถึงกันและกัน
 - [Application Metrics](/microservices/th/observability/application-metrics/) — metrics บอกคุณว่า latency เพิ่มขึ้น; traces บอกคุณว่ามันเพิ่มขึ้น *ที่ไหน*
 
+| Benefits | Trade-offs |
+|---|---|
+| เห็น request journey ข้าม service ทั้งหมดในที่เดียว | sampling ที่ไม่ดีทำให้พลาด trace สำคัญ |
+| ค้นหา bottleneck ใน distributed system ได้ | overhead ของ trace collection และ storage |
+| correlate log และ metric กับ specific request | require instrument ทุก service — ถ้า service หนึ่งไม่ instrument trace ขาด |
+| เห็น dependency map ของ service จาก trace data | ทีมต้องเรียนรู้ tool เพิ่ม (Jaeger, Zipkin, Tempo) |
+
+## Common Mistakes
+
+**Trace ทุก Request (100% Sampling)** — ไม่ใช้ sampling ทำให้ storage พุ่ง
+อาการ:
+- trace storage cost สูงมากใน high-traffic system
+- ใช้ head-based หรือ tail-based sampling แทน
+
+**Trace ที่ขาดช่วง** — service บางตัวไม่ propagate trace context
+อาการ:
+- เปิด trace แล้วเห็น hop ขาดหายไป
+- ไม่รู้ว่า service ไหนใช้เวลาเท่าไร
+- ต้อง instrument ทุก service และทุก async call
+
+> 💡 Real World Example
+>
+> **Google (Dapper):**
+> - เป็น paper ที่เป็นต้นแบบของ distributed tracing ทั้งอุตสาหกรรม (2010)
+> - Zipkin (Twitter) และ Jaeger (Uber) ได้รับแรงบันดาลใจจาก Dapper
+>
+> **Uber (Jaeger):**
+> - สร้าง Jaeger เพื่อ trace request ข้าม 1000+ service
+> - ปัจจุบัน CNCF graduated project — ใช้แพร่หลายที่สุดในอุตสาหกรรม
+
 <Callout title="Logs, traces และ metrics คือชุดเครื่องมือเดียวกัน">
-สัญญาณทั้งสามนี้ตอบคำถามที่ต่างกันและแข็งแกร่งที่สุดเมื่ออยู่ด้วยกัน metrics เตือนคุณว่า p99 latency พุ่งขึ้น trace จากคำขอที่ช้าแสดงให้คุณเห็น hop ที่ก่อให้เกิดมัน logs ที่ถูกรวบรวมและ filter ด้วย id ของ trace นั้นแสดงให้คุณเห็นข้อความ error ภายใน hop นั้น ประทับ trace id เดียวกันลงในทั้งสามแล้วคุณก็เคลื่อนไหวระหว่างมันได้อย่างลื่นไหลระหว่างเหตุการณ์ แทนการเริ่มการสืบสวนแต่ละครั้งจากศูนย์
+สัญญาณทั้งสามนี้ตอบคำถามที่ต่างกันและแข็งแกร่งที่สุดเมื่ออยู่ด้วยกัน metrics เตือนคุณว่า p99 latency พุ่งขึ้น trace จากคำขอที่ช้าแสดงให้คุณเห็น hop ที่ก่อให้เกิดมัน logs ที่ถูกรวบรวมและ filter ด้วย id ของ trace นั้นแสดงให้คุณเห็นข้อความ error ภายใน hop นั้น ประทับ trace id เดียวกันลงในทั้งสามแล้วคุณก็เคลื่อนไหวระหว่างมันได้อย่างลื่นไหลระหว่าง event แทนการเริ่มการสืบสวนแต่ละครั้งจากศูนย์
 </Callout>
 
 export const quizTracing = [

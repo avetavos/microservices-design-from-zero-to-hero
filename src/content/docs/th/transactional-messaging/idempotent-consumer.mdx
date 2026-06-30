@@ -11,17 +11,17 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 ทุก relay ในโมดูลนี้ — ไม่ว่าจะ [tail transaction log](/microservices/th/transactional-messaging/transaction-log-tailing/) หรือ [poll outbox](/microservices/th/transactional-messaging/polling-publisher/) — ส่งแบบ **at least once** relay สามารถ publish ข้อความแล้ว crash ก่อนบันทึกว่าได้ทำไปแล้ว มันจึง publish ซ้ำเมื่อ restart broker เองก็ส่งซ้ำเมื่อ consumer ไม่ ack ทันเวลา ผลลัพธ์จึงหลีกเลี่ยงไม่ได้: consumer ของคุณบางครั้งจะได้รับข้อความเดียวกันมากกว่าหนึ่งครั้ง
 
-## ปัญหา
+## Problem
 
 handler จำนวนมากไม่ปลอดภัยที่จะรันสองครั้ง การเครดิตเงินเข้าบัญชี การลดสต็อก การชาร์จบัตร หรือการส่งของ ล้วนเป็นการดำเนินงานที่ duplicate ก่อให้เกิดความเสียหายจริง — ชาร์จซ้ำ สต็อกติดลบ พัสดุสองชิ้น คุณไม่สามารถป้องกันการส่งซ้ำได้ (นั่นเป็นกลไกความปลอดภัยของ broker) และคุณไม่สามารถเรียกร้องการส่งแบบ exactly-once จากระบบที่ไม่ได้ให้สิ่งนั้น
 
 ดังนั้นแรงต่าง ๆ คือ: ข้อความสามารถและจะถูกส่งซ้ำ บาง side effect ต้องไม่เกิดขึ้นสองครั้ง และคุณไม่สามารถผลักปัญหา deduplication กลับไปให้ broker
 
-## วิธีแก้
+## Solution
 
 ทำให้ consumer เป็น **idempotent** — การประมวลผลข้อความสองครั้งมีผลเหมือนกับการประมวลผลครั้งเดียว มีสองแนวทาง และ handler ที่ดีที่สุดรวมทั้งสองเข้าด้วยกัน
 
@@ -43,7 +43,7 @@ export const idempotentDiagram = `sequenceDiagram
 
 <Mermaid code={idempotentDiagram} title="consumer บันทึกแต่ละ message id พร้อม effect ของมัน; duplicate ที่ถูกส่งซ้ำถูกตรวจจับและข้าม" />
 
-## ตัวอย่าง
+## Example
 
 handler insert message id และนำ side effect ไปใช้ใน transaction เดียว การละเมิด unique-constraint บน id หมายถึง "ประมวลผลแล้ว" ดังนั้น duplicate จึงถูกกลืนและ ack
 
@@ -168,7 +168,7 @@ handler insert message id และนำ side effect ไปใช้ใน tran
   </TabItem>
 </Tabs>
 
-## บริบทที่เป็นผลลัพธ์
+## Resulting Context
 
 สิ่งที่คุณได้:
 
@@ -181,11 +181,43 @@ handler insert message id และนำ side effect ไปใช้ใน tran
 - **effect ต้องใช้ transaction ร่วมกัน** การบันทึก id และการนำ side effect ไปใช้ต้องเป็น atomic ถ้า side effect แตะระบบภายนอกที่ไม่สามารถเข้าร่วม transaction ได้ คุณก็กลับไปสู่ dual-write ขนาดเล็กกว่า — ในกรณีนั้นควรเลือกการดำเนินงานที่เป็น idempotent โดยธรรมชาติ
 - **การเรียงลำดับยังคงเป็นปัญหาของคุณ** idempotency หยุดการประมวลผลซ้ำ แต่ไม่รับประกันว่าข้อความจะมาถึงตามลำดับ ถ้าลำดับสำคัญ ให้จัดการแยกต่างหาก
 
-## แพตเทิร์นที่เกี่ยวข้อง
+## Related
 
 - [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/) — กำหนด message id ที่ไม่ซ้ำกันซึ่งแพตเทิร์นนี้ใช้ทำ dedup
 - [Transaction Log Tailing](/microservices/th/transactional-messaging/transaction-log-tailing/) — relay ที่การส่งแบบ at-least-once ของมันถูกแพตเทิร์นนี้ดูดซับ
 - [Polling Publisher](/microservices/th/transactional-messaging/polling-publisher/) — อีก relay แบบ at-least-once ที่แพตเทิร์นนี้ป้องกัน
+
+| Benefits | Trade-offs |
+|---|---|
+| message ที่ deliver ซ้ำไม่ทำให้ผลลัพธ์เปลี่ยน | ต้องมี idempotency store — storage เพิ่ม |
+| ระบบทนต่อ at-least-once delivery guarantee | lookup idempotency key เพิ่ม latency เล็กน้อย |
+| retry อย่างปลอดภัยโดยไม่กลัว duplicate effect | idempotency key ต้อง expire อย่างระมัดระวัง |
+| ง่ายต่อการ reason เกี่ยวกับ correctness | ต้องออกแบบ idempotency key ให้ unique และ stable |
+
+## Common Mistakes
+
+**Idempotency Key ที่ไม่ Stable** — key เปลี่ยนทุก retry
+อาการ:
+- ใช้ timestamp หรือ random UUID เป็น idempotency key
+- retry ทุกครั้งถือว่าเป็น operation ใหม่ — duplicate effect เกิดได้เสมอ
+- ใช้ message ID จาก broker หรือ business key แทน
+
+**Idempotency Key ที่ไม่ Expire** — เก็บ key ตลอดไป
+อาการ:
+- idempotency store ใหญ่ขึ้นไม่จำกัด
+- query ช้าเมื่อ store ใหญ่มาก
+- กำหนด TTL ที่เหมาะสมตาม message retention ของ broker
+
+> 💡 Real World Example
+>
+> **Stripe:**
+> - idempotency key บน payment API เป็น best practice ที่ document ชัดเจน
+> - client ส่ง `Idempotency-Key` header ใน POST request
+> - Stripe เก็บ result 24 ชั่วโมง — retry ด้วย key เดิมได้รับ result เดิม
+>
+> **AWS SQS:**
+> - at-least-once delivery โดย design — consumer ต้องเป็น idempotent เอง
+> - FIFO queue มี message deduplication built-in (5 นาที window)
 
 <Callout title="มุ่งสู่การประมวลผลแบบ idempotent ไม่ใช่การส่งแบบ exactly-once">
 การส่งแบบ exactly-once ข้าม network แทบเป็นไปไม่ได้ *การประมวลผล* แบบ exactly-once ทำได้และเป็นสิ่งที่คุณต้องการจริง ๆ บันทึก message id และนำ effect ไปใช้ใน transaction เดียว หรือทำให้ effect เป็น idempotent โดยธรรมชาติ แล้ว duplicate ก็หยุดมีความสำคัญ วินัยฝั่ง consumer นี้คือสิ่งที่ทำให้ทุกแพตเทิร์นอื่นในโมดูลนี้ยังคงเรียบง่าย

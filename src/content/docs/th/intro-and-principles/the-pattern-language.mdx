@@ -28,7 +28,7 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 - **แกน X — horizontal duplication** รันสำเนาที่เหมือนกันของแอปพลิเคชันจำนวนมากหลัง load balancer นี่คือการ scale แบบคลาสสิกที่ง่าย และใช้ได้กับ monolith ด้วย มัน scale throughput แต่ไม่ scale ความซับซ้อน: ทุกสำเนายังบรรจุทั้งระบบ
 - **แกน Y — functional decomposition** แยกแอปพลิเคชันตาม *สิ่งที่มันทำ* ออกเป็น service รอบ business capability นี่คือแกนที่นิยาม microservices มัน scale การพัฒนา — โดยให้ทีมและ component วิวัฒน์อย่างอิสระ — ไม่ใช่แค่ traffic
-- **แกน Z — data partitioning** แยกตาม *ข้อมูลใด* ที่ request แตะต้อง โดยส่งต่อแต่ละ request ไปยัง partition (หรือ shard) ที่ถือข้อมูลของมัน โค้ดเหมือนกันทุกที่ แต่แต่ละ instance ให้บริการข้อมูลส่วนหนึ่ง
+- **แกน Z — data partitioning** แยกตาม *ข้อมูลใด* ที่ request แตะต้อง โดยส่งต่อแต่ละ request ไปยัง partition (หรือ shard) ที่ถือข้อมูลของมัน codeเหมือนกันทุกที่ แต่แต่ละ instance ให้บริการข้อมูลส่วนหนึ่ง
 
 แกน Y คือแกนที่คอร์สนี้พูดถึงเป็นหลัก เพราะ functional decomposition คือสิ่งที่เปลี่ยนแอปพลิเคชันหนึ่งให้กลายเป็น service จำนวนมาก — และการเลือกครั้งเดียวนั้นคือต้นตอของกลุ่มปัญหาอื่น ๆ ทั้งหมดด้านล่าง
 
@@ -77,6 +77,38 @@ export const groupsDiagram = `flowchart TB
 - [What Is Microservices Architecture?](/microservices/th/intro-and-principles/) — รากฐานที่ทั้งภาษาตั้งอยู่บน
 - [When to Use Microservices](/microservices/th/intro-and-principles/when-to-use-microservices/) — การตัดสินใจที่จะ decompose ซึ่งเริ่มต้นโซ่นี้ให้เคลื่อนไหว
 - [Data Management](/microservices/th/data-management/) — กลุ่มปัญหาแรกที่ decomposition สร้างขึ้น และเป็นโมดูลถัดไปที่ต้องอ่าน
+
+| Benefits | Trade-offs |
+|---|---|
+| pattern ให้ vocabulary ร่วมกันในทีม — คุยกันเข้าใจเร็วขึ้น | pattern เป็น template ไม่ใช่ recipe — ต้อง adapt ตาม context |
+| แต่ละ pattern documented ว่า context ไหนเหมาะ | การรู้ pattern ไม่ได้แปลว่า implement ถูก |
+| เรียนจาก collective experience ของอุตสาหกรรม | over-engineering — ใช้ pattern ที่ยังไม่จำเป็น |
+| pattern language ช่วย see the big picture ว่า pattern สัมพันธ์กันอย่างไร | pattern อาจ outdated สำหรับ technology stack ปัจจุบัน |
+
+## Common Mistakes
+
+**Pattern Shopping** — เลือก pattern เพราะชื่อดังหรือ hype ไม่ใช่เพราะ context เหมาะ
+
+อาการ:
+- ใช้ CQRS เพราะอ่านบทความ ไม่ใช่เพราะมีปัญหา read/write asymmetry
+- เพิ่ม complexity โดยไม่มี corresponding benefit
+- เริ่มจาก problem ก่อนเสมอ — pattern เป็นคำตอบไม่ใช่คำถาม
+
+**ใช้ Pattern โดยไม่เข้าใจ Trade-offs** — implement pattern ตาม tutorial โดยไม่รู้ว่าจะเสียอะไร
+
+อาการ:
+- adopt Saga โดยไม่รู้ว่า compensating transaction คืออะไร
+- adopt Event Sourcing โดยไม่รู้ว่า query current state ยากขึ้น
+
+> 💡 Real World Example
+>
+> **Chris Richardson (microservices.io):**
+> - สร้าง microservices pattern language catalog
+> - patterns สัมพันธ์กัน — แก้ปัญหาหนึ่งนำไปสู่ปัญหาถัดไปที่ต้องใช้ pattern ใหม่
+>
+> **Martin Fowler & Sam Newman:**
+> - "Microservices" article (2014) นิยาม architectural style
+> - "Building Microservices" book เป็น reference สำคัญของอุตสาหกรรม
 
 <Callout title="เรียนรู้ความเชื่อมโยง ไม่ใช่แค่แคตตาล็อก">
 pattern ที่อยู่โดดเดี่ยวคือเกร็ดความรู้ pattern ที่อยู่ในตำแหน่งของมันคือเครื่องมือที่คุณรู้ว่าควรหยิบมาใช้เมื่อไร scale cube บอกคุณว่า *ทำไม* ถึง decompose และโซ่ของกลุ่มปัญหาบอกคุณว่า decomposition จะยื่นอะไรให้คุณต่อไป จงพกแผนที่นี้ไปตลอดคอร์สที่เหลือ แล้ว pattern ใหม่แต่ละตัวจะลงล็อกในโครงสร้างที่คุณเข้าใจอยู่แล้ว

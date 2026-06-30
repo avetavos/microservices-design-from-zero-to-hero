@@ -11,19 +11,19 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 service ของคุณคุยกันอยู่ตลอดเวลา และทุก call เหล่านั้นต้องการมาตรการป้องกันชุดเดียวกันไม่กี่อย่าง: traffic ควรถูกเข้ารหัส, request ที่ล้มเหลวควรถูก retry ตามจำนวนที่จำกัด, callee ที่ช้าควรชน timeout แทนที่จะค้าง caller ไว้ และทุก call ควรปล่อย metric และ trace span ออกมา ในโมดูล reliability และ observability คุณได้เรียนรู้การ build สิ่งเหล่านี้เข้าไปใน service — circuit breaker, retry, การ instrument
 
 ปัญหาคือตอนนี้คุณมียี่สิบ service ในสี่ภาษา และแต่ละตัวต้อง implement มันทั้งหมดให้ถูกต้องและเหมือนกัน retry logic ของทีม Go ต่างจากของทีม Java เล็กน้อย mTLS ถูกตั้งค่าสามแบบต่างกัน service หนึ่งลืมปล่อย trace ไปเลย networking logic แบบ cross-cutting ตัวเดียวกันถูก implement ใหม่ ไม่สอดคล้องกัน อยู่ทุกที่
 
-## ปัญหา
+## Problem
 
 คุณต้องการให้ทุก call ระหว่าง service ถูกเข้ารหัส, retry, timeout, ถูกสังเกต และ route ตาม policy เดียวที่สอดคล้องกัน — โดยไม่ต้องขอให้ทุกทีมในทุกภาษาเขียนและดูแล logic นั้นด้วยมือ คุณต้องการเปลี่ยน policy (เข้มงวด timeout, เลื่อน 5% ของ traffic ไปยัง canary) จากส่วนกลางโดยไม่ต้อง redeploy service และคุณต้องการให้มันทำงานเหมือนกันไม่ว่า service จะเป็น Go, Java, Python หรือ Rust
 
 ดังนั้นแรงที่ขัดแย้งกันคือ: พฤติกรรม networking ที่สอดคล้องกันและถูกควบคุมจากส่วนกลาง ข้ามกองทัพแบบ polyglot โดยใช้กับ service ที่แบก business logic โดยไม่ต้องแก้ไขหรือ redeploy มัน
 
-## ทางออก
+## Solution
 
 รับเอา **service mesh** มาใช้ mesh ย้ายเรื่อง communication เหล่านี้ทั้งหมดออกจาก service และเข้าไปไว้ใน **sidecar proxy** — process proxy เล็ก ๆ ที่ deploy ในหน่วยเดียวกับแต่ละ service instance ทุก byte ที่ service ส่งหรือรับจะผ่าน sidecar ของมัน sidecar ไม่ใช่ code ของคุณ ที่ทำ mutual TLS, ใช้ retry และ timeout, บังคับ routing rule และบันทึก metric และ trace
 
@@ -49,7 +49,7 @@ export const meshDiagram = `flowchart TB
 
 <Mermaid code={meshDiagram} title="แต่ละ service รันข้าง sidecar proxy (data plane); control plane push policy และ certificate ไปยังทุก sidecar" />
 
-## ตัวอย่าง
+## Example
 
 คุณอธิบายพฤติกรรม traffic เป็น policy ที่ control plane กระจายออกไป policy นี้ตั้ง timeout และ retry แบบจำกัดสำหรับ call ไปยัง payment service และ split traffic เพื่อให้ 90% ไปยังเวอร์ชัน stable และ 10% ไปยัง canary — โดยไม่ต้องไปแตะ code ของ payment service เลย
 
@@ -76,7 +76,7 @@ spec:
 
 control plane แปลสิ่งนี้เป็น configuration สำหรับทุก sidecar ที่ call `payment-service` เพื่อเลื่อน canary ไปข้างหน้า คุณเปลี่ยน weight ที่นี่ ไม่มี service ใดถูก build ใหม่หรือ redeploy
 
-## บริบทที่ได้
+## Resulting Context
 
 สิ่งที่คุณได้:
 
@@ -92,11 +92,41 @@ control plane แปลสิ่งนี้เป็น configuration สำห
 
 กฎที่ใช้ได้จริง: mesh คุ้มค่าเมื่อคุณมี service แบบ polyglot จำนวนมากและมีความต้องการจริงด้าน mTLS, การควบคุม traffic และ telemetry ที่สม่ำเสมอ สำหรับ service ไม่กี่ตัว มันมักเป็นเครื่องจักรที่มากเกินกว่าที่ปัญหาต้องการ
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Service per Container](/microservices/th/deployment-and-cross-cutting/service-per-container/) — sidecar มักเป็น container ตัวที่สองที่ deploy ข้าง service container
 - [Microservice Chassis](/microservices/th/deployment-and-cross-cutting/microservice-chassis/) — ทางเลือกแบบ in-process สำหรับบางเรื่องเดียวกัน mesh และ chassis มักถูกใช้ร่วมกัน
 - [Externalized Configuration](/microservices/th/deployment-and-cross-cutting/externalized-configuration/) — policy ของ mesh เองก็เป็น externalized configuration ที่ถูก push โดย control plane
+
+| Benefits | Trade-offs |
+|---|---|
+| traffic management, retry, circuit breaker ทำที่ infrastructure — ไม่ต้องแก้ code | เพิ่ม complexity ของ infrastructure มาก — sidecar ทุก pod |
+| mTLS ระหว่าง service อัตโนมัติ — zero-trust security | latency เพิ่มเล็กน้อยจาก sidecar proxy |
+| observability ครบ: metrics, tracing, logs สำหรับทุก service call | ต้องการ expertise ในการ configure และ debug Istio/Linkerd |
+| เปลี่ยน policy ได้โดยไม่ต้อง redeploy service | resource overhead — sidecar แต่ละตัวใช้ memory และ CPU |
+
+## Common Mistakes
+
+**Service Mesh ตั้งแต่วันแรก** — adopt service mesh ก่อนที่จะมี service หลายตัวจริง ๆ
+อาการ:
+- มี 3 service แต่ใช้ Istio ทั้ง cluster
+- ทีมเสีย 80% ของเวลากับ mesh config แทนที่จะ build feature
+- complexity เกินความจำเป็น
+
+**Misconfigured mTLS** — config mTLS ผิดทำให้ service คุยกันไม่ได้
+อาการ:
+- service ใหม่เพิ่มเข้า cluster แล้วคุยกับ service เก่าไม่ได้
+- certificate expire ทำให้ production ล่ม
+
+> 💡 Real World Example
+>
+> **Google (Istio):**
+> - สร้าง Istio จาก internal service mesh ที่ใช้ใน Google production
+> - ใช้ Envoy proxy เป็น sidecar — battle-tested ที่ Lyft และ Airbnb
+>
+> **Lyft:**
+> - ผู้สร้าง Envoy proxy — เริ่มจาก internal need
+> - ใช้ mesh สำหรับ observability ก่อน — ได้ tracing ทั้งระบบโดยไม่ต้องแก้ service
 
 <Callout title="Mesh ย้าย logic ออกจาก code ของคุณ ไม่ใช่ทำให้มันหายไป">
 service mesh ไม่ได้ทำให้ retry, timeout และ mTLS หายไป — มันย้ายพวกมันจาก application code ของคุณเข้าไปไว้ใน sidecar ที่จัดการจากส่วนกลาง ประโยชน์คือความสม่ำเสมอและการควบคุมจากส่วนกลาง ราคาคือ proxy บนทุก hop และระบบใหม่ที่ทรงพลังที่ต้อง operate มันเป็นการแลกเปลี่ยนที่คุณทำเมื่อความสอดคล้องข้ามหลาย service สำคัญกว่า latency และความซับซ้อนที่เพิ่มขึ้น

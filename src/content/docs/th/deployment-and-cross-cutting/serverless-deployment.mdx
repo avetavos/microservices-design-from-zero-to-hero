@@ -11,19 +11,19 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## บริบท
+## Context
 
 บาง service ของคุณทำงานจริงแต่เป็นแบบ bursty (พุ่งเป็นช่วง) service ที่ทำ thumbnail รูปจะรันเฉพาะเมื่อมีคนอัปโหลดรูป webhook handler ทำงานไม่กี่ครั้งต่อชั่วโมง report generator รายคืนรันวันละครั้ง ด้วยโมเดล container แต่ละตัวเหล่านี้ยังต้องมีอย่างน้อยหนึ่ง replica รันตลอดเวลา กิน memory และยึดช่องใน cluster รองานที่มาเป็นช่วงพุ่ง
 
 คุณกำลังจ่าย — ทั้งเงินและความใส่ใจด้าน operation — เพื่อรักษา process ที่ว่างอยู่ให้อุ่นไว้ และเพื่อ patch เครื่องที่อยู่ข้างใต้มัน สำหรับ workload ที่ขับเคลื่อนด้วย event และพุ่งเป็นช่วง นั่นรู้สึกเหมือนเป็นค่าเริ่มต้นที่ผิด คุณอยากให้ service ไม่ต้องมีอยู่เลยจนกว่าจะมีงานให้มันทำ
 
-## ปัญหา
+## Problem
 
 คุณต้องการรันชิ้นส่วนของ business logic โดยไม่ต้อง provision, patch หรือ scale server ใด ๆ ด้วยตัวเอง คุณต้องการให้มัน scale ลงไปถึง **ศูนย์** เมื่อว่าง เพื่อให้มันไม่มีค่าใช้จ่าย และ scale **ขึ้นโดยอัตโนมัติ** หนึ่ง instance ต่อหนึ่ง request ที่เกิดขึ้นพร้อมกัน เมื่อมีการพุ่งเข้ามา — โดยที่คุณไม่ต้องตั้งค่า autoscaler และคุณต้องการจ่ายเฉพาะเวลาที่ code รันจริง ไม่ใช่จ่ายสำหรับ capacity ที่จองไว้
 
 ดังนั้นแรงที่ขัดแย้งกันคือ: กำจัด operation ของ server และค่าใช้จ่ายขณะว่างให้หมดไปเลย ในขณะที่ยัง scale แบบยืดหยุ่นตาม demand ได้ — โดยยอมรับว่าคุณยกการควบคุม runtime ให้ไปเป็นการแลกเปลี่ยน
 
-## ทางออก
+## Solution
 
 รับเอา **serverless deployment** มาใช้ หรือที่เรียกว่า Functions as a Service (FaaS) คุณ package logic ของคุณเป็น **function** แล้วมอบให้ platform เช่น AWS Lambda, Google Cloud Functions หรือ Azure Functions คุณไม่จัดการ server ใด ๆ platform เป็นผู้ provision, patch และ scale สภาพแวดล้อมการรันให้คุณ
 
@@ -43,7 +43,7 @@ export const serverlessDiagram = `flowchart LR
 
 <Mermaid code={serverlessDiagram} title="event ทริกเกอร์ platform ซึ่งปั้น function instance หนึ่งตัวต่อหนึ่ง invocation ที่เกิดขึ้นพร้อมกัน และ scale กลับลงไปถึงศูนย์เมื่อว่าง" />
 
-## ตัวอย่าง
+## Example
 
 คุณอธิบาย function เชิงประกาศ: runtime ของมัน, handler entry point, trigger และ resource limit ของมัน platform จัดการต่อจากนั้น — ไม่มี server, จำนวน replica หรือ operating system ให้คุณจัดการ
 
@@ -67,7 +67,7 @@ functions:
 
 platform อ่านสิ่งนี้และในแต่ละ event `object.created` ใน uploads bucket จะ invoke `onUpload` โดย scale จากศูนย์ขึ้นไปถึง 100 instance ขนานกันตามอัตราการอัปโหลดที่ต้องการ แล้วกลับลงไปถึงศูนย์เมื่อ bucket เงียบลง
 
-## บริบทที่ได้
+## Resulting Context
 
 สิ่งที่คุณได้:
 
@@ -83,11 +83,41 @@ platform อ่านสิ่งนี้และในแต่ละ event `
 
 กฎที่ใช้ได้จริง: เอื้อมไปหา serverless เมื่องานขับเคลื่อนด้วย event, พุ่งเป็นช่วง หรือเกิดไม่บ่อย และความทนทานต่อ latency อยู่ในเกณฑ์ที่รับได้ ส่วน service ที่คงที่ วิกฤตต่อ latency หรือรันยาว ให้เก็บไว้บน container
 
-## Pattern ที่เกี่ยวข้อง
+## Related
 
 - [Service per Container](/microservices/th/deployment-and-cross-cutting/service-per-container/) — โมเดล runtime ทางเลือกสำหรับ service ที่คงที่ อยู่ยาว ที่คุณอยากควบคุมเอง
 - [Externalized Configuration](/microservices/th/deployment-and-cross-cutting/externalized-configuration/) — function ก็ยังรับการตั้งค่าจากค่า environment ที่ inject เข้ามา ไม่ใช่จากค่าคงที่ที่ฝังไว้
 - [Microservice Chassis](/microservices/th/deployment-and-cross-cutting/microservice-chassis/) — แม้แต่ function ก็ได้ประโยชน์จาก baseline ร่วมด้าน logging, metric และ config
+
+| Benefits | Trade-offs |
+|---|---|
+| ไม่ต้องจัดการ server — cloud provider ดูแล infra | cold start latency — function ที่ไม่ได้ถูกเรียกนาน ๆ ช้าครั้งแรก |
+| scale ถึง zero — ไม่มี request ไม่เสีย cost | execution time limit — ไม่เหมาะกับ long-running process |
+| pay per invocation — ประหยัดสำหรับ intermittent workload | vendor lock-in สูงกว่า container deployment |
+| deploy เร็ว — แค่ upload code | debugging และ local development ยากกว่า |
+
+## Common Mistakes
+
+**Serverless Monolith** — ใส่ทุก business logic ลงใน function เดียว
+อาการ:
+- function มีขนาดใหญ่มาก (>50MB)
+- function ทำหลายอย่าง — ไม่ต่างจาก monolith ที่ deploy บน Lambda
+- scale ไม่ได้แยก — ต้อง scale ทั้ง function
+
+**State ใน Function** — เก็บ state ใน memory ระหว่าง invocation
+อาการ:
+- ข้อมูลใน global variable หาย เมื่อ function instance ใหม่เริ่มทำงาน
+- behavior ต่างกันระหว่าง warm และ cold invocation
+
+> 💡 Real World Example
+>
+> **Netflix:**
+> - ใช้ AWS Lambda สำหรับ event-driven pipeline: encode video, resize image
+> - scale ได้ไม่จำกัดระหว่าง peak traffic
+>
+> **Coca-Cola:**
+> - ย้าย vending machine backend มาใช้ AWS Lambda
+> - ประหยัด cost ได้ 65% เนื่องจาก intermittent traffic pattern
 
 <Callout title="Serverless เป็นทางเลือก runtime ไม่ใช่ architecture">
 "Serverless" ไม่ได้หมายความว่าไม่มี server — มันหมายความว่าคุณไม่จัดการมัน มันเป็นวิธีหนึ่งในการรัน service ที่อยู่เคียงข้าง container ไม่ใช่ตัวแทนของ service boundary ที่ดี เลือกมันตาม workload: thumbnailer หรือ webhook handler เข้ากันได้ดีมาก ส่วน request path ที่ latency ต่ำซึ่งต้องอุ่นอยู่เสมอมักจะไม่
