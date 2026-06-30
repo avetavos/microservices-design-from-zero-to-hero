@@ -52,8 +52,8 @@ We start with the table that makes the write atomic (Transactional Outbox), then
 
 ## Related patterns
 
-- [Saga](/microservices-design-from-zero-to-hero/en/data-management/saga/) — depends on reliable event publishing for every step.
-- [Event Sourcing](/microservices-design-from-zero-to-hero/en/data-management/event-sourcing/) — another way to make the event the same write as the state change.
+- [Saga](/microservices/en/data-management/saga/) — depends on reliable event publishing for every step.
+- [Event Sourcing](/microservices/en/data-management/event-sourcing/) — another way to make the event the same write as the state change.
 
 <Callout title="Two writes, one truth">
 The whole module rests on one move: never trust two independent writes to both happen. Pick one system — the database — as the source of truth, record the message there in the same transaction, and treat delivery as a separate job that can be retried until it succeeds. Everything else is detail.

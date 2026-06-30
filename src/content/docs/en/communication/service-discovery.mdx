@@ -95,9 +95,9 @@ Many platforms — for example a container orchestrator with built-in DNS and a 
 
 ## Related patterns
 
-- [Remote Procedure Invocation](/microservices-design-from-zero-to-hero/en/communication/remote-procedure-invocation/) — the synchronous call that needs an instance address to send to.
-- [API Gateway](/microservices-design-from-zero-to-hero/en/communication/api-gateway/) — relies on discovery to route to live instances of internal services.
-- [Backends for Frontends](/microservices-design-from-zero-to-hero/en/communication/backends-for-frontends/) — each BFF discovers the internal services it composes.
+- [Remote Procedure Invocation](/microservices/en/communication/remote-procedure-invocation/) — the synchronous call that needs an instance address to send to.
+- [API Gateway](/microservices/en/communication/api-gateway/) — relies on discovery to route to live instances of internal services.
+- [Backends for Frontends](/microservices/en/communication/backends-for-frontends/) — each BFF discovers the internal services it composes.
 
 <Callout title="You may already have discovery for free">
 Before building a registry, check what your platform gives you. A container orchestrator typically registers and health-checks pods and exposes them under a stable DNS name with built-in load balancing — that is third-party registration plus server-side discovery, handed to you. A service mesh adds the same with richer routing and retries. Reach for an explicit registry library only when your environment does not already solve this.

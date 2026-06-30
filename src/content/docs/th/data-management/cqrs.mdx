@@ -177,13 +177,13 @@ export const cqrsDiagram = `flowchart LR
 - **eventual consistency.** read model ตามหลัง write model อยู่ตามเวลาที่ event ใช้ในการแพร่กระจายและ project ผู้ใช้ที่เพิ่งเขียนอาจอ่านข้อมูลเก่าได้ชั่วครู่ ดังนั้น UI ต้องเผื่อรองรับเรื่องนี้
 - **ข้อมูลซ้ำซ้อนและ projection ที่ replay ได้.** read model ทำสำเนาข้อมูลซ้ำ และคุณต้องมีวิธีสร้างมันขึ้นใหม่จากศูนย์เมื่อ view เปลี่ยนหรือ projection มี bug
 
-เพราะ overhead นี้ คว้า CQRS มาใช้เฉพาะเมื่อ query จำเป็นต้องใช้มันจริง ๆ สำหรับ query ข้าม service ที่ไม่ใหญ่นัก [API Composition](/microservices-design-from-zero-to-hero/th/data-management/api-composition/) ที่ง่ายกว่ามักเป็นตัวเลือกที่ดีกว่า
+เพราะ overhead นี้ คว้า CQRS มาใช้เฉพาะเมื่อ query จำเป็นต้องใช้มันจริง ๆ สำหรับ query ข้าม service ที่ไม่ใหญ่นัก [API Composition](/microservices/th/data-management/api-composition/) ที่ง่ายกว่ามักเป็นตัวเลือกที่ดีกว่า
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [API Composition](/microservices-design-from-zero-to-hero/th/data-management/api-composition/) — ทางเลือกที่ง่ายกว่า ให้ใช้มันก่อนจนกว่า query จะพิสูจน์ว่าแพงเกินกว่าจะ compose สด ๆ
-- [Event Sourcing](/microservices-design-from-zero-to-hero/th/data-management/event-sourcing/) — แหล่งที่มาตามธรรมชาติของ event ที่ป้อนให้ CQRS projection
-- [Saga](/microservices-design-from-zero-to-hero/th/data-management/saga/) — read model มักเปิดเผยสถานะกลางที่ saga สร้างขึ้น
+- [API Composition](/microservices/th/data-management/api-composition/) — ทางเลือกที่ง่ายกว่า ให้ใช้มันก่อนจนกว่า query จะพิสูจน์ว่าแพงเกินกว่าจะ compose สด ๆ
+- [Event Sourcing](/microservices/th/data-management/event-sourcing/) — แหล่งที่มาตามธรรมชาติของ event ที่ป้อนให้ CQRS projection
+- [Saga](/microservices/th/data-management/saga/) — read model มักเปิดเผยสถานะกลางที่ saga สร้างขึ้น
 
 <Callout title="CQRS ไม่ต้องการ Event Sourcing (และในทางกลับกัน)">
 สอง pattern นี้จับคู่กันได้สวยงามแต่เป็นอิสระต่อกัน คุณสามารถทำ CQRS โดยการ publish event จากการเขียน CRUD ธรรมดาได้ และคุณสามารถทำ Event Sourcing โดยไม่เคยแยกการอ่านออกจากการเขียนเลยก็ได้ จงนำแต่ละตัวมาใช้ด้วยเหตุผลของมันเอง และผสมพวกมันเข้าด้วยกันเฉพาะเมื่อเหตุผลทั้งสองเข้าเงื่อนไขเท่านั้น

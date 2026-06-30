@@ -192,9 +192,9 @@ What it costs you:
 
 ## Related patterns
 
-- [Transaction Log Tailing](/microservices-design-from-zero-to-hero/en/transactional-messaging/transaction-log-tailing/) — one way to implement the relay, with no polling.
-- [Polling Publisher](/microservices-design-from-zero-to-hero/en/transactional-messaging/polling-publisher/) — the simpler way to implement the relay.
-- [Idempotent Consumer](/microservices-design-from-zero-to-hero/en/transactional-messaging/idempotent-consumer/) — required because the outbox guarantees only at-least-once delivery.
+- [Transaction Log Tailing](/microservices/en/transactional-messaging/transaction-log-tailing/) — one way to implement the relay, with no polling.
+- [Polling Publisher](/microservices/en/transactional-messaging/polling-publisher/) — the simpler way to implement the relay.
+- [Idempotent Consumer](/microservices/en/transactional-messaging/idempotent-consumer/) — required because the outbox guarantees only at-least-once delivery.
 
 <Callout title="The outbox row is intent, not delivery">
 Committing the outbox row does not mean the message has been sent — it means the service has *promised* to send it. Delivery is a separate, retryable job. This separation is exactly why the pattern works: the hard atomic part happens inside one database, and the unreliable network part is pushed to a step that can be retried until it succeeds.

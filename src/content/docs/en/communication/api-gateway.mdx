@@ -96,13 +96,13 @@ What it costs you:
 - **It can become a bottleneck or a God-object.** As more routing rules, transformations, and aggregations accumulate, the gateway grows into a large, shared component that every team must change — and a development bottleneck when one team's change waits behind another's.
 - **Risk of over-generalisation.** A single gateway trying to serve a web app, a mobile app, and third-party integrations equally well tends to serve none of them ideally, because their needs differ.
 
-That last cost is the motivation for the next pattern: instead of one gateway for everyone, give each client type its own. See [Backends for Frontends](/microservices-design-from-zero-to-hero/en/communication/backends-for-frontends/).
+That last cost is the motivation for the next pattern: instead of one gateway for everyone, give each client type its own. See [Backends for Frontends](/microservices/en/communication/backends-for-frontends/).
 
 ## Related patterns
 
-- [Backends for Frontends](/microservices-design-from-zero-to-hero/en/communication/backends-for-frontends/) — one tailored gateway per client type, addressing the God-object risk.
-- [Service Discovery](/microservices-design-from-zero-to-hero/en/communication/service-discovery/) — how the gateway finds live instances of the services it routes to.
-- [API Composition](/microservices-design-from-zero-to-hero/en/data-management/api-composition/) — the aggregation technique a gateway uses to join data from several services.
+- [Backends for Frontends](/microservices/en/communication/backends-for-frontends/) — one tailored gateway per client type, addressing the God-object risk.
+- [Service Discovery](/microservices/en/communication/service-discovery/) — how the gateway finds live instances of the services it routes to.
+- [API Composition](/microservices/en/data-management/api-composition/) — the aggregation technique a gateway uses to join data from several services.
 
 <Callout title="The gateway routes; it does not own business logic">
 It is tempting to push "just a little" business logic into the gateway — a discount calculation here, an order validation there. Resist it. The gateway's job is routing, aggregation, and cross-cutting concerns. Business rules belong in the owning service; once they leak into the gateway, you have rebuilt a distributed monolith with the gateway as its hidden core.

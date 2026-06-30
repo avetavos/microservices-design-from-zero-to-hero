@@ -163,9 +163,9 @@ wrapper เล็ก ๆ ครอบ broker ที่เผยแพร่ even
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Remote Procedure Invocation](/microservices-design-from-zero-to-hero/th/communication/remote-procedure-invocation/) — ทางเลือกแบบ synchronous เมื่อผู้เรียกต้องการคำตอบทันทีจริง ๆ
-- [Saga](/microservices-design-from-zero-to-hero/th/data-management/saga/) — ใช้ messaging เพื่อประสานทรานแซกชันที่ครอบหลายบริการ
-- [Event Sourcing](/microservices-design-from-zero-to-hero/th/data-management/event-sourcing/) — วิธีที่เชื่อถือได้ในการสร้าง event ที่คุณจะเผยแพร่
+- [Remote Procedure Invocation](/microservices/th/communication/remote-procedure-invocation/) — ทางเลือกแบบ synchronous เมื่อผู้เรียกต้องการคำตอบทันทีจริง ๆ
+- [Saga](/microservices/th/data-management/saga/) — ใช้ messaging เพื่อประสานทรานแซกชันที่ครอบหลายบริการ
+- [Event Sourcing](/microservices/th/data-management/event-sourcing/) — วิธีที่เชื่อถือได้ในการสร้าง event ที่คุณจะเผยแพร่
 
 <Callout title="consumer ที่เป็น idempotent ไม่ใช่ทางเลือก">
 broker ส่วนใหญ่รับประกันการส่งแบบ at-least-once ซึ่งหมายความว่า consumer ของคุณจะได้เห็นข้อความเดิมซ้ำสองครั้งในที่สุด ถ้าการประมวลผล "ตัดเงินคำสั่งซื้อ 17" ไม่ idempotent การส่งซ้ำจะตัดเงินลูกค้าสองครั้ง ทำให้ consumer ปลอดภัยที่จะทำซ้ำได้ — ลบข้อมูลซ้ำโดยอ้างอิงจาก message id หรือออกแบบการทำงานให้การใช้สองครั้งมีผลเหมือนกับการใช้ครั้งเดียว

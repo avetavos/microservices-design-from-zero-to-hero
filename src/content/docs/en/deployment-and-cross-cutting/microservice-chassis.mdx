@@ -146,13 +146,13 @@ What it costs you:
 - **Coupling and versioning friction.** Every service depends on the chassis; a breaking change forces a coordinated upgrade, and a stale chassis can hold a service back.
 - **Risk of bloat.** A chassis that tries to do everything becomes heavy and opinionated. Keep it focused on genuinely cross-cutting concerns, not business helpers.
 
-A practical note: a chassis handles *in-process* concerns (config, logging, metrics, health), while a [Service Mesh](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/service-mesh/) handles *between-process* networking. Many teams use both.
+A practical note: a chassis handles *in-process* concerns (config, logging, metrics, health), while a [Service Mesh](/microservices/en/deployment-and-cross-cutting/service-mesh/) handles *between-process* networking. Many teams use both.
 
 ## Related patterns
 
-- [Externalized Configuration](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/externalized-configuration/) — the chassis is usually what reads and applies the externalized config.
-- [Service Mesh](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/service-mesh/) — handles the networking cross-cutting concerns the chassis leaves to the sidecar.
-- [Service per Container](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/service-per-container/) — a chassis-built service is still packaged and run as one service per container.
+- [Externalized Configuration](/microservices/en/deployment-and-cross-cutting/externalized-configuration/) — the chassis is usually what reads and applies the externalized config.
+- [Service Mesh](/microservices/en/deployment-and-cross-cutting/service-mesh/) — handles the networking cross-cutting concerns the chassis leaves to the sidecar.
+- [Service per Container](/microservices/en/deployment-and-cross-cutting/service-per-container/) — a chassis-built service is still packaged and run as one service per container.
 
 <Callout title="A chassis is a starting point, not a cage">
 The goal is to remove undifferentiated plumbing, not to dictate how every service is built. Keep the chassis focused on truly cross-cutting concerns — config, logging, metrics, health, discovery — and let services keep their freedom over domain design. The day the chassis starts mandating how you model orders, it has overreached.

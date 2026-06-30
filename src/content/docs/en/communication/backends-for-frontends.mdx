@@ -13,7 +13,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## Context
 
-You introduced an [API Gateway](/microservices-design-from-zero-to-hero/en/communication/api-gateway/) and it worked. But your clients are not the same. The web app runs on a fast connection and wants rich, detailed responses to render a wide dashboard. The mobile app runs on a flaky cellular link and wants small, compact responses with only the fields the small screen shows. A third-party integration wants stable, conservative, versioned endpoints that rarely change. A single gateway trying to satisfy all three keeps growing conditional logic and "include this field only for mobile" special cases.
+You introduced an [API Gateway](/microservices/en/communication/api-gateway/) and it worked. But your clients are not the same. The web app runs on a fast connection and wants rich, detailed responses to render a wide dashboard. The mobile app runs on a flaky cellular link and wants small, compact responses with only the fields the small screen shows. A third-party integration wants stable, conservative, versioned endpoints that rarely change. A single gateway trying to satisfy all three keeps growing conditional logic and "include this field only for mobile" special cases.
 
 ## Problem
 
@@ -90,9 +90,9 @@ What it costs you:
 
 ## Related patterns
 
-- [API Gateway](/microservices-design-from-zero-to-hero/en/communication/api-gateway/) — the single-gateway pattern that BFF specialises per client type.
-- [Service Discovery](/microservices-design-from-zero-to-hero/en/communication/service-discovery/) — how each BFF locates the internal services it calls.
-- [API Composition](/microservices-design-from-zero-to-hero/en/data-management/api-composition/) — the aggregation each BFF performs to compose a client-shaped response.
+- [API Gateway](/microservices/en/communication/api-gateway/) — the single-gateway pattern that BFF specialises per client type.
+- [Service Discovery](/microservices/en/communication/service-discovery/) — how each BFF locates the internal services it calls.
+- [API Composition](/microservices/en/data-management/api-composition/) — the aggregation each BFF performs to compose a client-shaped response.
 
 <Callout title="BFF is a team-shaping pattern as much as a technical one">
 The real win of BFF is not a smaller payload — it is removing a coordination bottleneck. When the mobile team owns its BFF, it ships at its own pace without queuing behind every other client team. If your organisation has one platform team that would own all the BFFs anyway, a single well-factored gateway may serve you better; BFF pays off when client teams are distinct and want autonomy.

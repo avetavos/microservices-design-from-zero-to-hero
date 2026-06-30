@@ -165,12 +165,12 @@ What it costs you:
 - **Availability is the product of its parts.** The composer needs every called service to respond. If one is down or slow, the whole query suffers — unless you add timeouts and partial-result handling.
 - **Reduced consistency.** The pieces are read at slightly different moments, so the combined view can mix states that never existed together at one instant.
 
-When the in-memory join becomes the bottleneck — large data, complex filtering, or strict latency targets — graduate to a maintained read model with [CQRS](/microservices-design-from-zero-to-hero/en/data-management/cqrs/), which pre-joins the data ahead of time.
+When the in-memory join becomes the bottleneck — large data, complex filtering, or strict latency targets — graduate to a maintained read model with [CQRS](/microservices/en/data-management/cqrs/), which pre-joins the data ahead of time.
 
 ## Related patterns
 
-- [Database per Service](/microservices-design-from-zero-to-hero/en/data-management/database-per-service/) — the boundary that turns a join into a composition.
-- [CQRS](/microservices-design-from-zero-to-hero/en/data-management/cqrs/) — the heavier alternative for queries too expensive to compose at request time.
+- [Database per Service](/microservices/en/data-management/database-per-service/) — the boundary that turns a join into a composition.
+- [CQRS](/microservices/en/data-management/cqrs/) — the heavier alternative for queries too expensive to compose at request time.
 
 <Callout title="Start here, escalate only when forced">
 API Composition is the cheapest cross-service query pattern, and most queries never outgrow it. Reach for CQRS only when you have measured that an in-memory join is genuinely too slow or too data-hungry — not before. Premature read models are a common source of accidental complexity.

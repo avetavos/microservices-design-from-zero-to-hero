@@ -223,9 +223,9 @@ What it costs you:
 
 ## Related patterns
 
-- [Circuit Breaker](/microservices-design-from-zero-to-hero/en/reliability/circuit-breaker/) — the essential partner that stops retries from becoming a storm.
-- [Bulkhead](/microservices-design-from-zero-to-hero/en/reliability/bulkhead/) — bounds the resources retries can consume while they wait.
-- [Saga](/microservices-design-from-zero-to-hero/en/data-management/saga/) — its compensating transactions must be idempotent precisely because they may be retried.
+- [Circuit Breaker](/microservices/en/reliability/circuit-breaker/) — the essential partner that stops retries from becoming a storm.
+- [Bulkhead](/microservices/en/reliability/bulkhead/) — bounds the resources retries can consume while they wait.
+- [Saga](/microservices/en/data-management/saga/) — its compensating transactions must be idempotent precisely because they may be retried.
 
 <Callout title="Only retry what is safe to repeat">
 A retry can cause the *same* request to be processed more than once — the first attempt may have actually succeeded on the server even though the response never reached you. For reads this is harmless. For writes it is not: a retried "charge card" can double-bill. Retry only idempotent operations, or give each write an idempotency key the server uses to recognize and discard duplicates. Without idempotency, a retry policy is a correctness bug waiting to happen.

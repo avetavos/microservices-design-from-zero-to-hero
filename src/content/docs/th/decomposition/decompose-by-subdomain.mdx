@@ -74,9 +74,9 @@ export const contextDiagram = `flowchart TB
 
 ## pattern ที่เกี่ยวข้อง
 
-- [Decompose by Business Capability](/microservices-design-from-zero-to-hero/th/decomposition/decompose-by-business-capability/) — กลยุทธ์เสริมที่ให้การแบ่งครั้งแรกอย่างรวดเร็ว แล้ว DDD จึงทำให้มันละเอียดขึ้น
-- [Self-Contained Service](/microservices-design-from-zero-to-hero/th/decomposition/self-contained-service/) — bounded context ให้โมเดลในที่ (local model) ที่แต่ละ service ต้องใช้ในการตอบ request ด้วยตัวเอง
-- [ภาพรวมการ decompose](/microservices-design-from-zero-to-hero/th/decomposition/) — กลยุทธ์นี้อยู่ตรงไหนในภาพใหญ่
+- [Decompose by Business Capability](/microservices/th/decomposition/decompose-by-business-capability/) — กลยุทธ์เสริมที่ให้การแบ่งครั้งแรกอย่างรวดเร็ว แล้ว DDD จึงทำให้มันละเอียดขึ้น
+- [Self-Contained Service](/microservices/th/decomposition/self-contained-service/) — bounded context ให้โมเดลในที่ (local model) ที่แต่ละ service ต้องใช้ในการตอบ request ด้วยตัวเอง
+- [ภาพรวมการ decompose](/microservices/th/decomposition/) — กลยุทธ์นี้อยู่ตรงไหนในภาพใหญ่
 
 <Callout title="ปล่อยให้คำเดียวกันมีความหมายต่างกัน">
 แนวคิดที่ปลดปล่อยที่สุดเพียงหนึ่งเดียวใน pattern นี้คือการอนุญาตให้คำหนึ่งมีความหมายต่างกันใน context ที่ต่างกัน คำนิยามที่ "ถูกต้อง" ร่วมกันของ `Customer` ทั่วทั้งบริษัทไม่ใช่เป้าหมายที่ควรค่าแก่การไล่ตาม มันคือสิ่งที่สร้างโมเดล monolithic ขึ้นมาเสียเอง bounded context ปล่อยให้ billing, ordering, และ delivery ต่างเก็บความหมายที่แม่นยำที่มันต้องการจริง ๆ ไว้ และเปลี่ยนรอยต่อระหว่างกันให้เป็น contract ที่จงใจและนิยามไว้อย่างดี

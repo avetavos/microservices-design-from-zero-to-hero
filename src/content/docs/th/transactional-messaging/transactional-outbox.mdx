@@ -192,9 +192,9 @@ export const outboxDiagram = `flowchart LR
 
 ## แพตเทิร์นที่เกี่ยวข้อง
 
-- [Transaction Log Tailing](/microservices-design-from-zero-to-hero/th/transactional-messaging/transaction-log-tailing/) — วิธีหนึ่งในการสร้าง relay โดยไม่ต้อง polling
-- [Polling Publisher](/microservices-design-from-zero-to-hero/th/transactional-messaging/polling-publisher/) — วิธีที่ง่ายกว่าในการสร้าง relay
-- [Idempotent Consumer](/microservices-design-from-zero-to-hero/th/transactional-messaging/idempotent-consumer/) — จำเป็นเพราะ outbox รับประกันเพียงการส่งแบบ at-least-once
+- [Transaction Log Tailing](/microservices/th/transactional-messaging/transaction-log-tailing/) — วิธีหนึ่งในการสร้าง relay โดยไม่ต้อง polling
+- [Polling Publisher](/microservices/th/transactional-messaging/polling-publisher/) — วิธีที่ง่ายกว่าในการสร้าง relay
+- [Idempotent Consumer](/microservices/th/transactional-messaging/idempotent-consumer/) — จำเป็นเพราะ outbox รับประกันเพียงการส่งแบบ at-least-once
 
 <Callout title="แถว outbox คือเจตนา ไม่ใช่การส่ง">
 การ commit แถว outbox ไม่ได้หมายความว่าข้อความถูกส่งแล้ว — มันหมายความว่าเซอร์วิสได้ *สัญญา* ว่าจะส่ง การส่งเป็นงานแยกต่างหากที่ retry ได้ การแยกนี้คือเหตุผลที่แพตเทิร์นนี้ใช้ได้: ส่วน atomic ที่ยากเกิดขึ้นภายในฐานข้อมูลเดียว และส่วน network ที่ไม่น่าเชื่อถือถูกผลักไปเป็นขั้นตอนที่ retry ได้จนกว่าจะสำเร็จ

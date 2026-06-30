@@ -13,7 +13,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## Context
 
-Every relay in this module — whether it [tails the transaction log](/microservices-design-from-zero-to-hero/en/transactional-messaging/transaction-log-tailing/) or [polls the outbox](/microservices-design-from-zero-to-hero/en/transactional-messaging/polling-publisher/) — delivers **at least once**. A relay can publish a message and then crash before recording that it did, so it republishes on restart. Brokers themselves redeliver when a consumer fails to acknowledge in time. The result is unavoidable: your consumer will sometimes receive the same message more than once.
+Every relay in this module — whether it [tails the transaction log](/microservices/en/transactional-messaging/transaction-log-tailing/) or [polls the outbox](/microservices/en/transactional-messaging/polling-publisher/) — delivers **at least once**. A relay can publish a message and then crash before recording that it did, so it republishes on restart. Brokers themselves redeliver when a consumer fails to acknowledge in time. The result is unavoidable: your consumer will sometimes receive the same message more than once.
 
 ## Problem
 
@@ -183,9 +183,9 @@ What it costs you:
 
 ## Related patterns
 
-- [Transactional Outbox](/microservices-design-from-zero-to-hero/en/transactional-messaging/transactional-outbox/) — assigns the unique message id this pattern deduplicates on.
-- [Transaction Log Tailing](/microservices-design-from-zero-to-hero/en/transactional-messaging/transaction-log-tailing/) — a relay whose at-least-once delivery this pattern absorbs.
-- [Polling Publisher](/microservices-design-from-zero-to-hero/en/transactional-messaging/polling-publisher/) — the other at-least-once relay this pattern protects against.
+- [Transactional Outbox](/microservices/en/transactional-messaging/transactional-outbox/) — assigns the unique message id this pattern deduplicates on.
+- [Transaction Log Tailing](/microservices/en/transactional-messaging/transaction-log-tailing/) — a relay whose at-least-once delivery this pattern absorbs.
+- [Polling Publisher](/microservices/en/transactional-messaging/polling-publisher/) — the other at-least-once relay this pattern protects against.
 
 <Callout title="Aim for idempotent processing, not exactly-once delivery">
 Exactly-once delivery across a network is effectively impossible; exactly-once *processing* is achievable and is what you actually want. Record the message id and apply the effect in one transaction, or make the effect naturally idempotent, and duplicates stop mattering. This consumer-side discipline is what lets every other pattern in this module stay simple.

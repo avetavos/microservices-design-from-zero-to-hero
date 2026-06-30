@@ -13,7 +13,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## บริบท
 
-คุณนำ [API Gateway](/microservices-design-from-zero-to-hero/th/communication/api-gateway/) มาใช้และมันได้ผล แต่ client ของคุณไม่เหมือนกัน web app ทำงานบนการเชื่อมต่อที่เร็วและต้องการการตอบกลับที่ละเอียดสมบูรณ์เพื่อแสดง dashboard ที่กว้าง mobile app ทำงานบนสัญญาณมือถือที่ไม่เสถียรและต้องการการตอบกลับที่เล็กกระชับ มีเฉพาะ field ที่หน้าจอเล็กแสดงเท่านั้น third-party integration ต้องการ endpoint ที่เสถียร อนุรักษ์นิยม มีเวอร์ชัน และเปลี่ยนแปลงน้อย gateway เดียวที่พยายามตอบสนองทั้งสามฝ่ายก็จะเติบโต logic แบบมีเงื่อนไขและกรณีพิเศษ "ใส่ field นี้เฉพาะ mobile" เพิ่มขึ้นเรื่อย ๆ
+คุณนำ [API Gateway](/microservices/th/communication/api-gateway/) มาใช้และมันได้ผล แต่ client ของคุณไม่เหมือนกัน web app ทำงานบนการเชื่อมต่อที่เร็วและต้องการการตอบกลับที่ละเอียดสมบูรณ์เพื่อแสดง dashboard ที่กว้าง mobile app ทำงานบนสัญญาณมือถือที่ไม่เสถียรและต้องการการตอบกลับที่เล็กกระชับ มีเฉพาะ field ที่หน้าจอเล็กแสดงเท่านั้น third-party integration ต้องการ endpoint ที่เสถียร อนุรักษ์นิยม มีเวอร์ชัน และเปลี่ยนแปลงน้อย gateway เดียวที่พยายามตอบสนองทั้งสามฝ่ายก็จะเติบโต logic แบบมีเงื่อนไขและกรณีพิเศษ "ใส่ field นี้เฉพาะ mobile" เพิ่มขึ้นเรื่อย ๆ
 
 ## ปัญหา
 
@@ -90,9 +90,9 @@ routes:
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [API Gateway](/microservices-design-from-zero-to-hero/th/communication/api-gateway/) — pattern แบบ gateway เดียวที่ BFF ทำให้พิเศษขึ้นต่อ client หนึ่งชนิด
-- [Service Discovery](/microservices-design-from-zero-to-hero/th/communication/service-discovery/) — วิธีที่แต่ละ BFF ค้นหาตำแหน่งของบริการภายในที่มันเรียก
-- [API Composition](/microservices-design-from-zero-to-hero/th/data-management/api-composition/) — การรวมผลลัพธ์ที่แต่ละ BFF ทำเพื่อประกอบการตอบกลับที่ปรับให้เข้ากับ client
+- [API Gateway](/microservices/th/communication/api-gateway/) — pattern แบบ gateway เดียวที่ BFF ทำให้พิเศษขึ้นต่อ client หนึ่งชนิด
+- [Service Discovery](/microservices/th/communication/service-discovery/) — วิธีที่แต่ละ BFF ค้นหาตำแหน่งของบริการภายในที่มันเรียก
+- [API Composition](/microservices/th/data-management/api-composition/) — การรวมผลลัพธ์ที่แต่ละ BFF ทำเพื่อประกอบการตอบกลับที่ปรับให้เข้ากับ client
 
 <Callout title="BFF เป็น pattern ที่ปรับรูปทีมพอ ๆ กับที่เป็นเรื่องทางเทคนิค">
 ชัยชนะที่แท้จริงของ BFF ไม่ใช่ payload ที่เล็กลง — แต่คือการขจัดคอขวดในการประสานงาน เมื่อทีม mobile เป็นเจ้าของ BFF ของตน มันก็ส่งงานได้ตามจังหวะของตัวเองโดยไม่ต้องเข้าคิวรออยู่หลังทีม client อื่นทุกทีม ถ้าองค์กรของคุณมีทีม platform เดียวที่จะเป็นเจ้าของ BFF ทั้งหมดอยู่แล้ว gateway เดียวที่ถูกแยกองค์ประกอบมาอย่างดีอาจให้บริการคุณได้ดีกว่า; BFF ให้ผลคุ้มค่าเมื่อทีม client แยกจากกันชัดเจนและต้องการความเป็นอิสระ

@@ -67,9 +67,9 @@ export const teamDiagram = `flowchart TB
 
 ## pattern ที่เกี่ยวข้อง
 
-- [Decompose by Business Capability](/microservices-design-from-zero-to-hero/th/decomposition/decompose-by-business-capability/) — capability แมปลงทีมได้อย่างหมดจด ทำให้การกำหนดความเป็นเจ้าของง่าย
-- [Decompose by Subdomain](/microservices-design-from-zero-to-hero/th/decomposition/decompose-by-subdomain/) — bounded context ให้แต่ละทีมมีส่วนที่ self-contained ไว้เป็นเจ้าของ
-- [Self-Contained Service](/microservices-design-from-zero-to-hero/th/decomposition/self-contained-service/) — ความเป็นอิสระตอน runtime และความเป็นอิสระของทีมเสริมแรงซึ่งกันและกัน ทีมที่ไม่ขึ้นกับใครตอน deploy ก็ต้องการ service ที่ไม่ขึ้นกับใครตอน runtime เช่นกัน
+- [Decompose by Business Capability](/microservices/th/decomposition/decompose-by-business-capability/) — capability แมปลงทีมได้อย่างหมดจด ทำให้การกำหนดความเป็นเจ้าของง่าย
+- [Decompose by Subdomain](/microservices/th/decomposition/decompose-by-subdomain/) — bounded context ให้แต่ละทีมมีส่วนที่ self-contained ไว้เป็นเจ้าของ
+- [Self-Contained Service](/microservices/th/decomposition/self-contained-service/) — ความเป็นอิสระตอน runtime และความเป็นอิสระของทีมเสริมแรงซึ่งกันและกัน ทีมที่ไม่ขึ้นกับใครตอน deploy ก็ต้องการ service ที่ไม่ขึ้นกับใครตอน runtime เช่นกัน
 
 <Callout title="inverse Conway manoeuvre">
 Conway's law มักถูกยกมาเป็นคำเตือน แต่มันก็เป็นคันโยกด้วย ถ้าสถาปัตยกรรมของคุณจะลงเอยดูเหมือนผังองค์กรของคุณอยู่ดี งั้นก็ *เลือกสถาปัตยกรรมที่คุณต้องการก่อนแล้วปั้นทีมให้เข้ากับมัน* การวาดเส้นแบ่งของทีมอย่างจงใจให้สะท้อนเส้นแบ่งของ service ที่คุณตั้งใจไว้ — แทนที่จะดัดแปลง service มาใส่ทีมที่มีอยู่แล้ว — คือวิธีที่คุณทำให้องค์กรผลักดันการออกแบบไปในทิศทางที่คุณต้องการ แทนที่จะผลักออกไปจากมัน

@@ -85,9 +85,9 @@ platform อ่านสิ่งนี้และในแต่ละ event `
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Service per Container](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/service-per-container/) — โมเดล runtime ทางเลือกสำหรับ service ที่คงที่ อยู่ยาว ที่คุณอยากควบคุมเอง
-- [Externalized Configuration](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/externalized-configuration/) — function ก็ยังรับการตั้งค่าจากค่า environment ที่ inject เข้ามา ไม่ใช่จากค่าคงที่ที่ฝังไว้
-- [Microservice Chassis](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/microservice-chassis/) — แม้แต่ function ก็ได้ประโยชน์จาก baseline ร่วมด้าน logging, metric และ config
+- [Service per Container](/microservices/th/deployment-and-cross-cutting/service-per-container/) — โมเดล runtime ทางเลือกสำหรับ service ที่คงที่ อยู่ยาว ที่คุณอยากควบคุมเอง
+- [Externalized Configuration](/microservices/th/deployment-and-cross-cutting/externalized-configuration/) — function ก็ยังรับการตั้งค่าจากค่า environment ที่ inject เข้ามา ไม่ใช่จากค่าคงที่ที่ฝังไว้
+- [Microservice Chassis](/microservices/th/deployment-and-cross-cutting/microservice-chassis/) — แม้แต่ function ก็ได้ประโยชน์จาก baseline ร่วมด้าน logging, metric และ config
 
 <Callout title="Serverless เป็นทางเลือก runtime ไม่ใช่ architecture">
 "Serverless" ไม่ได้หมายความว่าไม่มี server — มันหมายความว่าคุณไม่จัดการมัน มันเป็นวิธีหนึ่งในการรัน service ที่อยู่เคียงข้าง container ไม่ใช่ตัวแทนของ service boundary ที่ดี เลือกมันตาม workload: thumbnailer หรือ webhook handler เข้ากันได้ดีมาก ส่วน request path ที่ latency ต่ำซึ่งต้องอุ่นอยู่เสมอมักจะไม่

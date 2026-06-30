@@ -290,9 +290,9 @@ A practical rule: prefer **choreography** for short, simple flows with few parti
 
 ## Related patterns
 
-- [Database per Service](/microservices-design-from-zero-to-hero/en/data-management/database-per-service/) — the boundary that makes sagas necessary.
-- [Event Sourcing](/microservices-design-from-zero-to-hero/en/data-management/event-sourcing/) — a reliable way to publish the events a saga depends on.
-- [CQRS](/microservices-design-from-zero-to-hero/en/data-management/cqrs/) — often used to query the intermediate state a saga produces.
+- [Database per Service](/microservices/en/data-management/database-per-service/) — the boundary that makes sagas necessary.
+- [Event Sourcing](/microservices/en/data-management/event-sourcing/) — a reliable way to publish the events a saga depends on.
+- [CQRS](/microservices/en/data-management/cqrs/) — often used to query the intermediate state a saga produces.
 
 <Callout title="Compensation is not rollback">
 A compensating transaction is a new business action, not a database `ROLLBACK`. Releasing reserved credit, cancelling a shipment, or issuing a refund leaves a trail in the audit log — and sometimes you genuinely cannot fully undo a step (an email was already sent). Designing good compensations, and accepting that some are approximate, is the real work of building a saga.

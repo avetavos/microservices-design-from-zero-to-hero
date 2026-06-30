@@ -186,13 +186,13 @@ What it costs you:
 - **Cascading failures.** A slow callee makes the caller slow too; the caller's threads or connections pile up waiting, and the slowness propagates upstream until an entire chain of services is stuck. A single struggling service can take down everything that depends on it.
 - **Reduced availability.** The overall availability of a synchronous call chain is the product of each link's availability, so the more hops a request makes, the more fragile it becomes.
 
-Because of these failure modes, never make a raw synchronous call without protecting it. Wrap it with timeouts, retries, and a [Circuit Breaker](/microservices-design-from-zero-to-hero/en/reliability/circuit-breaker/) so a failing dependency fails fast instead of dragging the caller down with it. Where the interaction does not truly need an immediate answer, prefer [Messaging](/microservices-design-from-zero-to-hero/en/communication/messaging/) instead.
+Because of these failure modes, never make a raw synchronous call without protecting it. Wrap it with timeouts, retries, and a [Circuit Breaker](/microservices/en/reliability/circuit-breaker/) so a failing dependency fails fast instead of dragging the caller down with it. Where the interaction does not truly need an immediate answer, prefer [Messaging](/microservices/en/communication/messaging/) instead.
 
 ## Related patterns
 
-- [Messaging](/microservices-design-from-zero-to-hero/en/communication/messaging/) — the asynchronous alternative that removes temporal coupling.
-- [Service Discovery](/microservices-design-from-zero-to-hero/en/communication/service-discovery/) — how the client finds the address it sends the request to.
-- [API Gateway](/microservices-design-from-zero-to-hero/en/communication/api-gateway/) — often the front door through which external RPI calls arrive.
+- [Messaging](/microservices/en/communication/messaging/) — the asynchronous alternative that removes temporal coupling.
+- [Service Discovery](/microservices/en/communication/service-discovery/) — how the client finds the address it sends the request to.
+- [API Gateway](/microservices/en/communication/api-gateway/) — often the front door through which external RPI calls arrive.
 
 <Callout title="REST or gRPC?">
 Reach for REST at the system's edge and for public APIs, where human readability, broad tooling, and cacheable HTTP semantics matter most. Reach for gRPC for internal service-to-service traffic, where the strict schema, smaller payloads, and HTTP/2 streaming pay off — and where both ends are yours to regenerate when the contract changes.

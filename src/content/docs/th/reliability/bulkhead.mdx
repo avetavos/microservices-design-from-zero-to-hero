@@ -213,9 +213,9 @@ export const bulkheadDiagram = `flowchart TB
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Circuit Breaker](/microservices-design-from-zero-to-hero/th/reliability/circuit-breaker/) — bulkhead ควบคุมความเสียหาย จากนั้น breaker จะหยุดเรียก dependency ที่พังโดยสิ้นเชิง
-- [Retry and Timeout](/microservices-design-from-zero-to-hero/th/reliability/retry-and-timeout/) — กำหนดขอบเขตว่าการเรียกแต่ละครั้งจะถือ permit ได้นานแค่ไหน ซึ่งกันไม่ให้ช่องเต็มอยู่ตลอดกาล
-- [Rate Limiting](/microservices-design-from-zero-to-hero/th/reliability/rate-limiting/) — จำกัด *อัตรา* ของงาน ในขณะที่ bulkhead จำกัด *ความ concurrency* ของงาน
+- [Circuit Breaker](/microservices/th/reliability/circuit-breaker/) — bulkhead ควบคุมความเสียหาย จากนั้น breaker จะหยุดเรียก dependency ที่พังโดยสิ้นเชิง
+- [Retry and Timeout](/microservices/th/reliability/retry-and-timeout/) — กำหนดขอบเขตว่าการเรียกแต่ละครั้งจะถือ permit ได้นานแค่ไหน ซึ่งกันไม่ให้ช่องเต็มอยู่ตลอดกาล
+- [Rate Limiting](/microservices/th/reliability/rate-limiting/) — จำกัด *อัตรา* ของงาน ในขณะที่ bulkhead จำกัด *ความ concurrency* ของงาน
 
 <Callout title="ขีดจำกัดความ concurrency ไม่ใช่ rate limit">
 bulkhead จำกัดจำนวนการเรียกที่รัน *ในเวลาเดียวกัน* ไม่ใช่จำนวนต่อวินาที สองอย่างนี้มักถูกสับสน bulkhead ขนาดสองปล่อยให้การเรียกที่รวดเร็วหนึ่งพันครั้งไหลผ่านได้ในหนึ่งวินาทีหากแต่ละครั้งเสร็จเร็ว — มันจะ block ก็ต่อเมื่อมีมากกว่าสองครั้งกำลังทำงานพร้อมกันเท่านั้น เลือกใช้ bulkhead เมื่อคุณต้องการควบคุมว่า dependency หนึ่งจะถือทรัพยากรที่แชร์กันได้มากเพียงใดในคราวเดียว เลือกใช้ rate limiting เมื่อคุณต้องการจำกัด throughput ตามเวลา

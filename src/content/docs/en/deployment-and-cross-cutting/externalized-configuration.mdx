@@ -89,9 +89,9 @@ What it costs you:
 
 ## Related patterns
 
-- [Service per Container](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/service-per-container/) — externalized configuration is what makes the immutable container image truly environment-agnostic.
-- [Microservice Chassis](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/microservice-chassis/) — the chassis is typically the component that reads and validates the injected configuration.
-- [Serverless Deployment](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/serverless-deployment/) — functions take their settings the same way, from injected values rather than baked-in constants.
+- [Service per Container](/microservices/en/deployment-and-cross-cutting/service-per-container/) — externalized configuration is what makes the immutable container image truly environment-agnostic.
+- [Microservice Chassis](/microservices/en/deployment-and-cross-cutting/microservice-chassis/) — the chassis is typically the component that reads and validates the injected configuration.
+- [Serverless Deployment](/microservices/en/deployment-and-cross-cutting/serverless-deployment/) — functions take their settings the same way, from injected values rather than baked-in constants.
 
 <Callout title="Build the artifact once, configure it per place">
 The discipline is simple to state: code and defaults go in the image; everything that changes between environments comes from outside it. Get this right and a single tested artifact flows from staging to production untouched, with secrets supplied safely at the edge. Bake configuration in, and you give up the central promise of immutable deploys.

@@ -13,7 +13,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## บริบท
 
-คุณมี [Transactional Outbox](/microservices-design-from-zero-to-hero/th/transactional-messaging/transactional-outbox/) และคุณต้องการ relay เพื่อส่งแถวของมัน [Transaction Log Tailing](/microservices-design-from-zero-to-hero/th/transactional-messaging/transaction-log-tailing/) มีประสิทธิภาพแต่นำ CDC stack มาด้วย — replication slot, connector, log retention — ที่อาจมากเกินกว่าที่ทีมของคุณอยากรัน โดยเฉพาะในช่วงแรก คุณต้องการ relay ที่คุณสร้างและดำเนินการได้ด้วยเพียงแอปพลิเคชันและฐานข้อมูลของมันเท่านั้น
+คุณมี [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/) และคุณต้องการ relay เพื่อส่งแถวของมัน [Transaction Log Tailing](/microservices/th/transactional-messaging/transaction-log-tailing/) มีประสิทธิภาพแต่นำ CDC stack มาด้วย — replication slot, connector, log retention — ที่อาจมากเกินกว่าที่ทีมของคุณอยากรัน โดยเฉพาะในช่วงแรก คุณต้องการ relay ที่คุณสร้างและดำเนินการได้ด้วยเพียงแอปพลิเคชันและฐานข้อมูลของมันเท่านั้น
 
 ## ปัญหา
 
@@ -25,7 +25,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 รัน **polling publisher**: background loop ที่ในช่วงเวลาคงที่ เลือกชุดของแถวที่ยังไม่ถูกส่งจาก outbox (เก่าสุดก่อน) publish แต่ละอันไปยัง broker และทำเครื่องหมายว่าส่งแล้วเมื่อ broker ตอบรับ เลือกด้วย row lock ที่ข้ามแถวที่ถูก lock อยู่แล้ว เพื่อให้ relay หลายตัวรันได้อย่างปลอดภัยโดยไม่อ้างสิทธิ์แถวเดียวกัน หลังจาก publish ให้ลบแถวหรือตั้ง timestamp `published_at` เพื่อไม่ให้มันถูกหยิบขึ้นมาอีก
 
-การส่งยังคงเป็น at least once: ถ้า relay crash หลัง publish แต่ก่อนทำเครื่องหมายแถวว่าส่งแล้ว poll ครั้งถัดไปจะ publish มันซ้ำ นั่นยอมรับได้ — [Idempotent Consumer](/microservices-design-from-zero-to-hero/th/transactional-messaging/idempotent-consumer/) ที่ปลายอีกด้านดูดซับ duplicate
+การส่งยังคงเป็น at least once: ถ้า relay crash หลัง publish แต่ก่อนทำเครื่องหมายแถวว่าส่งแล้ว poll ครั้งถัดไปจะ publish มันซ้ำ นั่นยอมรับได้ — [Idempotent Consumer](/microservices/th/transactional-messaging/idempotent-consumer/) ที่ปลายอีกด้านดูดซับ duplicate
 
 export const pollingDiagram = `sequenceDiagram
   participant R as Polling Relay
@@ -202,9 +202,9 @@ loop อ้างสิทธิ์ชุดด้วย `FOR UPDATE SKIP LOCKED
 
 ## แพตเทิร์นที่เกี่ยวข้อง
 
-- [Transactional Outbox](/microservices-design-from-zero-to-hero/th/transactional-messaging/transactional-outbox/) — ผลิตแถวที่ relay นี้ poll
-- [Transaction Log Tailing](/microservices-design-from-zero-to-hero/th/transactional-messaging/transaction-log-tailing/) — relay ที่ latency ต่ำกว่าแต่ซับซ้อนกว่า
-- [Idempotent Consumer](/microservices-design-from-zero-to-hero/th/transactional-messaging/idempotent-consumer/) — จำเป็นเพราะ polling ส่งแบบ at least once
+- [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/) — ผลิตแถวที่ relay นี้ poll
+- [Transaction Log Tailing](/microservices/th/transactional-messaging/transaction-log-tailing/) — relay ที่ latency ต่ำกว่าแต่ซับซ้อนกว่า
+- [Idempotent Consumer](/microservices/th/transactional-messaging/idempotent-consumer/) — จำเป็นเพราะ polling ส่งแบบ at least once
 
 <Callout title="ทำเครื่องหมายว่าส่งแล้วใน transaction เดียวกันกับที่ publish">
 เวอร์ชันที่อันตรายของแพตเทิร์นนี้ publish แถวแล้วทำเครื่องหมายว่าส่งแล้วในขั้นตอนแยกต่างหาก จงทำการอ้างสิทธิ์และการทำเครื่องหมายใน transaction เดียวด้วย `FOR UPDATE SKIP LOCKED` และยอมรับว่าการ crash กลาง loop จะ publish แถวซ้ำ การพยายามทำให้ polling เป็น exactly-once มักแค่ย้าย race ไปอยู่ที่ที่แยบยลกว่า — พึ่งพา idempotent consumer แทน

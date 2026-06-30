@@ -64,8 +64,8 @@ export const overviewDiagram = `flowchart LR
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Remote Procedure Invocation](/microservices-design-from-zero-to-hero/th/communication/remote-procedure-invocation/) — เริ่มที่นี่ รูปแบบที่ง่ายที่สุด
-- [Messaging](/microservices-design-from-zero-to-hero/th/communication/messaging/) — ทางเลือกแบบ asynchronous
+- [Remote Procedure Invocation](/microservices/th/communication/remote-procedure-invocation/) — เริ่มที่นี่ รูปแบบที่ง่ายที่สุด
+- [Messaging](/microservices/th/communication/messaging/) — ทางเลือกแบบ asynchronous
 
 <Callout title="ไม่มีรูปแบบใดดีที่สุดเพียงรูปแบบเดียว">
 ระบบที่สมบูรณ์ผสมผสานรูปแบบต่าง ๆ อย่างจงใจ ผู้ใช้ที่คลิก "สั่งซื้อ" ต้องการคำตอบทันที ดังนั้นขอบของระบบจึงมักเป็น synchronous แต่งานที่คำสั่งซื้อนั้นจุดชนวน — การเรียกเก็บเงิน การจัดส่ง การแจ้งเตือน — กระจายออกไปแบบ asynchronous เพื่อให้บริการแจ้งเตือนที่ช้าไม่มีวันบล็อกการขายได้ เลือกรูปแบบตามการโต้ตอบ ไม่ใช่ตามทั้งระบบ

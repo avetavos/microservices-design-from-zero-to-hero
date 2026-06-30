@@ -205,9 +205,9 @@ export const tokenBucket = `flowchart LR
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Circuit Breaker](/microservices-design-from-zero-to-hero/th/reliability/circuit-breaker/) — ปกป้อง *คุณ* จาก dependency ที่ล้มเหลว ส่วน rate limiting ปกป้องบริการจาก *ผู้เรียกของมัน*
-- [Bulkhead](/microservices-design-from-zero-to-hero/th/reliability/bulkhead/) — จำกัดความ concurrency ในขณะที่ rate limiting จำกัด throughput ทั้งสองประกอบกันได้ดี
-- [Retry and Timeout](/microservices-design-from-zero-to-hero/th/reliability/retry-and-timeout/) — `429` พร้อม `Retry-After` บอกตรรกะการ retry ของ client อย่างชัดเจนว่าควรถอยกลับนานเท่าใด
+- [Circuit Breaker](/microservices/th/reliability/circuit-breaker/) — ปกป้อง *คุณ* จาก dependency ที่ล้มเหลว ส่วน rate limiting ปกป้องบริการจาก *ผู้เรียกของมัน*
+- [Bulkhead](/microservices/th/reliability/bulkhead/) — จำกัดความ concurrency ในขณะที่ rate limiting จำกัด throughput ทั้งสองประกอบกันได้ดี
+- [Retry and Timeout](/microservices/th/reliability/retry-and-timeout/) — `429` พร้อม `Retry-After` บอกตรรกะการ retry ของ client อย่างชัดเจนว่าควรถอยกลับนานเท่าใด
 
 <Callout title="การ shed load เป็นฟีเจอร์ ไม่ใช่ความล้มเหลว">
 การปฏิเสธ request รู้สึกเหมือนการยอมแพ้ แต่ที่ขอบของกำลัง มันคือทางเลือกที่รับผิดชอบ บริการที่รับทุกอย่างแล้ว timeout กับทุกอย่างให้บริการ *ใครไม่ได้เลย* บริการที่ shed ส่วนล้นและ return `429` ที่ชัดเจนยังคงให้บริการคนส่วนใหญ่ได้ดีและบอกที่เหลือให้กลับมาในไม่ช้า การตัดสินใจว่าจะ shed *อะไร* ก่อน — traffic ที่มีลำดับความสำคัญต่ำ ผู้ใช้ที่ไม่ระบุตัวตน client ที่เสียงดังที่สุด — เปลี่ยนการ shed load จากเครื่องมือทื่อ ๆ ให้กลายเป็นกลยุทธ์การเสื่อมประสิทธิภาพที่จงใจ

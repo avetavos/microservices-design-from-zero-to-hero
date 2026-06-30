@@ -13,7 +13,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## บริบท
 
-คุณมี [Transactional Outbox](/microservices-design-from-zero-to-hero/th/transactional-messaging/transactional-outbox/): การเปลี่ยนแปลงทางธุรกิจ commit เคียงข้างแถว outbox ใน local transaction เดียว ตอนนี้คุณต้องการ relay — คอมโพเนนต์ที่นำแถว outbox ที่ commit แล้วไป publish ยัง broker คุณต้องการให้การส่งรวดเร็วและเพิ่มภาระบนฐานข้อมูลแอปพลิเคชันให้น้อยที่สุดเท่าที่จะเป็นไปได้
+คุณมี [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/): การเปลี่ยนแปลงทางธุรกิจ commit เคียงข้างแถว outbox ใน local transaction เดียว ตอนนี้คุณต้องการ relay — คอมโพเนนต์ที่นำแถว outbox ที่ commit แล้วไป publish ยัง broker คุณต้องการให้การส่งรวดเร็วและเพิ่มภาระบนฐานข้อมูลแอปพลิเคชันให้น้อยที่สุดเท่าที่จะเป็นไปได้
 
 ## ปัญหา
 
@@ -90,9 +90,9 @@ resume → continue streaming WAL after lsn 24197848
 
 ## แพตเทิร์นที่เกี่ยวข้อง
 
-- [Transactional Outbox](/microservices-design-from-zero-to-hero/th/transactional-messaging/transactional-outbox/) — จัดหาแถวที่ relay นี้ tail
-- [Polling Publisher](/microservices-design-from-zero-to-hero/th/transactional-messaging/polling-publisher/) — ทางเลือก relay ที่ง่ายกว่าเมื่อ CDC มากเกินไปที่จะดำเนินการ
-- [Idempotent Consumer](/microservices-design-from-zero-to-hero/th/transactional-messaging/idempotent-consumer/) — จำเป็นเพราะ log tailing ก็ส่งแบบ at least once เช่นกัน
+- [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/) — จัดหาแถวที่ relay นี้ tail
+- [Polling Publisher](/microservices/th/transactional-messaging/polling-publisher/) — ทางเลือก relay ที่ง่ายกว่าเมื่อ CDC มากเกินไปที่จะดำเนินการ
+- [Idempotent Consumer](/microservices/th/transactional-messaging/idempotent-consumer/) — จำเป็นเพราะ log tailing ก็ส่งแบบ at least once เช่นกัน
 
 <Callout title="Tailing log ไม่ใช่ table">
 การเปลี่ยนแปลงสำคัญคือ relay ไม่ถามฐานข้อมูลว่า "มีแถวใหม่ไหม?" อีกต่อไป มันฟัง change stream เดียวกันกับที่ฐานข้อมูลใช้ป้อนให้ replica ของตัวเอง สตรีมนั้นคงทนถาวร เรียงลำดับ และถูกผลิตอยู่แล้ว — log tailing แค่ยืมมันมาใช้ ราคาที่จ่ายคือ CDC infrastructure ที่คุณต้องดำเนินการและพึ่งพาในตอนนี้

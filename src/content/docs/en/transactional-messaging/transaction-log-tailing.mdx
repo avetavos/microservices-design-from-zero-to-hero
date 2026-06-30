@@ -13,7 +13,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## Context
 
-You have a [Transactional Outbox](/microservices-design-from-zero-to-hero/en/transactional-messaging/transactional-outbox/): business changes commit alongside an outbox row in one local transaction. Now you need the relay — the component that takes committed outbox rows and publishes them to the broker. You want delivery to be prompt and to add as little load on the application database as possible.
+You have a [Transactional Outbox](/microservices/en/transactional-messaging/transactional-outbox/): business changes commit alongside an outbox row in one local transaction. Now you need the relay — the component that takes committed outbox rows and publishes them to the broker. You want delivery to be prompt and to add as little load on the application database as possible.
 
 ## Problem
 
@@ -90,9 +90,9 @@ What it costs you:
 
 ## Related patterns
 
-- [Transactional Outbox](/microservices-design-from-zero-to-hero/en/transactional-messaging/transactional-outbox/) — supplies the rows this relay tails.
-- [Polling Publisher](/microservices-design-from-zero-to-hero/en/transactional-messaging/polling-publisher/) — the simpler relay alternative when CDC is too much to operate.
-- [Idempotent Consumer](/microservices-design-from-zero-to-hero/en/transactional-messaging/idempotent-consumer/) — needed because log tailing also delivers at least once.
+- [Transactional Outbox](/microservices/en/transactional-messaging/transactional-outbox/) — supplies the rows this relay tails.
+- [Polling Publisher](/microservices/en/transactional-messaging/polling-publisher/) — the simpler relay alternative when CDC is too much to operate.
+- [Idempotent Consumer](/microservices/en/transactional-messaging/idempotent-consumer/) — needed because log tailing also delivers at least once.
 
 <Callout title="Tailing the log, not the table">
 The key shift is that the relay no longer asks the database "any new rows?" It listens to the same change stream the database uses to feed its own replicas. That stream is durable, ordered, and already being produced — log tailing just borrows it. The price is the CDC infrastructure you now operate and depend on.

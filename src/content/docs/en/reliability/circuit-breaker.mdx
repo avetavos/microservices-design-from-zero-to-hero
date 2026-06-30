@@ -287,9 +287,9 @@ What it costs you:
 
 ## Related patterns
 
-- [Retry and Timeout](/microservices-design-from-zero-to-hero/en/reliability/retry-and-timeout/) — a timeout is what turns a hang into a counted failure the breaker can act on.
-- [Bulkhead](/microservices-design-from-zero-to-hero/en/reliability/bulkhead/) — contains the resources a dependency can consume even before the breaker trips.
-- [Rate Limiting](/microservices-design-from-zero-to-hero/en/reliability/rate-limiting/) — protects the dependency on the receiving end of the calls a breaker controls.
+- [Retry and Timeout](/microservices/en/reliability/retry-and-timeout/) — a timeout is what turns a hang into a counted failure the breaker can act on.
+- [Bulkhead](/microservices/en/reliability/bulkhead/) — contains the resources a dependency can consume even before the breaker trips.
+- [Rate Limiting](/microservices/en/reliability/rate-limiting/) — protects the dependency on the receiving end of the calls a breaker controls.
 
 <Callout title="A breaker needs a timeout to work">
 A circuit breaker counts failures, and a hung call is not a failure until something declares it one. Without a per-call timeout, a slow dependency keeps every probe waiting indefinitely, the failure count never rises, and the breaker never trips. Always pair a breaker with a hard timeout on the call it wraps — the timeout produces the failures the breaker is designed to count.

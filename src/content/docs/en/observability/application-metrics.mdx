@@ -174,8 +174,8 @@ What it costs you:
 
 ## Related patterns
 
-- [Distributed Tracing](/microservices-design-from-zero-to-hero/en/observability/distributed-tracing/) — when a latency metric spikes, a trace shows you which hop caused it.
-- [Health Check API](/microservices-design-from-zero-to-hero/en/observability/health-check-api/) — health is a binary check; metrics reveal the gradual decline that precedes it.
+- [Distributed Tracing](/microservices/en/observability/distributed-tracing/) — when a latency metric spikes, a trace shows you which hop caused it.
+- [Health Check API](/microservices/en/observability/health-check-api/) — health is a binary check; metrics reveal the gradual decline that precedes it.
 
 <Callout title="Pick the right signal for the question">
 Reach for metrics to answer "how is the system as a whole, over time?" and to drive alerts. Reach for traces and logs to answer "what happened to this one request?" A common anti-pattern is trying to recover per-request detail from metrics by adding high-cardinality labels — it bankrupts your metrics store without giving you what logs and traces already provide. Let each signal do its job.

@@ -290,9 +290,9 @@ export const orchestrationDiagram = `sequenceDiagram
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Database per Service](/microservices-design-from-zero-to-hero/th/data-management/database-per-service/) — ขอบเขตที่ทำให้ saga จำเป็น
-- [Event Sourcing](/microservices-design-from-zero-to-hero/th/data-management/event-sourcing/) — วิธีที่น่าเชื่อถือในการ publish event ที่ saga พึ่งพา
-- [CQRS](/microservices-design-from-zero-to-hero/th/data-management/cqrs/) — มักใช้เพื่อ query สถานะกลางที่ saga สร้างขึ้น
+- [Database per Service](/microservices/th/data-management/database-per-service/) — ขอบเขตที่ทำให้ saga จำเป็น
+- [Event Sourcing](/microservices/th/data-management/event-sourcing/) — วิธีที่น่าเชื่อถือในการ publish event ที่ saga พึ่งพา
+- [CQRS](/microservices/th/data-management/cqrs/) — มักใช้เพื่อ query สถานะกลางที่ saga สร้างขึ้น
 
 <Callout title="การ compensate ไม่ใช่การ rollback">
 compensating transaction เป็น business action ใหม่ ไม่ใช่ `ROLLBACK` ของฐานข้อมูล การปล่อยเครดิตที่จองไว้ การยกเลิก shipment หรือการคืนเงิน ทิ้งร่องรอยไว้ใน audit log — และบางครั้งคุณก็ไม่สามารถยกเลิก step หนึ่งได้อย่างสมบูรณ์จริง ๆ (อีเมลถูกส่งออกไปแล้ว) การออกแบบ compensation ที่ดี และการยอมรับว่าบางตัวเป็นเพียงค่าประมาณ คืองานจริงของการสร้าง saga

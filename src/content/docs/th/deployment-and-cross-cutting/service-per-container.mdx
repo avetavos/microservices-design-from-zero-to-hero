@@ -128,9 +128,9 @@ spec:
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Externalized Configuration](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/externalized-configuration/) — เก็บการตั้งค่าเฉพาะสภาพแวดล้อมไว้นอก image เพื่อให้ image เดียวรันได้ทุกที่
-- [Service Mesh](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/service-mesh/) — เพิ่ม sidecar container ข้าง ๆ แต่ละ service container เพื่อ networking ที่สอดคล้องกัน
-- [Serverless Deployment](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/serverless-deployment/) — โมเดล runtime ทางเลือกเมื่อคุณไม่อยากรัน container ด้วยตัวเอง
+- [Externalized Configuration](/microservices/th/deployment-and-cross-cutting/externalized-configuration/) — เก็บการตั้งค่าเฉพาะสภาพแวดล้อมไว้นอก image เพื่อให้ image เดียวรันได้ทุกที่
+- [Service Mesh](/microservices/th/deployment-and-cross-cutting/service-mesh/) — เพิ่ม sidecar container ข้าง ๆ แต่ละ service container เพื่อ networking ที่สอดคล้องกัน
+- [Serverless Deployment](/microservices/th/deployment-and-cross-cutting/serverless-deployment/) — โมเดล runtime ทางเลือกเมื่อคุณไม่อยากรัน container ด้วยตัวเอง
 
 <Callout title="หนึ่ง service ต่อหนึ่ง container คือหัวใจ">
 มันชวนให้ประหยัดไม่กี่สตางค์ด้วยการยัดหลาย service เข้าไปใน image เดียว จงต้านทานมันไว้ คุณค่าทั้งหมดของ pattern นี้ — การ deploy อิสระ, scale อิสระ, roll back อิสระ และ resource limit ที่สะอาด — มาจากการแมปแบบหนึ่งต่อหนึ่งระหว่าง service กับ container ของมัน รวมมันเข้าด้วยกัน แล้วคุณก็สร้าง monolith เล็ก ๆ ขึ้นมาใหม่ภายใน container

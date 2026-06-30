@@ -213,9 +213,9 @@ What it costs you:
 
 ## Related patterns
 
-- [Circuit Breaker](/microservices-design-from-zero-to-hero/en/reliability/circuit-breaker/) — bulkheads contain the damage; a breaker then stops calling the broken dependency entirely.
-- [Retry and Timeout](/microservices-design-from-zero-to-hero/en/reliability/retry-and-timeout/) — bounds how long each call holds a permit, which keeps a compartment from staying full forever.
-- [Rate Limiting](/microservices-design-from-zero-to-hero/en/reliability/rate-limiting/) — caps the *rate* of work, where a bulkhead caps the *concurrency* of work.
+- [Circuit Breaker](/microservices/en/reliability/circuit-breaker/) — bulkheads contain the damage; a breaker then stops calling the broken dependency entirely.
+- [Retry and Timeout](/microservices/en/reliability/retry-and-timeout/) — bounds how long each call holds a permit, which keeps a compartment from staying full forever.
+- [Rate Limiting](/microservices/en/reliability/rate-limiting/) — caps the *rate* of work, where a bulkhead caps the *concurrency* of work.
 
 <Callout title="Concurrency limit, not a rate limit">
 A bulkhead caps how many calls run *at the same time*, not how many per second. The two often get confused. A bulkhead of size two lets a thousand quick calls flow through in a second if each finishes fast — it only ever blocks when more than two are in flight simultaneously. Reach for a bulkhead when you want to contain how much of a shared resource one dependency can hold at once; reach for rate limiting when you want to cap throughput over time.

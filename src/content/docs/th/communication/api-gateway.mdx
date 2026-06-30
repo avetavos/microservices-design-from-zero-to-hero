@@ -96,13 +96,13 @@ routes:
 - **มันอาจกลายเป็นคอขวดหรือ God-object** เมื่อกฎการจัดเส้นทาง การแปลงข้อมูล และการรวมผลลัพธ์สะสมมากขึ้น gateway ก็เติบโตเป็นองค์ประกอบใหญ่ที่ใช้ร่วมกันซึ่งทุกทีมต้องแก้ — และเป็นคอขวดในการพัฒนาเมื่อการเปลี่ยนแปลงของทีมหนึ่งต้องรออยู่หลังของอีกทีม
 - **ความเสี่ยงของการทำให้ทั่วไปเกินไป** gateway เดียวที่พยายามให้บริการ web app, mobile app และ third-party integration ให้ดีเท่ากันทั้งหมด มักให้บริการไม่ดีกับใครเลย เพราะความต้องการของแต่ละฝ่ายต่างกัน
 
-ต้นทุนข้อสุดท้ายนั้นคือแรงจูงใจของ pattern ถัดไป: แทนที่จะมี gateway เดียวสำหรับทุกคน ให้ client แต่ละชนิดมี gateway ของตัวเอง ดู [Backends for Frontends](/microservices-design-from-zero-to-hero/th/communication/backends-for-frontends/)
+ต้นทุนข้อสุดท้ายนั้นคือแรงจูงใจของ pattern ถัดไป: แทนที่จะมี gateway เดียวสำหรับทุกคน ให้ client แต่ละชนิดมี gateway ของตัวเอง ดู [Backends for Frontends](/microservices/th/communication/backends-for-frontends/)
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Backends for Frontends](/microservices-design-from-zero-to-hero/th/communication/backends-for-frontends/) — gateway ที่ปรับแต่งหนึ่งตัวต่อ client หนึ่งชนิด แก้ปัญหาความเสี่ยงของ God-object
-- [Service Discovery](/microservices-design-from-zero-to-hero/th/communication/service-discovery/) — วิธีที่ gateway ค้นหา instance ที่ยังมีชีวิตอยู่ของบริการที่มันจัดเส้นทางไปหา
-- [API Composition](/microservices-design-from-zero-to-hero/th/data-management/api-composition/) — เทคนิคการรวมผลลัพธ์ที่ gateway ใช้เพื่อรวมข้อมูลจากหลายบริการ
+- [Backends for Frontends](/microservices/th/communication/backends-for-frontends/) — gateway ที่ปรับแต่งหนึ่งตัวต่อ client หนึ่งชนิด แก้ปัญหาความเสี่ยงของ God-object
+- [Service Discovery](/microservices/th/communication/service-discovery/) — วิธีที่ gateway ค้นหา instance ที่ยังมีชีวิตอยู่ของบริการที่มันจัดเส้นทางไปหา
+- [API Composition](/microservices/th/data-management/api-composition/) — เทคนิคการรวมผลลัพธ์ที่ gateway ใช้เพื่อรวมข้อมูลจากหลายบริการ
 
 <Callout title="gateway จัดเส้นทาง; มันไม่ได้เป็นเจ้าของ business logic">
 มันน่าดึงดูดที่จะดัน business logic "นิดเดียว" เข้าไปใน gateway — การคำนวณส่วนลดตรงนี้ การตรวจสอบคำสั่งซื้อตรงนั้น จงต้านทานมันไว้ หน้าที่ของ gateway คือการจัดเส้นทาง การรวมผลลัพธ์ และ cross-cutting concerns กฎทางธุรกิจเป็นของบริการที่เป็นเจ้าของ เมื่อมันรั่วไหลเข้าไปใน gateway คุณก็ได้สร้าง distributed monolith ขึ้นมาใหม่โดยมี gateway เป็นแกนกลางที่ซ่อนอยู่

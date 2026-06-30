@@ -146,13 +146,13 @@ export const chassisDiagram = `flowchart TB
 - **การ coupling และแรงเสียดทานด้านการทำเวอร์ชัน** ทุก service พึ่งพา chassis การเปลี่ยนแบบ breaking บังคับให้ต้อง upgrade แบบประสานงานกัน และ chassis ที่เก่าค้างสามารถรั้ง service ไว้ได้
 - **ความเสี่ยงของการบวม** chassis ที่พยายามทำทุกอย่างจะหนักและมีความเห็นมากเกินไป จงให้มันโฟกัสที่ cross-cutting concerns จริง ๆ ไม่ใช่ helper เชิงธุรกิจ
 
-ข้อสังเกตที่ใช้ได้จริง: chassis จัดการเรื่อง *in-process* (config, logging, metric, health) ในขณะที่ [Service Mesh](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/service-mesh/) จัดการ networking *between-process* หลายทีมใช้ทั้งสองอย่าง
+ข้อสังเกตที่ใช้ได้จริง: chassis จัดการเรื่อง *in-process* (config, logging, metric, health) ในขณะที่ [Service Mesh](/microservices/th/deployment-and-cross-cutting/service-mesh/) จัดการ networking *between-process* หลายทีมใช้ทั้งสองอย่าง
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Externalized Configuration](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/externalized-configuration/) — chassis มักเป็นตัวที่อ่านและใช้ externalized config
-- [Service Mesh](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/service-mesh/) — จัดการ networking cross-cutting concerns ที่ chassis ปล่อยให้ sidecar ทำ
-- [Service per Container](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/service-per-container/) — service ที่ build บน chassis ก็ยังถูก package และรันแบบหนึ่ง service ต่อหนึ่ง container
+- [Externalized Configuration](/microservices/th/deployment-and-cross-cutting/externalized-configuration/) — chassis มักเป็นตัวที่อ่านและใช้ externalized config
+- [Service Mesh](/microservices/th/deployment-and-cross-cutting/service-mesh/) — จัดการ networking cross-cutting concerns ที่ chassis ปล่อยให้ sidecar ทำ
+- [Service per Container](/microservices/th/deployment-and-cross-cutting/service-per-container/) — service ที่ build บน chassis ก็ยังถูก package และรันแบบหนึ่ง service ต่อหนึ่ง container
 
 <Callout title="chassis เป็นจุดเริ่มต้น ไม่ใช่กรงขัง">
 เป้าหมายคือการกำจัด plumbing ที่ไม่สร้างความแตกต่าง ไม่ใช่การกำหนดว่าทุก service ต้อง build อย่างไร จงให้ chassis โฟกัสที่ cross-cutting concerns จริง ๆ — config, logging, metric, health, discovery — และปล่อยให้ service มีอิสระเหนือการออกแบบ domain วันที่ chassis เริ่มสั่งว่าคุณต้อง model order อย่างไร มันก็ล้ำเส้นไปแล้ว

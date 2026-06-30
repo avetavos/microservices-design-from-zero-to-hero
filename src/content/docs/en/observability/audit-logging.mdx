@@ -83,8 +83,8 @@ What it costs you:
 
 ## Related patterns
 
-- [Log Aggregation](/microservices-design-from-zero-to-hero/en/observability/log-aggregation/) — operational logs are the diagnostic counterpart; audit logs deliberately do not share their pipeline or guarantees.
-- [Distributed Tracing](/microservices-design-from-zero-to-hero/en/observability/distributed-tracing/) — share a correlation or trace id so an audit record can be tied back to the request that produced it.
+- [Log Aggregation](/microservices/en/observability/log-aggregation/) — operational logs are the diagnostic counterpart; audit logs deliberately do not share their pipeline or guarantees.
+- [Distributed Tracing](/microservices/en/observability/distributed-tracing/) — share a correlation or trace id so an audit record can be tied back to the request that produced it.
 
 <Callout title="An audit log is evidence, not a debug log with a fancy name">
 The temptation is to add an `AUDIT` level to your existing logger and call it done. That fails the moment integrity matters: anyone who can write debug logs can forge or erase your "evidence," and your short retention deletes it before the audit arrives. Audit logging earns its name only through *separation and guarantees* — its own append-only store, its own retention, its own access controls. If a record can be quietly changed, it is not an audit record.

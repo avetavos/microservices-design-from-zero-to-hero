@@ -128,9 +128,9 @@ What it costs you:
 
 ## Related patterns
 
-- [Externalized Configuration](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/externalized-configuration/) — keeps environment-specific settings out of the image so one image runs everywhere.
-- [Service Mesh](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/service-mesh/) — adds a sidecar container alongside each service container for consistent networking.
-- [Serverless Deployment](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/serverless-deployment/) — an alternative runtime model when you would rather not run the containers yourself.
+- [Externalized Configuration](/microservices/en/deployment-and-cross-cutting/externalized-configuration/) — keeps environment-specific settings out of the image so one image runs everywhere.
+- [Service Mesh](/microservices/en/deployment-and-cross-cutting/service-mesh/) — adds a sidecar container alongside each service container for consistent networking.
+- [Serverless Deployment](/microservices/en/deployment-and-cross-cutting/serverless-deployment/) — an alternative runtime model when you would rather not run the containers yourself.
 
 <Callout title="One service per container is the point">
 It is tempting to save a few cents by cramming several services into one image. Resist it. The whole value of the pattern — independent deploys, independent scaling, independent rollback, and clean resource limits — comes from the one-to-one mapping between a service and its container. Bundle them, and you have rebuilt a small monolith inside a container.

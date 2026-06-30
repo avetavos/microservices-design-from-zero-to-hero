@@ -205,9 +205,9 @@ What it costs you:
 
 ## Related patterns
 
-- [Circuit Breaker](/microservices-design-from-zero-to-hero/en/reliability/circuit-breaker/) — protects *you* from a failing dependency; rate limiting protects a service from *its callers*.
-- [Bulkhead](/microservices-design-from-zero-to-hero/en/reliability/bulkhead/) — caps concurrency where rate limiting caps throughput; the two compose well.
-- [Retry and Timeout](/microservices-design-from-zero-to-hero/en/reliability/retry-and-timeout/) — a `429` with `Retry-After` tells a client's retry logic exactly how long to back off.
+- [Circuit Breaker](/microservices/en/reliability/circuit-breaker/) — protects *you* from a failing dependency; rate limiting protects a service from *its callers*.
+- [Bulkhead](/microservices/en/reliability/bulkhead/) — caps concurrency where rate limiting caps throughput; the two compose well.
+- [Retry and Timeout](/microservices/en/reliability/retry-and-timeout/) — a `429` with `Retry-After` tells a client's retry logic exactly how long to back off.
 
 <Callout title="Shedding load is a feature, not a failure">
 Rejecting a request feels like giving up, but at the edge of capacity it is the responsible choice. A service that admits everything and then times out on everything serves *no one*; a service that sheds the overflow and returns a clear `429` keeps serving the majority well and tells the rest to come back shortly. Deciding *what* to shed first — low-priority traffic, anonymous users, the noisiest client — turns load shedding from a blunt instrument into a deliberate degradation strategy.

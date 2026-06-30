@@ -191,15 +191,15 @@ What you gain:
 
 What it costs you:
 
-- **Querying is hard.** The event store is great at "give me one entity's events" and poor at "find all accounts with a negative balance". Event Sourcing therefore almost always pairs with [CQRS](/microservices-design-from-zero-to-hero/en/data-management/cqrs/), which builds queryable read models from the stream.
+- **Querying is hard.** The event store is great at "give me one entity's events" and poor at "find all accounts with a negative balance". Event Sourcing therefore almost always pairs with [CQRS](/microservices/en/data-management/cqrs/), which builds queryable read models from the stream.
 - **Replay cost.** Folding a long event history on every load is expensive, so you periodically save a **snapshot** and replay only the events after it.
 - **Schema evolution and eventual consistency.** Events are immutable, so changing their shape over time requires versioning and upcasting old events. And anything built from the stream — read models, other services — is eventually consistent.
 
 ## Related patterns
 
-- [CQRS](/microservices-design-from-zero-to-hero/en/data-management/cqrs/) — the standard partner that makes an event-sourced system queryable.
-- [Saga](/microservices-design-from-zero-to-hero/en/data-management/saga/) — sagas rely on the reliable events an event store emits.
-- [Database per Service](/microservices-design-from-zero-to-hero/en/data-management/database-per-service/) — each service may choose Event Sourcing as its private storage model.
+- [CQRS](/microservices/en/data-management/cqrs/) — the standard partner that makes an event-sourced system queryable.
+- [Saga](/microservices/en/data-management/saga/) — sagas rely on the reliable events an event store emits.
+- [Database per Service](/microservices/en/data-management/database-per-service/) — each service may choose Event Sourcing as its private storage model.
 
 <Callout title="Events are immutable facts">
 A stored event records something that already happened — it is in the past tense and it never changes. You correct a mistake by appending a new compensating event (a reversal), not by editing or deleting an old one. Treating the log as append-only is what gives Event Sourcing its audit trail and its reliable publishing in the first place.

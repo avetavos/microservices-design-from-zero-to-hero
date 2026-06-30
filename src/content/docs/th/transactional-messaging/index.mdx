@@ -52,8 +52,8 @@ export const dualWriteDiagram = `sequenceDiagram
 
 ## แพตเทิร์นที่เกี่ยวข้อง
 
-- [Saga](/microservices-design-from-zero-to-hero/th/data-management/saga/) — พึ่งพาการ publish event ที่เชื่อถือได้ในทุกขั้นตอน
-- [Event Sourcing](/microservices-design-from-zero-to-hero/th/data-management/event-sourcing/) — อีกวิธีหนึ่งในการทำให้ event เป็นการเขียนเดียวกันกับการเปลี่ยนแปลง state
+- [Saga](/microservices/th/data-management/saga/) — พึ่งพาการ publish event ที่เชื่อถือได้ในทุกขั้นตอน
+- [Event Sourcing](/microservices/th/data-management/event-sourcing/) — อีกวิธีหนึ่งในการทำให้ event เป็นการเขียนเดียวกันกับการเปลี่ยนแปลง state
 
 <Callout title="สองการเขียน หนึ่งความจริง">
 ทั้งโมดูลตั้งอยู่บนการเคลื่อนไหวเดียว: อย่าไว้ใจการเขียนสองครั้งที่อิสระต่อกันให้เกิดทั้งคู่ เลือกระบบเดียว — ฐานข้อมูล — เป็น source of truth บันทึกข้อความไว้ที่นั่นใน transaction เดียวกัน และมองว่าการส่งเป็นงานแยกต่างหากที่ retry ได้จนกว่าจะสำเร็จ ที่เหลือเป็นแค่รายละเอียด

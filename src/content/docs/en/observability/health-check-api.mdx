@@ -200,8 +200,8 @@ What it costs you:
 
 ## Related patterns
 
-- [Application Metrics](/microservices-design-from-zero-to-hero/en/observability/application-metrics/) — health is a yes/no signal; metrics show the gradual degradation that precedes a failed check.
-- [Log Aggregation](/microservices-design-from-zero-to-hero/en/observability/log-aggregation/) — when a readiness check starts failing, aggregated logs tell you *why*.
+- [Application Metrics](/microservices/en/observability/application-metrics/) — health is a yes/no signal; metrics show the gradual degradation that precedes a failed check.
+- [Log Aggregation](/microservices/en/observability/log-aggregation/) — when a readiness check starts failing, aggregated logs tell you *why*.
 
 <Callout title="Readiness is a routing decision, not a verdict on the world">
 A common mistake is to fail readiness when *any* downstream is unreachable. If every replica checks the same flaky dependency, they all report `DOWN` at once and the load balancer has nowhere left to route. Check only the dependencies without which this instance is genuinely useless, and prefer graceful degradation — returning a reduced response — over removing yourself from rotation entirely.

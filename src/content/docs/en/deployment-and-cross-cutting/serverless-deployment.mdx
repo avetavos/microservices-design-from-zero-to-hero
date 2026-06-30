@@ -85,9 +85,9 @@ A practical rule: reach for serverless when the work is event-driven, spiky, or 
 
 ## Related patterns
 
-- [Service per Container](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/service-per-container/) — the alternative runtime model for steady, long-lived services you would rather control.
-- [Externalized Configuration](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/externalized-configuration/) — functions still take their settings from injected environment values, not baked-in constants.
-- [Microservice Chassis](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/microservice-chassis/) — even functions benefit from a shared baseline of logging, metrics, and config.
+- [Service per Container](/microservices/en/deployment-and-cross-cutting/service-per-container/) — the alternative runtime model for steady, long-lived services you would rather control.
+- [Externalized Configuration](/microservices/en/deployment-and-cross-cutting/externalized-configuration/) — functions still take their settings from injected environment values, not baked-in constants.
+- [Microservice Chassis](/microservices/en/deployment-and-cross-cutting/microservice-chassis/) — even functions benefit from a shared baseline of logging, metrics, and config.
 
 <Callout title="Serverless is a runtime choice, not an architecture">
 "Serverless" does not mean there are no servers — it means you do not manage them. It is one way to run a service, sitting alongside containers, not a replacement for sound service boundaries. Choose it per workload: a thumbnailer or webhook handler is a great fit; a low-latency request path that must always be warm usually is not.

@@ -63,9 +63,9 @@ export const selfContainedDiagram = `flowchart TB
 
 ## pattern ที่เกี่ยวข้อง
 
-- [Decompose by Subdomain](/microservices-design-from-zero-to-hero/th/decomposition/decompose-by-subdomain/) — bounded context ที่ชัดเจนทำให้เห็นชัดว่าส่วนใดของข้อมูลภายนอกที่ service ต้องทำสำเนาจริง ๆ
-- [Saga](/microservices-design-from-zero-to-hero/th/data-management/saga/) — สไตล์แบบ asynchronous ที่ขับเคลื่อนด้วย event ซึ่ง self-contained service พึ่งพาสำหรับการเขียนข้าม service
-- [CQRS](/microservices-design-from-zero-to-hero/th/data-management/cqrs/) — การสร้าง local read model จาก event เป็นกลไกเดียวกับที่ทำให้สำเนาของ self-contained service สดใหม่
+- [Decompose by Subdomain](/microservices/th/decomposition/decompose-by-subdomain/) — bounded context ที่ชัดเจนทำให้เห็นชัดว่าส่วนใดของข้อมูลภายนอกที่ service ต้องทำสำเนาจริง ๆ
+- [Saga](/microservices/th/data-management/saga/) — สไตล์แบบ asynchronous ที่ขับเคลื่อนด้วย event ซึ่ง self-contained service พึ่งพาสำหรับการเขียนข้าม service
+- [CQRS](/microservices/th/data-management/cqrs/) — การสร้าง local read model จาก event เป็นกลไกเดียวกับที่ทำให้สำเนาของ self-contained service สดใหม่
 
 <Callout title="self-contained เป็นเรื่องของเส้นทาง request">
 self-contained service ไม่ได้ห้ามการสื่อสารทั้งหมดกับ service อื่น — มันห้ามการเรียกแบบ synchronous *บนเส้นทางของการให้บริการ request* ข้อมูลก็ยังไหลเข้ามา แต่แบบ asynchronous และล่วงหน้า ผ่าน event การทดสอบที่ใช้นั้นง่าย คือ เมื่อ service นี้จัดการ request มันต้องรอใครคนอื่นตอบกลับหรือไม่? ถ้าคำตอบคือไม่ มันก็เป็น self-contained และ availability ของมันก็เป็นของมันเองที่จะรักษาไว้

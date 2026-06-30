@@ -94,9 +94,9 @@ A practical rule: a mesh earns its keep once you have many polyglot services and
 
 ## Related patterns
 
-- [Service per Container](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/service-per-container/) — the sidecar is typically a second container deployed alongside the service container.
-- [Microservice Chassis](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/microservice-chassis/) — an in-process alternative for some of the same concerns; mesh and chassis are often combined.
-- [Externalized Configuration](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/externalized-configuration/) — mesh policy is itself externalized configuration, pushed by the control plane.
+- [Service per Container](/microservices/en/deployment-and-cross-cutting/service-per-container/) — the sidecar is typically a second container deployed alongside the service container.
+- [Microservice Chassis](/microservices/en/deployment-and-cross-cutting/microservice-chassis/) — an in-process alternative for some of the same concerns; mesh and chassis are often combined.
+- [Externalized Configuration](/microservices/en/deployment-and-cross-cutting/externalized-configuration/) — mesh policy is itself externalized configuration, pushed by the control plane.
 
 <Callout title="Mesh moves the logic out of your code, not out of existence">
 A service mesh does not make retries, timeouts, and mTLS disappear — it relocates them from your application code into a sidecar managed centrally. The benefit is uniformity and central control; the price is a proxy on every hop and a powerful new system to operate. It is a trade you make when consistency across many services matters more than the added latency and complexity.

@@ -64,8 +64,8 @@ We begin with the two raw interaction styles — Remote Procedure Invocation and
 
 ## Related patterns
 
-- [Remote Procedure Invocation](/microservices-design-from-zero-to-hero/en/communication/remote-procedure-invocation/) — start here, the simplest style.
-- [Messaging](/microservices-design-from-zero-to-hero/en/communication/messaging/) — the asynchronous alternative.
+- [Remote Procedure Invocation](/microservices/en/communication/remote-procedure-invocation/) — start here, the simplest style.
+- [Messaging](/microservices/en/communication/messaging/) — the asynchronous alternative.
 
 <Callout title="There is no single best style">
 A mature system mixes styles deliberately. A user clicking "place order" wants an immediate answer, so the edge of the system is often synchronous. But the work that order triggers — billing, shipping, notifications — fans out asynchronously so a slow notification service can never block a sale. Pick the style per interaction, not per system.

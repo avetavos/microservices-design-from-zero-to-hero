@@ -163,9 +163,9 @@ What it costs you:
 
 ## Related patterns
 
-- [Remote Procedure Invocation](/microservices-design-from-zero-to-hero/en/communication/remote-procedure-invocation/) — the synchronous alternative, when the caller truly needs an immediate answer.
-- [Saga](/microservices-design-from-zero-to-hero/en/data-management/saga/) — uses messaging to coordinate a multi-service transaction.
-- [Event Sourcing](/microservices-design-from-zero-to-hero/en/data-management/event-sourcing/) — a reliable way to produce the events you publish.
+- [Remote Procedure Invocation](/microservices/en/communication/remote-procedure-invocation/) — the synchronous alternative, when the caller truly needs an immediate answer.
+- [Saga](/microservices/en/data-management/saga/) — uses messaging to coordinate a multi-service transaction.
+- [Event Sourcing](/microservices/en/data-management/event-sourcing/) — a reliable way to produce the events you publish.
 
 <Callout title="Idempotent consumers are not optional">
 Most brokers guarantee at-least-once delivery, which means your consumer will eventually see the same message twice. If processing "charge order 17" is not idempotent, a redelivery double-charges the customer. Make consumers safe to repeat — deduplicate on a message id, or design the operation so applying it twice has the same effect as applying it once.

@@ -175,8 +175,8 @@ export const traceDiagram = `sequenceDiagram
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Log Aggregation](/microservices-design-from-zero-to-hero/th/observability/log-aggregation/) — ใส่ trace id ลงในทุกบรรทัด log แล้ว traces และ logs ก็อ้างอิงถึงกันและกัน
-- [Application Metrics](/microservices-design-from-zero-to-hero/th/observability/application-metrics/) — metrics บอกคุณว่า latency เพิ่มขึ้น; traces บอกคุณว่ามันเพิ่มขึ้น *ที่ไหน*
+- [Log Aggregation](/microservices/th/observability/log-aggregation/) — ใส่ trace id ลงในทุกบรรทัด log แล้ว traces และ logs ก็อ้างอิงถึงกันและกัน
+- [Application Metrics](/microservices/th/observability/application-metrics/) — metrics บอกคุณว่า latency เพิ่มขึ้น; traces บอกคุณว่ามันเพิ่มขึ้น *ที่ไหน*
 
 <Callout title="Logs, traces และ metrics คือชุดเครื่องมือเดียวกัน">
 สัญญาณทั้งสามนี้ตอบคำถามที่ต่างกันและแข็งแกร่งที่สุดเมื่ออยู่ด้วยกัน metrics เตือนคุณว่า p99 latency พุ่งขึ้น trace จากคำขอที่ช้าแสดงให้คุณเห็น hop ที่ก่อให้เกิดมัน logs ที่ถูกรวบรวมและ filter ด้วย id ของ trace นั้นแสดงให้คุณเห็นข้อความ error ภายใน hop นั้น ประทับ trace id เดียวกันลงในทั้งสามแล้วคุณก็เคลื่อนไหวระหว่างมันได้อย่างลื่นไหลระหว่างเหตุการณ์ แทนการเริ่มการสืบสวนแต่ละครั้งจากศูนย์

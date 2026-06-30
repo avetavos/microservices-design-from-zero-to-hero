@@ -51,8 +51,8 @@ We begin with the **circuit breaker**, the pattern that turns a hanging dependen
 
 ## Related patterns
 
-- [Circuit Breaker](/microservices-design-from-zero-to-hero/en/reliability/circuit-breaker/) — start here; it is the pattern that stops a hang from becoming an outage.
-- [Retry and Timeout](/microservices-design-from-zero-to-hero/en/reliability/retry-and-timeout/) — the per-call discipline a breaker is built on.
+- [Circuit Breaker](/microservices/en/reliability/circuit-breaker/) — start here; it is the pattern that stops a hang from becoming an outage.
+- [Retry and Timeout](/microservices/en/reliability/retry-and-timeout/) — the per-call discipline a breaker is built on.
 
 <Callout title="Design for failure, not against it">
 You will not make remote calls reliable; the network and other people's services are outside your control. The shift in mindset is to treat failure as an expected input rather than an exception. Every remote call gets a budget for time and attempts, a plan for what to return when the budget runs out, and an isolation boundary so its failure stays local. Reliability in a distributed system is not the absence of failure — it is failure that stays contained.

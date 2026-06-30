@@ -95,9 +95,9 @@ instances:
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Remote Procedure Invocation](/microservices-design-from-zero-to-hero/th/communication/remote-procedure-invocation/) — การเรียกแบบ synchronous ที่ต้องการที่อยู่ instance ที่จะส่งไปหา
-- [API Gateway](/microservices-design-from-zero-to-hero/th/communication/api-gateway/) — พึ่งพา discovery เพื่อจัดเส้นทางไปยัง instance ที่ยังมีชีวิตอยู่ของบริการภายใน
-- [Backends for Frontends](/microservices-design-from-zero-to-hero/th/communication/backends-for-frontends/) — แต่ละ BFF ทำ discovery หาบริการภายในที่มันประกอบขึ้น
+- [Remote Procedure Invocation](/microservices/th/communication/remote-procedure-invocation/) — การเรียกแบบ synchronous ที่ต้องการที่อยู่ instance ที่จะส่งไปหา
+- [API Gateway](/microservices/th/communication/api-gateway/) — พึ่งพา discovery เพื่อจัดเส้นทางไปยัง instance ที่ยังมีชีวิตอยู่ของบริการภายใน
+- [Backends for Frontends](/microservices/th/communication/backends-for-frontends/) — แต่ละ BFF ทำ discovery หาบริการภายในที่มันประกอบขึ้น
 
 <Callout title="คุณอาจมี discovery ฟรีอยู่แล้ว">
 ก่อนจะสร้าง registry ลองตรวจดูว่าแพลตฟอร์มของคุณให้อะไรมาบ้าง container orchestrator มักลงทะเบียนและ health-check pod และเปิดเผยพวกมันภายใต้ชื่อ DNS ที่เสถียรพร้อม load balancing ในตัว — นั่นคือ third-party registration บวกกับ server-side discovery ที่ส่งมาให้คุณ service mesh ก็เพิ่มสิ่งเดียวกันพร้อมการจัดเส้นทางและ retry ที่สมบูรณ์ยิ่งขึ้น เลือกใช้ registry library ที่ชัดเจนต่อเมื่อสภาพแวดล้อมของคุณยังไม่ได้แก้เรื่องนี้ไว้แล้วเท่านั้น

@@ -51,8 +51,8 @@ pattern เหล่านี้เสริมซึ่งกันและก
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Circuit Breaker](/microservices-design-from-zero-to-hero/th/reliability/circuit-breaker/) — เริ่มที่นี่ มันคือ pattern ที่หยุดการค้างไม่ให้กลายเป็นการล่ม
-- [Retry and Timeout](/microservices-design-from-zero-to-hero/th/reliability/retry-and-timeout/) — วินัยระดับการเรียกแต่ละครั้งที่ breaker สร้างขึ้นอยู่บนนั้น
+- [Circuit Breaker](/microservices/th/reliability/circuit-breaker/) — เริ่มที่นี่ มันคือ pattern ที่หยุดการค้างไม่ให้กลายเป็นการล่ม
+- [Retry and Timeout](/microservices/th/reliability/retry-and-timeout/) — วินัยระดับการเรียกแต่ละครั้งที่ breaker สร้างขึ้นอยู่บนนั้น
 
 <Callout title="ออกแบบเพื่อรับมือความล้มเหลว ไม่ใช่ต่อต้านมัน">
 คุณจะไม่สามารถทำให้การเรียก remote เชื่อถือได้ เพราะเครือข่ายและบริการของคนอื่นอยู่นอกเหนือการควบคุมของคุณ การเปลี่ยนกรอบความคิดคือการมองความล้มเหลวเป็น input ที่คาดหมายได้แทนที่จะเป็นข้อยกเว้น ทุกการเรียก remote จะได้รับงบสำหรับเวลาและจำนวนครั้ง แผนว่าจะ return อะไรเมื่องบหมด และขอบเขตการแยกตัวเพื่อให้ความล้มเหลวของมันอยู่เฉพาะที่ ความน่าเชื่อถือในระบบแบบกระจายไม่ใช่การไม่มีความล้มเหลว — แต่คือความล้มเหลวที่ถูกควบคุมไว้

@@ -6,11 +6,11 @@ hero:
   tagline: คอร์สแบบ standalone ตั้งแต่ผู้เริ่มต้นจนถึงขั้นสูงว่าด้วย pattern language ของ microservices เมื่อไรที่ microservices ช่วย (และเมื่อไรที่มันทำร้าย), จะ decompose ระบบอย่างไร, รักษาความสอดคล้องของข้อมูลข้ามบริการ, สื่อสารอย่างน่าเชื่อถือ และรันมันใน production — แต่ละ pattern นำเสนอเป็น Context → Problem → Solution พร้อมไดอะแกรมสถาปัตยกรรมและตัวอย่าง
   actions:
     - text: เริ่มที่นี่
-      link: /microservices-design-from-zero-to-hero/th/intro-and-principles/
+      link: /microservices/th/intro-and-principles/
       icon: right-arrow
       variant: primary
     - text: ข้ามไปที่ Data Management
-      link: /microservices-design-from-zero-to-hero/th/data-management/
+      link: /microservices/th/data-management/
       icon: open-book
 ---
 
@@ -20,28 +20,28 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid>
   <Card title="Intro & Principles" icon="rocket">
-    monolith เทียบ microservices, ข้อดีข้อเสีย, เมื่อไรควรใช้ และ pattern language [เริ่ม →](/microservices-design-from-zero-to-hero/th/intro-and-principles/)
+    monolith เทียบ microservices, ข้อดีข้อเสีย, เมื่อไรควรใช้ และ pattern language [เริ่ม →](/microservices/th/intro-and-principles/)
   </Card>
   <Card title="Decomposition" icon="puzzle">
-    decompose ตาม business capability และตาม subdomain (DDD), self-contained service, service per team [แยก →](/microservices-design-from-zero-to-hero/th/decomposition/)
+    decompose ตาม business capability และตาม subdomain (DDD), self-contained service, service per team [แยก →](/microservices/th/decomposition/)
   </Card>
   <Card title="Data Management" icon="seti:db">
-    Database per Service, Saga, API Composition, CQRS, Event Sourcing [จัดการข้อมูล →](/microservices-design-from-zero-to-hero/th/data-management/)
+    Database per Service, Saga, API Composition, CQRS, Event Sourcing [จัดการข้อมูล →](/microservices/th/data-management/)
   </Card>
   <Card title="Transactional Messaging" icon="seti:config">
-    ปัญหา dual-write — Transactional Outbox, log tailing, polling publisher, idempotent consumer [ส่งอย่างน่าเชื่อถือ →](/microservices-design-from-zero-to-hero/th/transactional-messaging/)
+    ปัญหา dual-write — Transactional Outbox, log tailing, polling publisher, idempotent consumer [ส่งอย่างน่าเชื่อถือ →](/microservices/th/transactional-messaging/)
   </Card>
   <Card title="Communication" icon="random">
-    RPI (REST/gRPC), messaging, API Gateway, Backends for Frontends, service discovery [เชื่อมต่อ →](/microservices-design-from-zero-to-hero/th/communication/)
+    RPI (REST/gRPC), messaging, API Gateway, Backends for Frontends, service discovery [เชื่อมต่อ →](/microservices/th/communication/)
   </Card>
   <Card title="Reliability" icon="approve-check">
-    Circuit Breaker, retry + timeout, bulkhead, rate limiting — อยู่รอดจาก partial failure [ทำให้แกร่ง →](/microservices-design-from-zero-to-hero/th/reliability/)
+    Circuit Breaker, retry + timeout, bulkhead, rate limiting — อยู่รอดจาก partial failure [ทำให้แกร่ง →](/microservices/th/reliability/)
   </Card>
   <Card title="Observability" icon="seti:plan">
-    Health Check API, log aggregation, distributed tracing, metrics, audit logging [สังเกตการณ์ →](/microservices-design-from-zero-to-hero/th/observability/)
+    Health Check API, log aggregation, distributed tracing, metrics, audit logging [สังเกตการณ์ →](/microservices/th/observability/)
   </Card>
   <Card title="Deployment & Cross-cutting" icon="cloud-download">
-    Service per Container, serverless, service mesh, microservice chassis, externalized config [ส่งขึ้นจริง →](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/)
+    Service per Container, serverless, service mesh, microservice chassis, externalized config [ส่งขึ้นจริง →](/microservices/th/deployment-and-cross-cutting/)
   </Card>
 </CardGrid>
 

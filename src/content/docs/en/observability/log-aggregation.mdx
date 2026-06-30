@@ -85,8 +85,8 @@ What it costs you:
 
 ## Related patterns
 
-- [Distributed Tracing](/microservices-design-from-zero-to-hero/en/observability/distributed-tracing/) — a trace id is the same idea taken further, adding causal spans and timing on top of correlation.
-- [Audit Logging](/microservices-design-from-zero-to-hero/en/observability/audit-logging/) — a separate, durable record for compliance, distinct from these operational debug logs.
+- [Distributed Tracing](/microservices/en/observability/distributed-tracing/) — a trace id is the same idea taken further, adding causal spans and timing on top of correlation.
+- [Audit Logging](/microservices/en/observability/audit-logging/) — a separate, durable record for compliance, distinct from these operational debug logs.
 
 <Callout title="Logs are an interface, not an afterthought">
 The moment logs become structured records that other systems parse, query, and alert on, their field names become a contract. Renaming `correlationId` or changing a level's meaning can silently break dashboards and alerts that depend on it. Treat your log schema with the same care you give an API: agree on field names across teams, version changes, and resist logging secrets or full payloads into a store many people can read.

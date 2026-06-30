@@ -13,7 +13,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## บริบท
 
-ทุก relay ในโมดูลนี้ — ไม่ว่าจะ [tail transaction log](/microservices-design-from-zero-to-hero/th/transactional-messaging/transaction-log-tailing/) หรือ [poll outbox](/microservices-design-from-zero-to-hero/th/transactional-messaging/polling-publisher/) — ส่งแบบ **at least once** relay สามารถ publish ข้อความแล้ว crash ก่อนบันทึกว่าได้ทำไปแล้ว มันจึง publish ซ้ำเมื่อ restart broker เองก็ส่งซ้ำเมื่อ consumer ไม่ ack ทันเวลา ผลลัพธ์จึงหลีกเลี่ยงไม่ได้: consumer ของคุณบางครั้งจะได้รับข้อความเดียวกันมากกว่าหนึ่งครั้ง
+ทุก relay ในโมดูลนี้ — ไม่ว่าจะ [tail transaction log](/microservices/th/transactional-messaging/transaction-log-tailing/) หรือ [poll outbox](/microservices/th/transactional-messaging/polling-publisher/) — ส่งแบบ **at least once** relay สามารถ publish ข้อความแล้ว crash ก่อนบันทึกว่าได้ทำไปแล้ว มันจึง publish ซ้ำเมื่อ restart broker เองก็ส่งซ้ำเมื่อ consumer ไม่ ack ทันเวลา ผลลัพธ์จึงหลีกเลี่ยงไม่ได้: consumer ของคุณบางครั้งจะได้รับข้อความเดียวกันมากกว่าหนึ่งครั้ง
 
 ## ปัญหา
 
@@ -183,9 +183,9 @@ handler insert message id และนำ side effect ไปใช้ใน tran
 
 ## แพตเทิร์นที่เกี่ยวข้อง
 
-- [Transactional Outbox](/microservices-design-from-zero-to-hero/th/transactional-messaging/transactional-outbox/) — กำหนด message id ที่ไม่ซ้ำกันซึ่งแพตเทิร์นนี้ใช้ทำ dedup
-- [Transaction Log Tailing](/microservices-design-from-zero-to-hero/th/transactional-messaging/transaction-log-tailing/) — relay ที่การส่งแบบ at-least-once ของมันถูกแพตเทิร์นนี้ดูดซับ
-- [Polling Publisher](/microservices-design-from-zero-to-hero/th/transactional-messaging/polling-publisher/) — อีก relay แบบ at-least-once ที่แพตเทิร์นนี้ป้องกัน
+- [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/) — กำหนด message id ที่ไม่ซ้ำกันซึ่งแพตเทิร์นนี้ใช้ทำ dedup
+- [Transaction Log Tailing](/microservices/th/transactional-messaging/transaction-log-tailing/) — relay ที่การส่งแบบ at-least-once ของมันถูกแพตเทิร์นนี้ดูดซับ
+- [Polling Publisher](/microservices/th/transactional-messaging/polling-publisher/) — อีก relay แบบ at-least-once ที่แพตเทิร์นนี้ป้องกัน
 
 <Callout title="มุ่งสู่การประมวลผลแบบ idempotent ไม่ใช่การส่งแบบ exactly-once">
 การส่งแบบ exactly-once ข้าม network แทบเป็นไปไม่ได้ *การประมวลผล* แบบ exactly-once ทำได้และเป็นสิ่งที่คุณต้องการจริง ๆ บันทึก message id และนำ effect ไปใช้ใน transaction เดียว หรือทำให้ effect เป็น idempotent โดยธรรมชาติ แล้ว duplicate ก็หยุดมีความสำคัญ วินัยฝั่ง consumer นี้คือสิ่งที่ทำให้ทุกแพตเทิร์นอื่นในโมดูลนี้ยังคงเรียบง่าย

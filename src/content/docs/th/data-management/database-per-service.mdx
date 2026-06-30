@@ -95,17 +95,17 @@ shipping-service  --X-->      orders DB     (blocked: no route, no credentials)
 
 สิ่งที่มันมีต้นทุนกับคุณ:
 
-- **ไม่มี transaction ข้าม service.** คุณไม่สามารถห่อการ insert order และการลด inventory ไว้ใน atomic commit เดียวได้ เพราะมันอยู่ในฐานข้อมูลคนละตัว การคืนความสอดคล้องข้าม service คือสิ่งที่ pattern [Saga](/microservices-design-from-zero-to-hero/th/data-management/saga/) จัดการพอดี
-- **ไม่มี join ข้าม service.** query ที่ต้องการข้อมูล order, customer และ shipping ไม่สามารถเป็น SQL statement เดียวได้อีกต่อไป คุณต้องประกอบมันด้วย [API Composition](/microservices-design-from-zero-to-hero/th/data-management/api-composition/) หรือ [CQRS](/microservices-design-from-zero-to-hero/th/data-management/cqrs/) แทน
+- **ไม่มี transaction ข้าม service.** คุณไม่สามารถห่อการ insert order และการลด inventory ไว้ใน atomic commit เดียวได้ เพราะมันอยู่ในฐานข้อมูลคนละตัว การคืนความสอดคล้องข้าม service คือสิ่งที่ pattern [Saga](/microservices/th/data-management/saga/) จัดการพอดี
+- **ไม่มี join ข้าม service.** query ที่ต้องการข้อมูล order, customer และ shipping ไม่สามารถเป็น SQL statement เดียวได้อีกต่อไป คุณต้องประกอบมันด้วย [API Composition](/microservices/th/data-management/api-composition/) หรือ [CQRS](/microservices/th/data-management/cqrs/) แทน
 - **ข้อมูลซ้ำซ้อนบางส่วน.** service มัก cache ข้อมูลบางส่วนเล็ก ๆ ที่บริโภคมาจาก service อื่น ซึ่งคุณต้องคอยซิงค์ให้ตรงกัน
 
 ข้อคิดสำคัญ: Database per Service ไม่ได้แก้ปัญหาความสอดคล้องและการ query — มันจงใจเอาทางลัดออกไป เพื่อให้คุณแก้ปัญหาเหล่านั้นอย่างชัดเจนและเป็นราย service ซึ่งเป็นเหตุผลว่าทำไมส่วนที่เหลือของโมดูลนี้จึงมีอยู่
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Saga](/microservices-design-from-zero-to-hero/th/data-management/saga/) — ความสอดคล้องข้ามฐานข้อมูลส่วนตัวโดยไม่ต้องใช้ distributed transaction
-- [API Composition](/microservices-design-from-zero-to-hero/th/data-management/api-composition/) — การตอบ query ที่เคยเป็น join
-- [CQRS](/microservices-design-from-zero-to-hero/th/data-management/cqrs/) — read model ที่พาดข้าม service ได้อย่างมีประสิทธิภาพ
+- [Saga](/microservices/th/data-management/saga/) — ความสอดคล้องข้ามฐานข้อมูลส่วนตัวโดยไม่ต้องใช้ distributed transaction
+- [API Composition](/microservices/th/data-management/api-composition/) — การตอบ query ที่เคยเป็น join
+- [CQRS](/microservices/th/data-management/cqrs/) — read model ที่พาดข้าม service ได้อย่างมีประสิทธิภาพ
 
 <Callout title="กฎข้อเดียว">
 ถ้าคุณจำอะไรไม่ได้เลย: ฐานข้อมูลของ service เป็นของส่วนตัว วันที่ service ที่สองเปิดการเชื่อมต่อโดยตรงกับมัน คุณจะไม่มีสอง service อีกต่อไป — คุณมี distributed monolith หนึ่งตัวที่ติดป้ายชื่อสองอัน

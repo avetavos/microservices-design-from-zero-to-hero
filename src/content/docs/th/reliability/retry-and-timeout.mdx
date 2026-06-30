@@ -223,9 +223,9 @@ export const retryFlow = `sequenceDiagram
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Circuit Breaker](/microservices-design-from-zero-to-hero/th/reliability/circuit-breaker/) — คู่หูสำคัญที่หยุดการ retry ไม่ให้กลายเป็น storm
-- [Bulkhead](/microservices-design-from-zero-to-hero/th/reliability/bulkhead/) — กำหนดขอบเขตทรัพยากรที่การ retry สามารถกินได้ในขณะที่มันรอ
-- [Saga](/microservices-design-from-zero-to-hero/th/data-management/saga/) — compensating transaction ของมันต้องเป็น idempotent อย่างแม่นยำเพราะมันอาจถูก retry
+- [Circuit Breaker](/microservices/th/reliability/circuit-breaker/) — คู่หูสำคัญที่หยุดการ retry ไม่ให้กลายเป็น storm
+- [Bulkhead](/microservices/th/reliability/bulkhead/) — กำหนดขอบเขตทรัพยากรที่การ retry สามารถกินได้ในขณะที่มันรอ
+- [Saga](/microservices/th/data-management/saga/) — compensating transaction ของมันต้องเป็น idempotent อย่างแม่นยำเพราะมันอาจถูก retry
 
 <Callout title="retry เฉพาะสิ่งที่ทำซ้ำได้อย่างปลอดภัย">
 การ retry สามารถทำให้ request *เดียวกัน* ถูกประมวลผลมากกว่าหนึ่งครั้ง — ความพยายามครั้งแรกอาจสำเร็จจริงบนเซิร์ฟเวอร์แล้วแม้ว่า response จะไปไม่ถึงคุณ สำหรับการอ่านสิ่งนี้ไม่เป็นอันตราย สำหรับการเขียนมันไม่เป็นเช่นนั้น: การ retry "หักเงินจากบัตร" อาจเรียกเก็บเงินซ้ำสองครั้ง retry เฉพาะ idempotent operation เท่านั้น หรือมอบ idempotency key ให้กับการเขียนแต่ละครั้งที่เซิร์ฟเวอร์ใช้เพื่อรู้จักและทิ้งรายการซ้ำ หากปราศจาก idempotency นโยบายการ retry คือบั๊กด้านความถูกต้องที่รอจะเกิดขึ้น

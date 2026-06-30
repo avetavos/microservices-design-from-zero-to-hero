@@ -174,8 +174,8 @@ export const metricsDiagram = `flowchart LR
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Distributed Tracing](/microservices-design-from-zero-to-hero/th/observability/distributed-tracing/) — เมื่อ latency metric พุ่งขึ้น trace แสดงให้คุณเห็นว่า hop ใดก่อให้เกิดมัน
-- [Health Check API](/microservices-design-from-zero-to-hero/th/observability/health-check-api/) — health เป็นการตรวจแบบ binary; metrics เผยให้เห็นการเสื่อมถอยแบบค่อยเป็นค่อยไปที่นำหน้ามัน
+- [Distributed Tracing](/microservices/th/observability/distributed-tracing/) — เมื่อ latency metric พุ่งขึ้น trace แสดงให้คุณเห็นว่า hop ใดก่อให้เกิดมัน
+- [Health Check API](/microservices/th/observability/health-check-api/) — health เป็นการตรวจแบบ binary; metrics เผยให้เห็นการเสื่อมถอยแบบค่อยเป็นค่อยไปที่นำหน้ามัน
 
 <Callout title="เลือกสัญญาณที่ถูกต้องสำหรับคำถาม">
 หยิบ metrics มาตอบคำถาม "ระบบโดยรวมเป็นอย่างไรตามเวลา?" และเพื่อขับเคลื่อน alerts หยิบ traces และ logs มาตอบคำถาม "เกิดอะไรขึ้นกับคำขอเดียวนี้?" anti-pattern ที่พบบ่อยคือการพยายามกู้คืนรายละเอียดราย ๆ คำขอจาก metrics ด้วยการเพิ่ม label ที่ high-cardinality — มันทำให้ metrics store ของคุณล้มละลายโดยไม่ให้สิ่งที่ logs และ traces ให้อยู่แล้ว ปล่อยให้แต่ละสัญญาณทำหน้าที่ของมัน

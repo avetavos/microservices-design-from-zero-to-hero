@@ -287,9 +287,9 @@ export const breakerStates = `stateDiagram-v2
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Retry and Timeout](/microservices-design-from-zero-to-hero/th/reliability/retry-and-timeout/) — timeout คือสิ่งที่เปลี่ยนการค้างให้กลายเป็นความล้มเหลวที่นับได้ซึ่ง breaker สามารถนำไปดำเนินการต่อได้
-- [Bulkhead](/microservices-design-from-zero-to-hero/th/reliability/bulkhead/) — ควบคุมทรัพยากรที่ dependency สามารถกินได้ตั้งแต่ก่อนที่ breaker จะ trip ด้วยซ้ำ
-- [Rate Limiting](/microservices-design-from-zero-to-hero/th/reliability/rate-limiting/) — ปกป้อง dependency ที่อยู่ปลายทางที่รับการเรียกซึ่ง breaker ควบคุมอยู่
+- [Retry and Timeout](/microservices/th/reliability/retry-and-timeout/) — timeout คือสิ่งที่เปลี่ยนการค้างให้กลายเป็นความล้มเหลวที่นับได้ซึ่ง breaker สามารถนำไปดำเนินการต่อได้
+- [Bulkhead](/microservices/th/reliability/bulkhead/) — ควบคุมทรัพยากรที่ dependency สามารถกินได้ตั้งแต่ก่อนที่ breaker จะ trip ด้วยซ้ำ
+- [Rate Limiting](/microservices/th/reliability/rate-limiting/) — ปกป้อง dependency ที่อยู่ปลายทางที่รับการเรียกซึ่ง breaker ควบคุมอยู่
 
 <Callout title="breaker ต้องมี timeout จึงจะทำงานได้">
 circuit breaker นับความล้มเหลว และการเรียกที่ค้างยังไม่ถือเป็นความล้มเหลวจนกว่าจะมีอะไรมาประกาศให้มันเป็น หากไม่มี timeout ต่อการเรียก dependency ที่ช้าจะทำให้ทุก probe รอไปอย่างไม่มีกำหนด จำนวนความล้มเหลวจะไม่เพิ่มขึ้น และ breaker จะไม่มีวัน trip จับคู่ breaker กับ timeout ที่เข้มงวดบนการเรียกที่มันห่อหุ้มเสมอ — timeout เป็นตัวสร้างความล้มเหลวที่ breaker ถูกออกแบบมาให้นับ

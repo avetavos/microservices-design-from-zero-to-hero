@@ -85,8 +85,8 @@ export const pipelineDiagram = `flowchart LR
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Distributed Tracing](/microservices-design-from-zero-to-hero/th/observability/distributed-tracing/) — trace id คือแนวคิดเดียวกันที่ถูกขยายต่อไป โดยเพิ่ม causal spans และ timing ทับลงบน correlation
-- [Audit Logging](/microservices-design-from-zero-to-hero/th/observability/audit-logging/) — record แยกต่างหากที่คงทนสำหรับการกำกับดูแล แตกต่างจาก operational debug logs เหล่านี้
+- [Distributed Tracing](/microservices/th/observability/distributed-tracing/) — trace id คือแนวคิดเดียวกันที่ถูกขยายต่อไป โดยเพิ่ม causal spans และ timing ทับลงบน correlation
+- [Audit Logging](/microservices/th/observability/audit-logging/) — record แยกต่างหากที่คงทนสำหรับการกำกับดูแล แตกต่างจาก operational debug logs เหล่านี้
 
 <Callout title="Logs คือ interface ไม่ใช่ของที่นึกถึงทีหลัง">
 ในวินาทีที่ logs กลายเป็น record ที่มีโครงสร้างที่ระบบอื่น parse, query และตั้ง alert ชื่อ field ของมันก็กลายเป็น contract การเปลี่ยนชื่อ `correlationId` หรือเปลี่ยนความหมายของ level สามารถทำให้ dashboard และ alert ที่พึ่งพามันพังอย่างเงียบ ๆ ปฏิบัติต่อ log schema ของคุณด้วยความใส่ใจเดียวกับที่คุณให้กับ API คือ ตกลงชื่อ field ข้ามทีม, version การเปลี่ยนแปลง และต้านทานการ log ความลับหรือ payload เต็มลงใน store ที่คนจำนวนมากอ่านได้

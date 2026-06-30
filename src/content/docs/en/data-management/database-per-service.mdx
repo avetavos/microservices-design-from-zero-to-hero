@@ -95,17 +95,17 @@ What you gain:
 
 What it costs you:
 
-- **No cross-service transactions.** You cannot wrap an order insert and an inventory decrement in one atomic commit, because they live in different databases. Restoring consistency across services is exactly what the [Saga](/microservices-design-from-zero-to-hero/en/data-management/saga/) pattern addresses.
-- **No cross-service joins.** A query that needs order, customer, and shipping data can no longer be one SQL statement. You assemble it instead with [API Composition](/microservices-design-from-zero-to-hero/en/data-management/api-composition/) or [CQRS](/microservices-design-from-zero-to-hero/en/data-management/cqrs/).
+- **No cross-service transactions.** You cannot wrap an order insert and an inventory decrement in one atomic commit, because they live in different databases. Restoring consistency across services is exactly what the [Saga](/microservices/en/data-management/saga/) pattern addresses.
+- **No cross-service joins.** A query that needs order, customer, and shipping data can no longer be one SQL statement. You assemble it instead with [API Composition](/microservices/en/data-management/api-composition/) or [CQRS](/microservices/en/data-management/cqrs/).
 - **Some duplicated data.** Services often cache small slices of data they consume from others, which you must keep in sync.
 
 The key insight: Database per Service does not solve consistency and querying — it deliberately removes the shortcuts so that you solve them explicitly and per-service, which is why the rest of this module exists.
 
 ## Related patterns
 
-- [Saga](/microservices-design-from-zero-to-hero/en/data-management/saga/) — consistency across the private databases without distributed transactions.
-- [API Composition](/microservices-design-from-zero-to-hero/en/data-management/api-composition/) — answering queries that used to be a join.
-- [CQRS](/microservices-design-from-zero-to-hero/en/data-management/cqrs/) — a read model that spans services efficiently.
+- [Saga](/microservices/en/data-management/saga/) — consistency across the private databases without distributed transactions.
+- [API Composition](/microservices/en/data-management/api-composition/) — answering queries that used to be a join.
+- [CQRS](/microservices/en/data-management/cqrs/) — a read model that spans services efficiently.
 
 <Callout title="The one rule">
 If you remember nothing else: a service's database is private. The day a second service opens a direct connection to it, you no longer have two services — you have one distributed monolith wearing two name tags.

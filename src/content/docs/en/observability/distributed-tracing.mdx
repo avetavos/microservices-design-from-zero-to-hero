@@ -175,8 +175,8 @@ What it costs you:
 
 ## Related patterns
 
-- [Log Aggregation](/microservices-design-from-zero-to-hero/en/observability/log-aggregation/) — put the trace id into every log line and traces and logs cross-reference each other.
-- [Application Metrics](/microservices-design-from-zero-to-hero/en/observability/application-metrics/) — metrics tell you latency rose; traces tell you *where* it rose.
+- [Log Aggregation](/microservices/en/observability/log-aggregation/) — put the trace id into every log line and traces and logs cross-reference each other.
+- [Application Metrics](/microservices/en/observability/application-metrics/) — metrics tell you latency rose; traces tell you *where* it rose.
 
 <Callout title="Logs, traces, and metrics are one toolkit">
 These three signals answer different questions and are strongest together. Metrics alert you that p99 latency jumped. A trace from a slow request shows you the hop that caused it. Aggregated logs, filtered by that trace's id, show you the error message inside that hop. Stamp the same trace id across all three and you can move fluidly between them during an incident instead of starting each investigation from scratch.

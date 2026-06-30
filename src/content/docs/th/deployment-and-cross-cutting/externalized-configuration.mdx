@@ -89,9 +89,9 @@ service อ่านสิ่งเหล่านี้ตอนเริ่ม
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [Service per Container](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/service-per-container/) — externalized configuration คือสิ่งที่ทำให้ container image ที่ไม่เปลี่ยนแปลงเป็นกลางต่อสภาพแวดล้อมอย่างแท้จริง
-- [Microservice Chassis](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/microservice-chassis/) — chassis มักเป็น component ที่อ่านและ validate configuration ที่ inject เข้ามา
-- [Serverless Deployment](/microservices-design-from-zero-to-hero/th/deployment-and-cross-cutting/serverless-deployment/) — function รับการตั้งค่าในแบบเดียวกัน จากค่าที่ inject เข้ามาแทนที่จะเป็นค่าคงที่ที่ฝังไว้
+- [Service per Container](/microservices/th/deployment-and-cross-cutting/service-per-container/) — externalized configuration คือสิ่งที่ทำให้ container image ที่ไม่เปลี่ยนแปลงเป็นกลางต่อสภาพแวดล้อมอย่างแท้จริง
+- [Microservice Chassis](/microservices/th/deployment-and-cross-cutting/microservice-chassis/) — chassis มักเป็น component ที่อ่านและ validate configuration ที่ inject เข้ามา
+- [Serverless Deployment](/microservices/th/deployment-and-cross-cutting/serverless-deployment/) — function รับการตั้งค่าในแบบเดียวกัน จากค่าที่ inject เข้ามาแทนที่จะเป็นค่าคงที่ที่ฝังไว้
 
 <Callout title="build artifact ครั้งเดียว ตั้งค่ามันต่อที่">
 วินัยพูดได้ง่าย: code และค่าเริ่มต้นเข้าไปใน image; ทุกอย่างที่เปลี่ยนระหว่างสภาพแวดล้อมมาจากภายนอกมัน ทำสิ่งนี้ให้ถูก แล้ว artifact ที่ทดสอบแล้วเพียงชิ้นเดียวจะไหลจาก staging ไป production โดยไม่ถูกแตะต้อง โดยมี secret ส่งให้อย่างปลอดภัยที่ขอบ ฝัง configuration เข้าไป แล้วคุณก็ยกคำมั่นสำคัญของ immutable deploy ทิ้งไป

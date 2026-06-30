@@ -191,15 +191,15 @@ export const eventSourcingDiagram = `flowchart LR
 
 สิ่งที่มันมีต้นทุนกับคุณ:
 
-- **การ query เป็นเรื่องยาก.** event store เก่งเรื่อง "ขอ event ของ entity หนึ่งให้หน่อย" แต่อ่อนเรื่อง "หาทุกบัญชีที่มียอดคงเหลือติดลบ" ดังนั้น Event Sourcing จึงเกือบจะจับคู่กับ [CQRS](/microservices-design-from-zero-to-hero/th/data-management/cqrs/) เสมอ ซึ่งสร้าง read model ที่ query ได้จาก stream
+- **การ query เป็นเรื่องยาก.** event store เก่งเรื่อง "ขอ event ของ entity หนึ่งให้หน่อย" แต่อ่อนเรื่อง "หาทุกบัญชีที่มียอดคงเหลือติดลบ" ดังนั้น Event Sourcing จึงเกือบจะจับคู่กับ [CQRS](/microservices/th/data-management/cqrs/) เสมอ ซึ่งสร้าง read model ที่ query ได้จาก stream
 - **ต้นทุนการ replay.** การ fold ประวัติ event ที่ยาวทุกครั้งที่โหลดมีราคาแพง ดังนั้นคุณจึงบันทึก **snapshot** เป็นระยะ และเล่นซ้ำเฉพาะ event หลังจากนั้น
 - **schema evolution และ eventual consistency.** event ไม่เปลี่ยนแปลงได้ ดังนั้นการเปลี่ยนรูปร่างของมันตามกาลเวลาจึงต้องการ versioning และการ upcast event เก่า และอะไรก็ตามที่สร้างจาก stream — read model, service อื่น — ก็เป็น eventually consistent
 
 ## Pattern ที่เกี่ยวข้อง
 
-- [CQRS](/microservices-design-from-zero-to-hero/th/data-management/cqrs/) — คู่หูมาตรฐานที่ทำให้ระบบ event-sourced query ได้
-- [Saga](/microservices-design-from-zero-to-hero/th/data-management/saga/) — saga พึ่งพา event ที่น่าเชื่อถือซึ่ง event store ส่งออกมา
-- [Database per Service](/microservices-design-from-zero-to-hero/th/data-management/database-per-service/) — แต่ละ service อาจเลือก Event Sourcing เป็นโมเดลการจัดเก็บส่วนตัวของมัน
+- [CQRS](/microservices/th/data-management/cqrs/) — คู่หูมาตรฐานที่ทำให้ระบบ event-sourced query ได้
+- [Saga](/microservices/th/data-management/saga/) — saga พึ่งพา event ที่น่าเชื่อถือซึ่ง event store ส่งออกมา
+- [Database per Service](/microservices/th/data-management/database-per-service/) — แต่ละ service อาจเลือก Event Sourcing เป็นโมเดลการจัดเก็บส่วนตัวของมัน
 
 <Callout title="event เป็นข้อเท็จจริงที่ไม่เปลี่ยนแปลง">
 event ที่ถูกจัดเก็บบันทึกบางสิ่งที่เกิดขึ้นไปแล้ว — มันอยู่ในรูปอดีตกาลและมันไม่เคยเปลี่ยนแปลง คุณแก้ไขข้อผิดพลาดด้วยการ append event ที่ชดเชยใหม่ (การกลับรายการ) ไม่ใช่ด้วยการแก้ไขหรือลบ event เก่า การมอง log เป็นแบบ append-only คือสิ่งที่มอบ audit trail และการ publish ที่น่าเชื่อถือให้กับ Event Sourcing ตั้งแต่แรก

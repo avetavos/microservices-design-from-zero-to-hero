@@ -63,9 +63,9 @@ What it costs you:
 
 ## Related patterns
 
-- [Decompose by Subdomain](/microservices-design-from-zero-to-hero/en/decomposition/decompose-by-subdomain/) — clear bounded contexts make it obvious which slice of foreign data a service actually needs to replicate.
-- [Saga](/microservices-design-from-zero-to-hero/en/data-management/saga/) — the asynchronous, event-driven style that self-contained services rely on for cross-service writes.
-- [CQRS](/microservices-design-from-zero-to-hero/en/data-management/cqrs/) — building a local read model from events is the same mechanism that keeps a self-contained replica fresh.
+- [Decompose by Subdomain](/microservices/en/decomposition/decompose-by-subdomain/) — clear bounded contexts make it obvious which slice of foreign data a service actually needs to replicate.
+- [Saga](/microservices/en/data-management/saga/) — the asynchronous, event-driven style that self-contained services rely on for cross-service writes.
+- [CQRS](/microservices/en/data-management/cqrs/) — building a local read model from events is the same mechanism that keeps a self-contained replica fresh.
 
 <Callout title="Self-contained is about the request path">
 A self-contained service does not forbid all communication with other services — it forbids synchronous calls *on the path of serving a request*. Data still flows in, but asynchronously and ahead of time, via events. The test to apply is simple: when this service handles a request, does it have to wait on anyone else to respond? If the answer is no, it is self-contained, and its availability is its own to keep.

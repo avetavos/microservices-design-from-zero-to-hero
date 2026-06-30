@@ -177,13 +177,13 @@ What it costs you:
 - **Eventual consistency.** The read model lags the write model by the time it takes an event to propagate and project. A user who just wrote may briefly read stale data, so the UI must account for it.
 - **Duplicated data and replayable projections.** The read model duplicates data, and you need a way to rebuild it from scratch when the view changes or a projection has a bug.
 
-Because of the overhead, reach for CQRS only when a query genuinely needs it. For modest cross-service queries, the simpler [API Composition](/microservices-design-from-zero-to-hero/en/data-management/api-composition/) is usually the better choice.
+Because of the overhead, reach for CQRS only when a query genuinely needs it. For modest cross-service queries, the simpler [API Composition](/microservices/en/data-management/api-composition/) is usually the better choice.
 
 ## Related patterns
 
-- [API Composition](/microservices-design-from-zero-to-hero/en/data-management/api-composition/) — the simpler alternative; prefer it until a query proves too expensive to compose live.
-- [Event Sourcing](/microservices-design-from-zero-to-hero/en/data-management/event-sourcing/) — a natural source of the events that feed CQRS projections.
-- [Saga](/microservices-design-from-zero-to-hero/en/data-management/saga/) — read models often expose the intermediate state a saga produces.
+- [API Composition](/microservices/en/data-management/api-composition/) — the simpler alternative; prefer it until a query proves too expensive to compose live.
+- [Event Sourcing](/microservices/en/data-management/event-sourcing/) — a natural source of the events that feed CQRS projections.
+- [Saga](/microservices/en/data-management/saga/) — read models often expose the intermediate state a saga produces.
 
 <Callout title="CQRS does not require Event Sourcing (and vice versa)">
 The two patterns pair beautifully but are independent. You can do CQRS by publishing events from ordinary CRUD writes, and you can do Event Sourcing without ever splitting reads from writes. Adopt each one for its own reason, and only combine them when both reasons apply.

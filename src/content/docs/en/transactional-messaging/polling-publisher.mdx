@@ -13,7 +13,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## Context
 
-You have a [Transactional Outbox](/microservices-design-from-zero-to-hero/en/transactional-messaging/transactional-outbox/) and you need a relay to deliver its rows. [Transaction Log Tailing](/microservices-design-from-zero-to-hero/en/transactional-messaging/transaction-log-tailing/) is efficient but brings a CDC stack — replication slots, a connector, log retention — that may be more than your team wants to run, especially early on. You want a relay you can build and operate with nothing but your application and its database.
+You have a [Transactional Outbox](/microservices/en/transactional-messaging/transactional-outbox/) and you need a relay to deliver its rows. [Transaction Log Tailing](/microservices/en/transactional-messaging/transaction-log-tailing/) is efficient but brings a CDC stack — replication slots, a connector, log retention — that may be more than your team wants to run, especially early on. You want a relay you can build and operate with nothing but your application and its database.
 
 ## Problem
 
@@ -25,7 +25,7 @@ So the forces are: you want the simplest possible relay with no extra infrastruc
 
 Run a **polling publisher**: a background loop that, on a fixed interval, selects a batch of unsent rows from the outbox (oldest first), publishes each to the broker, and marks it sent once the broker acknowledges. Select with a row lock that skips already-locked rows so that multiple relay instances can run safely without claiming the same rows. After publishing, delete the row or set a `published_at` timestamp so it is not picked up again.
 
-Delivery is still at least once: if the relay crashes after publishing but before marking the row sent, the next poll re-publishes it. That is acceptable — the [Idempotent Consumer](/microservices-design-from-zero-to-hero/en/transactional-messaging/idempotent-consumer/) on the other end absorbs the duplicate.
+Delivery is still at least once: if the relay crashes after publishing but before marking the row sent, the next poll re-publishes it. That is acceptable — the [Idempotent Consumer](/microservices/en/transactional-messaging/idempotent-consumer/) on the other end absorbs the duplicate.
 
 export const pollingDiagram = `sequenceDiagram
   participant R as Polling Relay
@@ -202,9 +202,9 @@ A practical rule: start with a **polling publisher** because it is simple and de
 
 ## Related patterns
 
-- [Transactional Outbox](/microservices-design-from-zero-to-hero/en/transactional-messaging/transactional-outbox/) — produces the rows this relay polls.
-- [Transaction Log Tailing](/microservices-design-from-zero-to-hero/en/transactional-messaging/transaction-log-tailing/) — the lower-latency, higher-complexity relay.
-- [Idempotent Consumer](/microservices-design-from-zero-to-hero/en/transactional-messaging/idempotent-consumer/) — required because polling delivers at least once.
+- [Transactional Outbox](/microservices/en/transactional-messaging/transactional-outbox/) — produces the rows this relay polls.
+- [Transaction Log Tailing](/microservices/en/transactional-messaging/transaction-log-tailing/) — the lower-latency, higher-complexity relay.
+- [Idempotent Consumer](/microservices/en/transactional-messaging/idempotent-consumer/) — required because polling delivers at least once.
 
 <Callout title="Mark sent in the same transaction that publishes">
 The dangerous version of this pattern publishes a row and then marks it sent in a separate step. Do the claim and the mark in one transaction with `FOR UPDATE SKIP LOCKED`, and accept that a crash mid-loop will re-publish a row. Trying to make polling exactly-once usually just moves the race somewhere subtler — lean on idempotent consumers instead.

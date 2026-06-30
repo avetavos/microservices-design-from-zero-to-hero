@@ -6,11 +6,11 @@ hero:
   tagline: A standalone, beginner→advanced course on the microservices pattern language. When microservices help (and when they hurt), how to decompose a system, keep data consistent across services, communicate reliably, and run them in production — each pattern presented as Context → Problem → Solution with an architecture diagram and an example.
   actions:
     - text: Start here
-      link: /microservices-design-from-zero-to-hero/en/intro-and-principles/
+      link: /microservices/en/intro-and-principles/
       icon: right-arrow
       variant: primary
     - text: Jump to Data Management
-      link: /microservices-design-from-zero-to-hero/en/data-management/
+      link: /microservices/en/data-management/
       icon: open-book
 ---
 
@@ -20,28 +20,28 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid>
   <Card title="Intro & Principles" icon="rocket">
-    Monolith vs microservices, the benefits and drawbacks, when to use them, and the pattern language. [Start →](/microservices-design-from-zero-to-hero/en/intro-and-principles/)
+    Monolith vs microservices, the benefits and drawbacks, when to use them, and the pattern language. [Start →](/microservices/en/intro-and-principles/)
   </Card>
   <Card title="Decomposition" icon="puzzle">
-    Decompose by business capability and by subdomain (DDD), self-contained service, service per team. [Split →](/microservices-design-from-zero-to-hero/en/decomposition/)
+    Decompose by business capability and by subdomain (DDD), self-contained service, service per team. [Split →](/microservices/en/decomposition/)
   </Card>
   <Card title="Data Management" icon="seti:db">
-    Database per Service, Saga, API Composition, CQRS, Event Sourcing. [Manage data →](/microservices-design-from-zero-to-hero/en/data-management/)
+    Database per Service, Saga, API Composition, CQRS, Event Sourcing. [Manage data →](/microservices/en/data-management/)
   </Card>
   <Card title="Transactional Messaging" icon="seti:config">
-    The dual-write problem — Transactional Outbox, log tailing, polling publisher, idempotent consumer. [Publish reliably →](/microservices-design-from-zero-to-hero/en/transactional-messaging/)
+    The dual-write problem — Transactional Outbox, log tailing, polling publisher, idempotent consumer. [Publish reliably →](/microservices/en/transactional-messaging/)
   </Card>
   <Card title="Communication" icon="random">
-    RPI (REST/gRPC), messaging, API Gateway, Backends for Frontends, service discovery. [Connect →](/microservices-design-from-zero-to-hero/en/communication/)
+    RPI (REST/gRPC), messaging, API Gateway, Backends for Frontends, service discovery. [Connect →](/microservices/en/communication/)
   </Card>
   <Card title="Reliability" icon="approve-check">
-    Circuit Breaker, retry + timeout, bulkhead, rate limiting — surviving partial failure. [Harden →](/microservices-design-from-zero-to-hero/en/reliability/)
+    Circuit Breaker, retry + timeout, bulkhead, rate limiting — surviving partial failure. [Harden →](/microservices/en/reliability/)
   </Card>
   <Card title="Observability" icon="seti:plan">
-    Health Check API, log aggregation, distributed tracing, metrics, audit logging. [Observe →](/microservices-design-from-zero-to-hero/en/observability/)
+    Health Check API, log aggregation, distributed tracing, metrics, audit logging. [Observe →](/microservices/en/observability/)
   </Card>
   <Card title="Deployment & Cross-cutting" icon="cloud-download">
-    Service per Container, serverless, service mesh, microservice chassis, externalized config. [Ship it →](/microservices-design-from-zero-to-hero/en/deployment-and-cross-cutting/)
+    Service per Container, serverless, service mesh, microservice chassis, externalized config. [Ship it →](/microservices/en/deployment-and-cross-cutting/)
   </Card>
 </CardGrid>
 
