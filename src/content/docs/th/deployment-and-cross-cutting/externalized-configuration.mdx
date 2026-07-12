@@ -122,7 +122,7 @@ service อ่านสิ่งเหล่านี้ตอนเริ่ม
 >
 > **Kubernetes:**
 > - ConfigMap สำหรับ non-secret config
-> - Secret object สำหรับ sensitive data (encrypted at rest)
+> - Secret object สำหรับ sensitive data (โดย default เป็นแค่ base64-encoded ไม่ได้ encrypt — ต้องเปิด encryption at rest / ใช้ KMS เองถึงจะ encrypt จริง)
 > - environment เปลี่ยน config โดยการ swap ConfigMap — ไม่ต้อง rebuild image
 
 <Callout title="build artifact ครั้งเดียว ตั้งค่ามันต่อที่">
