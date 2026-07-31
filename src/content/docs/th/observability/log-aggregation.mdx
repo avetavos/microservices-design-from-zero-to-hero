@@ -11,25 +11,25 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
 ทุกบริการเขียน logs — นิสัยนั้นรอดมาได้อย่างไม่บุบสลายเมื่อย้ายมาสู่ microservices สิ่งที่เปลี่ยนไปคือที่ที่ logs เหล่านั้นอยู่ ใน monolith มีโปรเซสเดียวและ `app.log` เดียว; `grep` บนไฟล์นั้นคือ debugger ของคุณ ตอนนี้คำขอเชิงตรรกะเดียวกันแตะห้าบริการ แต่ละบริการรัน replica หลายตัว แต่ละตัวเขียนลง local file หรือ standard output ของตัวเองภายใน container ที่ scheduler อาจทำลายได้ทุกเมื่อ
 
-ลูกค้ารายงานว่า checkout ของพวกเขาล้มเหลวตอน 14:32 บรรทัดที่เกี่ยวข้องกระจัดกระจายอยู่ตาม order replica ที่จัดการคลิก, payment replica ที่มันเรียก และ inventory replica ที่มันเรียกหลังจากนั้น — สามไฟล์บนสามเครื่อง ซึ่งสองในนั้นถูกรีไซเคิลไปแล้วและหายไป
+ลูกค้าแจ้งว่า checkout ล้มเหลวตอน 14:32 บรรทัด log ที่เกี่ยวข้องกระจายอยู่ใน order replica ที่รับคลิกนั้น payment replica ที่ order เรียกต่อ และ inventory replica ที่ถูกเรียกตามมา — สามไฟล์บนสามเครื่อง ซึ่งสองเครื่องโดนรีไซเคิลไปแล้วพร้อม log
 
-## Problem
+## ปัญหา
 
-ไม่มีที่เดียวให้มองหา และต่อให้คุณล็อกอินเข้าไปทุกเครื่องได้ logs ก็จะไม่เชื่อมต่อกัน order service log ข้อผิดพลาดหนึ่ง, payment service log timeout หนึ่ง, inventory service ไม่ได้ log อะไรเลย — แต่ไม่มีอะไรในบรรทัดเหล่านั้นบอกคุณว่ามันเป็นของคำขอ *เดียวกัน* คุณถูกทิ้งให้นั่งเทียบเคียงด้วย timestamp และการเดา ข้ามไฟล์ที่อาจ rotate ออกไปจากการมีอยู่แล้ว
+ไม่มีที่ไหนให้ดูรวมกันได้ที่เดียว และต่อให้ล็อกอินเข้าทุกเครื่องได้ log ก็ยังต่อกันไม่ติด order service log error ไว้บรรทัดหนึ่ง payment service log timeout ไว้อีกบรรทัด ส่วน inventory service ไม่ได้ log อะไรเลย แต่ไม่มีอะไรในบรรทัดพวกนั้นบอกได้ว่าทั้งหมดมาจาก request *เดียวกัน* สุดท้ายคุณต้องนั่งเทียบ timestamp แล้วเดาเอา ข้ามไฟล์ที่อาจ rotate หายไปแล้วด้วยซ้ำ
 
 แล้วคุณจะทำให้บรรทัด log จากคำขอเดียว ที่กระจายอยู่ตาม replica ที่อายุสั้นจำนวนมาก ทั้ง *ค้นหาเจอได้ในที่เดียว* และ *เชื่อมโยงถึงกัน* ได้อย่างไร
 
-## Solution
+## วิธีแก้
 
 **Log aggregation** มีสองส่วน และคุณต้องการทั้งสอง
 
-ส่วนแรก **pipeline ส่ง logs ออกจากเครื่อง** แต่ละบริการเขียน logs ของมันลง standard output (หรือ local agent tail มัน) และ collector ส่งต่อทุกบรรทัดไปยัง store กลางที่มี index ที่คุณสามารถค้นหาได้ครอบทุกบริการและทุก replica พร้อมกัน เพราะ logs ออกจาก container ทันที มันจึงอยู่รอดต่อจาก replica ที่ผลิตมันออกมา
+ส่วนแรก **pipeline ที่ส่ง log ออกจากเครื่อง** แต่ละ service เขียน log ลง standard output หรือให้ local agent มา tail แล้ว collector ส่งต่อทุกบรรทัดไปยัง store กลางที่มี index ให้ค้นหาข้าม service และข้าม replica ได้พร้อมกัน เพราะ log ออกจาก container ทันที จึงอยู่รอดต่อไปแม้ replica ที่เขียนจะหายไปแล้ว
 
-ส่วนที่สอง logs ถูกทำให้ **มีโครงสร้างและเชื่อมโยง** แทนที่จะเป็นข้อความรูปแบบอิสระ แต่ละบรรทัดเป็น record ที่อธิบายตัวเองได้ — โดยทั่วไปคือ JSON — ที่มี field ที่สอดคล้องกัน คือ timestamp, level, ชื่อบริการ และที่สำคัญคือ **correlation id** (บางครั้งเรียก request id) ที่ถูกสร้างขึ้นครั้งเดียวที่ขอบของระบบ และแนบไปกับทุกบรรทัดที่ปล่อยออกมาในขณะจัดการคำขอนั้น ในทุกบริการที่มันแตะ การค้นหา id เดียวนั้นจะดึงทุกบรรทัดของการเดินทางของคำขอกลับมาตามลำดับ ไม่ว่า replica หรือบริการใดเขียนมัน
+ส่วนที่สอง ทำให้ log **มีโครงสร้างและเชื่อมโยงกันได้** แทนที่จะเป็นข้อความอิสระ ให้แต่ละบรรทัดเป็น record ที่อธิบายตัวเองได้ ปกติคือ JSON ที่มี field ชุดเดียวกันเสมอ ได้แก่ timestamp, level, ชื่อ service และที่สำคัญที่สุดคือ **correlation id** หรือบางทีเรียก request id ซึ่งสร้างขึ้นครั้งเดียวที่ขอบของระบบ แล้วแนบไปกับทุกบรรทัดที่เกิดขึ้นระหว่างจัดการ request นั้น ครบทุก service ที่ request วิ่งผ่าน ค้นหาด้วย id เดียวก็ได้ทุกบรรทัดตลอดเส้นทางของ request กลับมาเรียงตามลำดับ ไม่ว่า replica ไหนหรือ service ไหนจะเป็นคนเขียน
 
 export const pipelineDiagram = `flowchart LR
   subgraph Replicas
@@ -45,9 +45,9 @@ export const pipelineDiagram = `flowchart LR
 
 <Mermaid code={pipelineDiagram} title="แต่ละ replica ปล่อย structured logs ไปยัง collector ซึ่งส่งต่อไปยัง store กลางที่ค้นหาได้และเชื่อมโยงด้วย request id" />
 
-## Example
+## ตัวอย่าง
 
-บรรทัด structured log ที่ payment service ปล่อยออกมาในขณะจัดการ checkout มันเป็น JSON object เดียวต่อบรรทัด ที่มีชื่อ field คงที่และ correlation id ที่ผูกมันเข้ากับทุกบรรทัดอื่นของคำขอเดียวกัน:
+ตัวอย่างบรรทัด structured log ที่ payment service เขียนออกมาระหว่างจัดการ checkout หนึ่ง JSON object ต่อหนึ่งบรรทัด ชื่อ field คงที่ และมี correlation id ที่ผูกบรรทัดนี้เข้ากับทุกบรรทัดของ request เดียวกัน:
 
 ```json
 {
@@ -69,33 +69,33 @@ export const pipelineDiagram = `flowchart LR
 
 การค้นหา store กลางด้วย `correlationId = "c1f4e9a2-8b3d-4e77-9a01-2f6c5d8e1b04"` จะคืนค่าบรรทัดนี้พร้อมกับบรรทัดของ order service ที่เริ่มคำขอ และบรรทัดของ inventory service ที่ตามมา — เรื่องราวเต็มของ checkout เดียว ประกอบขึ้นใหม่จากสามบริการ
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้รับ:
 
-- **ที่เดียวให้ค้นหา ครอบทุกอย่าง** คุณ query ทุกบริการและทุก replica พร้อมกัน และ logs อยู่รอดได้นานกว่า container ที่เขียนมัน ดังนั้น pod ที่ถูกรีไซเคิลจึงไม่พาหลักฐานของคุณไปด้วยอีกต่อไป
+- **ค้นที่เดียวได้ครบทุกอย่าง** คุณ query ข้ามทุก service และทุก replica ได้พร้อมกัน แถม log ยังอยู่ต่อแม้ container ที่เขียนจะตายไปแล้ว pod ที่โดนรีไซเคิลจึงไม่พาหลักฐานหายไปด้วยอีกต่อไป
 - **คำขออ่านเป็นเรื่องราว** การ filter ด้วย correlation id สร้างเส้นทางของคำขอเดียวข้ามขอบเขตบริการขึ้นใหม่ตามลำดับ — กู้คืนมุมมอง end-to-end ที่คุณได้มาฟรี ๆ ใน monolith
 - **Field ที่เครื่องอ่านได้** structured logs สามารถถูก filter, aggregate และตั้ง alert ตาม field (`level`, `service`, `reason`) แทนการ match ข้อความที่เปราะบาง
 
-สิ่งที่มันมีต้นทุนกับคุณ:
+สิ่งที่คุณต้องจ่าย:
 
-- **คุณต้อง propagate correlation id** สร้างมันที่ขอบ (gateway หรือบริการแรก) และส่งต่อในทุกการเรียกออก — มักผ่าน header — ไม่เช่นนั้น chain จะขาดที่ hop แรกที่ลืม
+- **คุณต้อง propagate correlation id เอง** สร้าง id ที่ขอบระบบ ไม่ว่าจะเป็น gateway หรือ service แรก แล้วส่งต่อในทุกการเรียกออก มักจะส่งผ่าน header ถ้าพลาด hop ไหนไป chain ก็ขาดตรงนั้นทันที
 - **ปริมาณและต้นทุน** การรวมศูนย์ทุกบรรทัดจากทุก replica ผลิตข้อมูลจำนวนมาก คุณจะต้องมี log level ที่สมเหตุสมผล, sampling สำหรับ debug log ที่มีปริมาณสูง และนโยบาย retention ไม่เช่นนั้นทั้งบิลและเสียงรบกวนก็จะโตอย่างไม่มีขอบเขต
 - **ระเบียบวินัยเรื่อง field** คุณค่ามาจากชื่อ field ที่ *สอดคล้องกัน* ข้ามบริการ หากไม่มี logging convention ที่ใช้ร่วมกัน `userId` ที่นี่และ `user_id` ที่นั่นก็จะทำลาย query ของคุณอย่างเงียบ ๆ
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Distributed Tracing](/microservices/th/observability/distributed-tracing/) — trace id คือแนวคิดเดียวกันที่ถูกขยายต่อไป โดยเพิ่ม causal spans และ timing ทับลงบน correlation
 - [Audit Logging](/microservices/th/observability/audit-logging/) — record แยกต่างหากที่คงทนสำหรับการกำกับดูแล แตกต่างจาก operational debug logs เหล่านี้
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | log จากทุก service อยู่ที่เดียว — search ง่าย | log volume สูงมากใน production — storage cost |
 | correlate log ข้าม service ด้วย trace ID | latency จาก log shipping ทำให้ log ไม่ real-time 100% |
 | ค้นหา error pattern ข้าม deployment ได้ | sensitive data ใน log ต้องจัดการก่อน aggregate |
 | audit และ compliance ใน central location | setup ELK/Loki stack ซับซ้อน |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Log ทุกอย่างด้วย DEBUG level ใน Production**
 อาการ:
@@ -109,7 +109,7 @@ export const pipelineDiagram = `flowchart LR
 - incident investigation ใช้เวลาชั่วโมงแทนที่จะเป็นนาที
 - inject trace/request ID ทุก log line
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Elastic (ELK Stack):**
 > - Elasticsearch + Logstash + Kibana เป็น stack ที่ใช้แพร่หลายที่สุด
@@ -121,35 +121,35 @@ export const pipelineDiagram = `flowchart LR
 > - Grafana, GitLab ใช้ Loki ใน production
 
 <Callout title="Logs คือ interface ไม่ใช่ของที่นึกถึงทีหลัง">
-ในวินาทีที่ logs กลายเป็น record ที่มีโครงสร้างที่ระบบอื่น parse, query และตั้ง alert ชื่อ field ของมันก็กลายเป็น contract การเปลี่ยนชื่อ `correlationId` หรือเปลี่ยนความหมายของ level สามารถทำให้ dashboard และ alert ที่พึ่งพามันพังอย่างเงียบ ๆ ปฏิบัติต่อ log schema ของคุณด้วยความใส่ใจเดียวกับที่คุณให้กับ API คือ ตกลงชื่อ field ข้ามทีม, version การเปลี่ยนแปลง และต้านทานการ log ความลับหรือ payload เต็มลงใน store ที่คนจำนวนมากอ่านได้
+นาทีที่ log กลายเป็น record มีโครงสร้างที่ระบบอื่น parse, query และตั้ง alert ได้ ชื่อ field ก็กลายเป็น contract ไปแล้ว การเปลี่ยนชื่อ `correlationId` หรือเปลี่ยนความหมายของ level ทำให้ dashboard และ alert ที่อ้างอิงอยู่พังแบบเงียบ ๆ ได้เลย ดังนั้นดูแล log schema ให้ดีเท่ากับที่คุณดูแล API ตกลงชื่อ field ร่วมกันข้ามทีม ทำ version เวลาเปลี่ยน และอย่าเผลอ log ความลับหรือ payload เต็ม ๆ ลงใน store ที่คนอ่านได้เยอะ
 </Callout>
 
 export const quizLogs = [
   {
-    q: 'What problem does a correlation id solve in aggregated logs?',
+    q: 'correlation id แก้ปัญหาอะไรใน log ที่รวมศูนย์ไว้แล้ว',
     options: [
-      'มันบีบอัด log file เพื่อประหยัดพื้นที่จัดเก็บ',
-      'มันผูกทุกบรรทัด log ที่ปล่อยออกมาในขณะจัดการคำขอหนึ่งเข้าด้วยกัน ครอบทุกบริการที่มันแตะ',
-      'มันเข้ารหัสบรรทัด log เพื่อให้เฉพาะ admin อ่านได้',
-      'มันแทนที่ความจำเป็นในการมี timestamp',
+      'บีบอัด log file เพื่อประหยัดพื้นที่จัดเก็บ',
+      'ผูกทุกบรรทัด log ที่เกิดระหว่างจัดการ request หนึ่งเข้าด้วยกัน ครบทุก service ที่ request วิ่งผ่าน',
+      'เข้ารหัสบรรทัด log ให้เฉพาะ admin อ่านได้',
+      'ทำให้ไม่ต้องมี timestamp อีกต่อไป',
     ],
     answer: 1,
   },
   {
-    q: 'Why prefer structured (e.g. JSON) logs over free-form text lines?',
+    q: 'ทำไมจึงควรใช้ structured log เช่น JSON แทนข้อความรูปแบบอิสระ',
     options: [
-      'มันสั้นกว่าและถูกกว่าในการจัดเก็บเสมอ',
-      'มันสามารถถูก filter, aggregate และตั้ง alert ตาม field แทนการ match ข้อความที่เปราะบาง',
-      'มันไม่จำเป็นต้องถูกส่งออกจากเครื่อง',
-      'มันทำให้ correlation id ไม่จำเป็น',
+      'สั้นกว่าและเก็บถูกกว่าเสมอ',
+      'filter, aggregate และตั้ง alert ตาม field ได้ แทนที่จะ match ข้อความซึ่งเปราะบาง',
+      'ไม่ต้องส่งออกจากเครื่อง',
+      'ทำให้ไม่ต้องใช้ correlation id',
     ],
     answer: 1,
   },
   {
-    q: 'Where should a correlation id typically be generated, and how does it travel?',
+    q: 'โดยทั่วไปควรสร้าง correlation id ที่จุดไหน และส่งต่อไปอย่างไร',
     options: [
-      'ใน database และมันอยู่ภายในบริการเดียว',
-      'ที่ขอบของระบบ และมันถูก propagate ในทุกการเรียกออก เพื่อให้ทุกบริการใช้ id เดียวกันซ้ำ',
+      'สร้างใน database และใช้อยู่ภายใน service เดียว',
+      'สร้างที่ขอบของระบบ แล้ว propagate ไปในทุกการเรียกออก เพื่อให้ทุก service ใช้ id เดียวกัน',
       'แบบสุ่มในแต่ละบริการ ดังนั้นแต่ละบรรทัดได้ id ใหม่',
       'เฉพาะใน log store หลังจากคำขอเสร็จสิ้น',
     ],

@@ -1,6 +1,6 @@
 ---
 title: Event Sourcing
-description: 'จัดเก็บ state เป็น log ของ domain event แบบ append-only สร้าง state ปัจจุบันขึ้นใหม่ด้วยการเล่นมันซ้ำ และ publish event เดียวกันนั้นไปยัง service อื่นอย่างน่าเชื่อถือ'
+description: 'เก็บ state เป็น log ของ domain event แบบ append-only แล้วสร้าง state ปัจจุบันขึ้นมาใหม่ด้วยการเล่น event ซ้ำ พร้อม publish event ชุดเดียวกันนั้นไปยัง service อื่นได้อย่างน่าเชื่อถือ'
 sidebar:
   order: 6
 ---
@@ -11,19 +11,19 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
-service ของคุณพึ่งพา event — saga ร้อยต่อกันด้วยมัน CQRS projection ถูกสร้างขึ้นจากมัน แต่มีช่องโหว่ด้านความน่าเชื่อถือที่แนบเนียน โดยปกติ service จะอัปเดตฐานข้อมูลแล้วจึง publish event เป็นสอง step แยกกัน ถ้ามัน commit การเปลี่ยนแปลงฐานข้อมูลแล้ว crash ก่อน publish ส่วนที่เหลือของระบบก็จะไม่มีวันได้ยินเรื่องนี้เลย state และ event stream แยกออกจากกันอย่างเงียบ ๆ คุณต้องการวิธีอัปเดต state และ publish event ที่สอดคล้องกันในแบบที่อย่างหนึ่งจะเกิดขึ้นโดยปราศจากอีกอย่างไม่ได้
+service ของคุณพึ่ง event เป็นหลัก saga ร้อยขั้นตอนเข้าด้วยกันด้วย event และ CQRS projection ก็สร้างขึ้นจาก event แต่มีช่องโหว่ด้านความน่าเชื่อถือซ่อนอยู่ ปกติ service จะอัปเดต database ก่อนแล้วค่อย publish event แยกเป็นสอง step ถ้า commit การเปลี่ยนแปลงลง database สำเร็จแล้ว crash ก่อนจะ publish ระบบส่วนที่เหลือก็จะไม่มีวันรู้เรื่องนี้เลย state กับ event stream แยกจากกันแบบเงียบ ๆ สิ่งที่คุณต้องการคือวิธีอัปเดต state และ publish event ที่ผูกกันแน่น จนอย่างหนึ่งเกิดขึ้นโดยไม่มีอีกอย่างไม่ได้
 
-## Problem
+## ปัญหา
 
 ปัญหา dual-write: การเขียนลงฐานข้อมูลและการ publish ไปยัง message broker เป็นสองการดำเนินงานที่คุณไม่สามารถห่อไว้ใน transaction เดียวได้ ไม่ว่าคุณจะทำอันไหนก่อน การ crash ระหว่างกลางก็ทิ้งให้ที่จัดเก็บทั้งสองไม่สอดคล้องกัน ยิ่งไปกว่านั้น การจัดเก็บ state แบบธรรมดาทิ้งประวัติศาสตร์ไป — เมื่อ row ถูกเขียนทับแล้ว คุณก็ไม่สามารถตอบได้อีกว่า "ยอดคงเหลือเมื่อวันอังคารที่แล้วเป็นเท่าไร?" หรือ "เรามาถึงสถานะนี้ได้อย่างไร?"
 
 คุณจะจัดเก็บ state อย่างไรให้ event เป็นแหล่งความจริง (source of truth) การ publish ถูกรับประกัน และประวัติทั้งหมดถูกเก็บรักษาไว้?
 
-## Solution
+## วิธีแก้
 
-ด้วย **Event Sourcing** คุณไม่จัดเก็บ state ปัจจุบันเลย คุณจัดเก็บลำดับของ **domain event** ที่ผลิตมันขึ้นมา ใน **event store** แบบ append-only บัญชีหนึ่งไม่ใช่ row ที่มีคอลัมน์ `balance` แต่เป็นรายการที่เรียงลำดับ `AccountOpened`, `Deposited`, `Withdrawn`, `Deposited` เพื่อให้ได้ state ปัจจุบัน คุณโหลด event ของ entity นั้นแล้ว **fold** (เล่นซ้ำ) มันลงเป็น state ใน memory
+ด้วย **Event Sourcing** คุณไม่เก็บ state ปัจจุบันเลย แต่เก็บลำดับของ **domain event** ที่สร้าง state นั้นขึ้นมา ไว้ใน **event store** แบบ append-only บัญชีหนึ่งจึงไม่ใช่ row ที่มีคอลัมน์ `balance` แต่เป็นรายการที่เรียงลำดับว่า `AccountOpened`, `Deposited`, `Withdrawn`, `Deposited` เวลาจะเอา state ปัจจุบัน ก็โหลด event ของ entity นั้นมาแล้ว **fold** หรือเล่นซ้ำให้กลายเป็น state ใน memory
 
 เพราะ event คือหน่วยที่คุณ persist จึงไม่มี dual write: การ append event *คือ* การเปลี่ยน state นั่นเอง event store เดียวกันนี้ยังทำหน้าที่เป็น outbox ไปด้วย — service อื่นมา subscribe stream และได้รับทุก event ตามลำดับ โดยไม่มี step การ publish แยกต่างหากที่จะหายไป
 
@@ -37,9 +37,9 @@ export const eventSourcingDiagram = `flowchart LR
 
 <Mermaid code={eventSourcingDiagram} title="command append event; state ถูก fold จาก log และ log เดียวกันกระจายออกไปยังผู้ subscribe" />
 
-## Example
+## ตัวอย่าง
 
-ตัวอย่างนี้จำลองบัญชีธนาคาร command ผลิต event; state ปัจจุบันถูกคำนวณด้วยการ fold รายการ event สังเกตว่าไม่มี setter สำหรับ `balance` — มันขยับได้ด้วยการ apply event เท่านั้น
+ตัวอย่างนี้จำลองบัญชีธนาคาร command เป็นตัวผลิต event ส่วน state ปัจจุบันคำนวณจากการ fold รายการ event สังเกตว่าไม่มี setter ของ `balance` เลย ค่าจะขยับได้ด้วยการ apply event เท่านั้น
 
 <Tabs syncKey="lang">
   <TabItem label="TypeScript">
@@ -181,34 +181,34 @@ export const eventSourcingDiagram = `flowchart LR
   </TabItem>
 </Tabs>
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้รับ:
 
-- **การ publish event ที่น่าเชื่อถือ.** การ append event คือการเขียน ดังนั้นจึงไม่มีช่องโหว่ dual-write — ผู้ subscribe ได้รับ event ที่เปลี่ยน state อย่างตรงเป๊ะ ตามลำดับ สิ่งนี้ทำให้ Event Sourcing เป็นแกนหลักตามธรรมชาติสำหรับ saga และ CQRS
-- **audit log ที่สมบูรณ์.** ทุกการเปลี่ยนแปลงถูกเก็บรักษาไว้ ไม่เปลี่ยนแปลงได้ ตลอดไป คุณสามารถตอบได้ไม่ใช่แค่ว่า state เป็นอะไร แต่มันมาถึงตรงนั้นได้อย่างไรและเมื่อไร
+- **การ publish event ที่น่าเชื่อถือ.** การ append event คือการเขียน ดังนั้นจึงไม่มีช่องโหว่ dual-write — ผู้ subscribe ได้รับ event ที่เปลี่ยน state อย่างตรงเป๊ะ ตามลำดับ ทำให้ Event Sourcing เป็นแกนหลักตามธรรมชาติสำหรับ saga และ CQRS
+- **ได้ audit log ที่สมบูรณ์** ทุกการเปลี่ยนแปลงถูกเก็บไว้ แก้ไม่ได้ และอยู่ตลอดไป คุณจึงตอบได้ไม่ใช่แค่ว่า state เป็นอะไร แต่ตอบได้ด้วยว่ามาถึงจุดนั้นได้อย่างไรและเมื่อไร
 - **temporal query และการ replay.** คุณสามารถสร้าง state ขึ้นใหม่ ณ ช่วงเวลาใดในอดีตก็ได้ และสร้าง read model ใหม่ได้ง่าย ๆ เพียงแค่เล่นประวัติซ้ำผ่าน projection ใหม่
 
-สิ่งที่มันมีต้นทุนกับคุณ:
+สิ่งที่คุณต้องจ่าย:
 
 - **การ query เป็นเรื่องยาก.** event store เก่งเรื่อง "ขอ event ของ entity หนึ่งให้หน่อย" แต่อ่อนเรื่อง "หาทุกบัญชีที่มียอดคงเหลือติดลบ" ดังนั้น Event Sourcing จึงเกือบจะจับคู่กับ [CQRS](/microservices/th/data-management/cqrs/) เสมอ ซึ่งสร้าง read model ที่ query ได้จาก stream
 - **ต้นทุนการ replay.** การ fold ประวัติ event ที่ยาวทุกครั้งที่โหลดมีราคาแพง ดังนั้นคุณจึงบันทึก **snapshot** เป็นระยะ และเล่นซ้ำเฉพาะ event หลังจากนั้น
-- **schema evolution และ eventual consistency.** event ไม่เปลี่ยนแปลงได้ ดังนั้นการเปลี่ยนรูปร่างของมันตามกาลเวลาจึงต้องการ versioning และการ upcast event เก่า และอะไรก็ตามที่สร้างจาก stream — read model, service อื่น — ก็เป็น eventually consistent
+- **schema evolution และ eventual consistency** event แก้ไม่ได้ การเปลี่ยนรูปร่าง event ตามเวลาจึงต้องทำ versioning และ upcast event เก่า ส่วนทุกอย่างที่สร้างจาก stream ไม่ว่าจะเป็น read model หรือ service อื่น ก็เป็น eventually consistent ทั้งหมด
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [CQRS](/microservices/th/data-management/cqrs/) — คู่หูมาตรฐานที่ทำให้ระบบ event-sourced query ได้
 - [Saga](/microservices/th/data-management/saga/) — saga พึ่งพา event ที่น่าเชื่อถือซึ่ง event store ส่งออกมา
-- [Database per Service](/microservices/th/data-management/database-per-service/) — แต่ละ service อาจเลือก Event Sourcing เป็นโมเดลการจัดเก็บส่วนตัวของมัน
+- [Database per Service](/microservices/th/data-management/database-per-service/) — แต่ละ service เลือกใช้ Event Sourcing เป็นโมเดลจัดเก็บส่วนตัวของตัวเองได้
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | audit log ครบสมบูรณ์ — รู้ว่า state เปลี่ยนยังไงและเมื่อไร | query current state ต้อง replay event — ช้ากว่า read current value |
 | rebuild state ได้ทุกเวลา | event schema เปลี่ยนยาก — event เก่าต้อง compatible |
 | เหมาะมากกับ CQRS | event store ขนาดใหญ่ต้องใช้ snapshotting |
 | time-travel debugging — ดู state ณ เวลาใดก็ได้ | conceptual overhead สูง ทีมต้องเปลี่ยน mental model |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Event Sourcing ทุก Service** — ใช้ Event Sourcing โดยไม่มี audit หรือ time-travel requirement
 อาการ:
@@ -221,7 +221,7 @@ export const eventSourcingDiagram = `flowchart LR
 - แก้ event เพื่อ fix bug แทนที่จะสร้าง compensating event ใหม่
 - audit log ไม่น่าเชื่อถืออีกต่อไป
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Eventbrite:**
 > - ใช้ Event Sourcing สำหรับ ticketing system
@@ -232,7 +232,7 @@ export const eventSourcingDiagram = `flowchart LR
 > - Event Sourcing ตอบโจทย์นี้โดยธรรมชาติ
 
 <Callout title="event เป็นข้อเท็จจริงที่ไม่เปลี่ยนแปลง">
-event ที่ถูกจัดเก็บบันทึกบางสิ่งที่เกิดขึ้นไปแล้ว — มันอยู่ในรูปอดีตกาลและมันไม่เคยเปลี่ยนแปลง คุณแก้ไขข้อผิดพลาดด้วยการ append event ที่ชดเชยใหม่ (การกลับรายการ) ไม่ใช่ด้วยการแก้ไขหรือลบ event เก่า การมอง log เป็นแบบ append-only คือสิ่งที่มอบ audit trail และการ publish ที่น่าเชื่อถือให้กับ Event Sourcing ตั้งแต่แรก
+event ที่เก็บไว้คือบันทึกของสิ่งที่เกิดขึ้นไปแล้ว เขียนในรูปอดีตกาลและไม่มีวันเปลี่ยน เวลาจะแก้ข้อผิดพลาด คุณ append event ชดเชยเข้าไปใหม่เพื่อกลับรายการ ไม่ใช่ไปแก้หรือลบ event เก่า การยึดมั่นว่า log เป็น append-only เท่านั้นคือสิ่งที่ทำให้ Event Sourcing มี audit trail และ publish ได้อย่างน่าเชื่อถือตั้งแต่แรก
 </Callout>
 
 export const quizEventSourcing = [
@@ -250,19 +250,19 @@ export const quizEventSourcing = [
     q: 'state ปัจจุบันของ entity ได้มาอย่างไร?',
     options: [
       'โดยการอ่านคอลัมน์ balance ที่ cache ไว้',
-      'โดยการ fold (เล่นซ้ำ) event ของมันตามลำดับ ซึ่งอาจเริ่มจาก snapshot ก็ได้',
+      'ด้วยการ fold หรือเล่น event ซ้ำตามลำดับ ซึ่งจะเริ่มจาก snapshot ก็ได้',
       'โดยการ query ฐานข้อมูลฝั่งเขียนแยกต่างหาก',
-      'โดยการถามมันจาก service อื่น',
+      'ด้วยการไปถามจาก service อื่น',
     ],
     answer: 1,
   },
   {
     q: 'ทำไม Event Sourcing จึงแก้ปัญหา dual-write ได้?',
     options: [
-      'มันใช้ two-phase commit ข้ามฐานข้อมูลและ broker',
+      'ใช้ two-phase commit ข้าม database และ broker',
       'การ append event คือการเปลี่ยน state ดังนั้น state และ event stream จึงไม่มีวันแยกออกจากกันได้',
-      'มันปิด message broker ทั้งหมด',
-      'มันเขียนลง broker ก่อน และไม่เขียนลงฐานข้อมูลเลย',
+      'ปิด message broker ทิ้งทั้งหมด',
+      'เขียนลง broker ก่อน แล้วไม่เขียนลง database เลย',
     ],
     answer: 1,
   },

@@ -11,19 +11,19 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
-คุณมีบริการนับสิบ แต่ละบริการมี API ของตัวเองและที่อยู่บนเครือข่ายของตัวเอง แอปมือถือหรือ single-page web client ต้องการข้อมูลจากหลายบริการเพื่อแสดงหน้าจอเดียว — เพียงสรุปคำสั่งซื้ออย่างเดียวก็แตะถึง Orders, Inventory และ Customer ถ้า client พูดกับแต่ละบริการโดยตรง มันต้องรู้ที่อยู่ของทุกบริการ ต้องวิ่งไปกลับหลายรอบบนเครือข่ายมือถือที่ช้า และต้องทำการยืนยันตัวตนกับแต่ละบริการ
+คุณมี service อยู่นับสิบตัว แต่ละตัวมี API และที่อยู่บนเครือข่ายของตัวเอง ส่วนแอปมือถือหรือ single-page web client ต้องดึงข้อมูลจากหลาย service เพื่อ render หน้าจอเดียว แค่หน้าสรุป order หน้าเดียวก็ต้องแตะทั้ง Orders, Inventory และ Customer ถ้าปล่อยให้ client คุยกับแต่ละ service ตรง ๆ client ก็ต้องรู้ที่อยู่ของทุกตัว ต้องวิ่ง round trip หลายรอบบนเครือข่ายมือถือที่ช้า และต้องยืนยันตัวตนกับทุก service
 
-## Problem
+## ปัญหา
 
 การเปิดเผยบริการภายในต่อ client ภายนอกโดยตรงทำให้ client เหล่านั้นผูกมัดกับโครงสร้างภายในของคุณ client ต้องค้นหาและเรียก endpoint มากมาย และทุกครั้งที่คุณแยกหรือรวมบริการ client ทุกตัวก็จะพัง ที่แย่กว่านั้นคือ cross-cutting concerns — การยืนยันตัวตน การ terminate TLS การจำกัดอัตรา การ logging คำขอ — จะต้องถูก implement ในทุกบริการหรือในทุก client และ client ที่พูดมากบนการเชื่อมต่อที่มี latency สูงต้องจ่ายค่าวิ่งไปกลับหนึ่งรอบต่อหนึ่งบริการเพียงเพื่อเติมข้อมูลหน้าจอเดียว คุณจะให้ client ภายนอกมีที่เรียกที่เดียวที่เสถียร มีประสิทธิภาพ และปลอดภัยได้อย่างไร โดยไม่รั่วไหลโครงสร้างภายในของคุณ?
 
-## Solution
+## วิธีแก้
 
-**API Gateway** คือเซิร์ฟเวอร์เดียวที่อยู่ระหว่าง client ภายนอกกับบริการภายใน มันเป็นจุดเข้าจุดเดียวสู่ระบบ และมันทำงานสามอย่าง:
+**API Gateway** คือ server ตัวเดียวที่คั่นอยู่ระหว่าง client ภายนอกกับ service ภายใน ทำหน้าที่เป็นจุดเข้าจุดเดียวของทั้งระบบ และรับผิดชอบสามอย่าง:
 
-- **Routing (การจัดเส้นทาง)** — มันรับทุกคำขอจากภายนอกแล้วส่งต่อไปยังบริการที่เหมาะสม โดยจับคู่ path สาธารณะกับที่อยู่ภายใน client รู้จักเพียง gateway เท่านั้น
+- **Routing (การจัดเส้นทาง)** — รับทุก request จากภายนอกแล้วส่งต่อไปยัง service ที่ถูกต้อง โดยจับคู่ path สาธารณะเข้ากับที่อยู่ภายใน ฝั่ง client รู้จักแค่ gateway ตัวเดียว
 - **Aggregation (การรวมผลลัพธ์)** — สำหรับคำขอที่ต้องการข้อมูลจากหลายบริการ gateway สามารถกระจายออกไป เรียกแต่ละบริการ และประกอบเป็นการตอบกลับเดียว ดังนั้น client จึงเรียกครั้งเดียวแทนหลายครั้ง
 - **การรับภาระ cross-cutting concerns** — การยืนยันตัวตน การอนุญาต การ terminate TLS การจำกัดอัตรา การ logging คำขอ และการ caching ทั้งหมดเกิดขึ้นครั้งเดียวที่ขอบ แทนที่จะถูกทำซ้ำในทุกบริการ
 
@@ -38,9 +38,9 @@ export const gatewayDiagram = `flowchart LR
 
 <Mermaid code={gatewayDiagram} title="API Gateway — จุดเข้าจุดเดียวที่จัดเส้นทาง รวมผลลัพธ์ และรับภาระ cross-cutting concerns" />
 
-## Example
+## ตัวอย่าง
 
-พฤติกรรมของ gateway เป็น configuration ไม่ใช่codeแอปพลิเคชัน: คุณประกาศ route และนโยบายที่ใช้กับมัน แล้วเอนจินของ gateway ก็บังคับใช้ตามนั้น นี่คือ configuration ของ route ที่จับคู่ path สาธารณะกับบริการภายใน และแนบการยืนยันตัวตนและการจำกัดอัตราเข้ากับแต่ละ route
+พฤติกรรมของ gateway เป็น configuration ไม่ใช่ code แอปพลิเคชัน คุณแค่ประกาศ route กับนโยบายที่จะใช้ แล้วเอนจินของ gateway บังคับใช้ให้เอง ตัวอย่างข้างล่างคือ configuration ที่จับคู่ path สาธารณะเข้ากับ service ภายใน พร้อมแนบการยืนยันตัวตนและ rate limit ให้แต่ละ route
 
 ```yaml
 # api-gateway.yaml — routes external paths to internal services
@@ -82,7 +82,7 @@ routes:
       issuer: https://auth.example.com
 ```
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้:
 
@@ -92,26 +92,26 @@ routes:
 
 สิ่งที่คุณต้องจ่าย:
 
-- **องค์ประกอบใหม่ที่ต้องสร้างและทำงาน** gateway เองต้องพร้อมใช้งานสูงและขยายขนาดได้ เพราะมันอยู่บนเส้นทางวิกฤตของทุกคำขอ ถ้ามันล่ม ระบบก็ล่ม
-- **มันอาจกลายเป็นคอขวดหรือ God-object** เมื่อกฎการจัดเส้นทาง การแปลงข้อมูล และการรวมผลลัพธ์สะสมมากขึ้น gateway ก็เติบโตเป็นองค์ประกอบใหญ่ที่ใช้ร่วมกันซึ่งทุกทีมต้องแก้ — และเป็นคอขวดในการพัฒนาเมื่อการเปลี่ยนแปลงของทีมหนึ่งต้องรออยู่หลังของอีกทีม
+- **มี component ใหม่ที่ต้องสร้างและดูแล** ตัว gateway เองต้อง available สูงและ scale ได้ เพราะยืนอยู่บนเส้นทางวิกฤตของทุก request ถ้า gateway ล่ม ระบบก็ล่มทั้งระบบ
+- **เสี่ยงกลายเป็นคอขวดหรือ God-object** พอกฎ routing การแปลงข้อมูล และการรวมผลลัพธ์สะสมมากขึ้น gateway ก็โตเป็น component ใหญ่ที่ทุกทีมต้องเข้ามาแก้ กลายเป็นคอขวดของการพัฒนา เพราะการเปลี่ยนแปลงของทีมหนึ่งต้องเข้าคิวรออีกทีม
 - **ความเสี่ยงของการทำให้ทั่วไปเกินไป** gateway เดียวที่พยายามให้บริการ web app, mobile app และ third-party integration ให้ดีเท่ากันทั้งหมด มักให้บริการไม่ดีกับใครเลย เพราะความต้องการของแต่ละฝ่ายต่างกัน
 
 ต้นทุนข้อสุดท้ายนั้นคือแรงจูงใจของ pattern ถัดไป: แทนที่จะมี gateway เดียวสำหรับทุกคน ให้ client แต่ละชนิดมี gateway ของตัวเอง ดู [Backends for Frontends](/microservices/th/communication/backends-for-frontends/)
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Backends for Frontends](/microservices/th/communication/backends-for-frontends/) — gateway ที่ปรับแต่งหนึ่งตัวต่อ client หนึ่งชนิด แก้ปัญหาความเสี่ยงของ God-object
-- [Service Discovery](/microservices/th/communication/service-discovery/) — วิธีที่ gateway ค้นหา instance ที่ยังมีชีวิตอยู่ของบริการที่มันจัดเส้นทางไปหา
+- [Service Discovery](/microservices/th/communication/service-discovery/) — วิธีที่ gateway ค้นหา instance ที่ยังมีชีวิตของ service ปลายทาง
 - [API Composition](/microservices/th/data-management/api-composition/) — เทคนิคการรวมผลลัพธ์ที่ gateway ใช้เพื่อรวมข้อมูลจากหลายบริการ
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | client ติดต่อระบบผ่านจุดเดียว ง่ายต่อการ manage | single point of failure ถ้า gateway ล่ม ทั้งระบบหยุด |
 | cross-cutting concerns (auth, rate limit) ทำครั้งเดียว | เพิ่ม latency ทุก request ต้องผ่าน gateway |
 | service ภายในเปลี่ยนได้โดย client ไม่รู้ | gateway อาจกลายเป็น bottleneck ภายใต้ load สูง |
 | รองรับ aggregation — client call ครั้งเดียวได้หลาย service | ต้องดูแล gateway แยกต่างหาก เพิ่ม operational complexity |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **God Gateway** — gateway ที่มี business logic ฝังอยู่แทนที่จะเป็นแค่ routing/auth
 
@@ -126,7 +126,7 @@ routes:
 - release schedule ของ gateway block release ของ service
 - ทีมหลายทีมรอ gateway team อยู่เสมอ
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Netflix:**
 > - ใช้ Zuul (ต่อมาเป็น Zuul 2) เป็น API Gateway รับ request หลายพันล้านครั้งต่อวัน
@@ -137,8 +137,8 @@ routes:
 > - แต่ละ product team มี API Gateway ของตัวเอง
 > - ไม่มี central gateway เดียว — แบ่งตาม domain ownership
 
-<Callout title="gateway จัดเส้นทาง; มันไม่ได้เป็นเจ้าของ business logic">
-มันน่าดึงดูดที่จะดัน business logic "นิดเดียว" เข้าไปใน gateway — การคำนวณส่วนลดตรงนี้ การตรวจสอบคำสั่งซื้อตรงนั้น จงต้านทานมันไว้ หน้าที่ของ gateway คือการจัดเส้นทาง การรวมผลลัพธ์ และ cross-cutting concerns กฎทางธุรกิจเป็นของบริการที่เป็นเจ้าของ เมื่อมันรั่วไหลเข้าไปใน gateway คุณก็ได้สร้าง distributed monolith ขึ้นมาใหม่โดยมี gateway เป็นแกนกลางที่ซ่อนอยู่
+<Callout title="gateway มีไว้จัดเส้นทาง ไม่ใช่ถือ business logic">
+น่าเย้ายวนที่จะแอบยัด business logic "นิดเดียว" เข้าไปใน gateway คำนวณส่วนลดตรงนี้สักหน่อย ตรวจ order ตรงนั้นอีกนิด แต่อย่าทำ หน้าที่ของ gateway คือ routing การรวมผลลัพธ์ และ cross-cutting concerns เท่านั้น ส่วนกฎทางธุรกิจเป็นของ service ที่เป็นเจ้าของ พอกฎพวกนี้รั่วเข้าไปใน gateway คุณก็ได้ distributed monolith กลับมา โดยมี gateway เป็นแกนกลางที่ซ่อนอยู่
 </Callout>
 
 export const quizGateway = [
@@ -155,10 +155,10 @@ export const quizGateway = [
   {
     q: 'การรวมคำขอ (aggregation) ช่วย mobile client อย่างไร?',
     options: [
-      'มันเข้ารหัสการตอบกลับ',
-      'มันให้ client เรียกครั้งเดียวแทนหลายครั้ง ดังนั้นจึงจ่ายค่าวิ่งไปกลับหนึ่งรอบเพื่อเติมหน้าจอที่ครอบหลายบริการ',
-      'มัน cache ฐานข้อมูลไว้บนอุปกรณ์',
-      'มันขจัดความจำเป็นในการยืนยันตัวตน',
+      'เข้ารหัส response ให้',
+      'ให้ client เรียกครั้งเดียวแทนหลายครั้ง จึงจ่ายแค่ round trip เดียวเพื่อเติมหน้าจอที่ครอบหลาย service',
+      'cache database ไว้บนอุปกรณ์',
+      'ทำให้ไม่ต้องยืนยันตัวตนอีกต่อไป',
     ],
     answer: 1,
   },
@@ -175,10 +175,10 @@ export const quizGateway = [
   {
     q: 'ความเสี่ยงสำคัญของ API Gateway เดียวคืออะไร?',
     options: [
-      'มันบังคับให้ทุกบริการใช้ฐานข้อมูลร่วมกัน',
-      'มันอาจกลายเป็นคอขวดหรือ God-object ที่ทุกทีมต้องแก้และให้บริการ client ชนิดใดไม่ได้ดีเลย',
-      'มันทำให้การเรียกแบบ synchronous เป็นไปไม่ได้',
-      'มันป้องกันไม่ให้ client ใช้ HTTPS',
+      'บังคับให้ทุก service ใช้ database ร่วมกัน',
+      'เสี่ยงกลายเป็นคอขวดหรือ God-object ที่ทุกทีมต้องเข้ามาแก้ และไม่ตอบโจทย์ client ชนิดไหนได้ดีเลย',
+      'ทำให้เรียกแบบ synchronous ไม่ได้',
+      'กัน client ไม่ให้ใช้ HTTPS',
     ],
     answer: 1,
   },

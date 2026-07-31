@@ -11,21 +11,21 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
 ตอนนี้แต่ละ service เป็นเจ้าของฐานข้อมูลของตัวเองแล้ว แต่การสั่งซื้อหนึ่งครั้งเป็นการดำเนินงานทางธุรกิจหนึ่งเดียวที่พาดข้ามถึงสามตัว: Order service บันทึก order, Customer service จองเครดิตของผู้ซื้อ และ Inventory service กันสต๊อกไว้ ใน monolith นี่เป็น transaction เดียว — การเปลี่ยนแปลงทั้งสามอย่าง commit พร้อมกัน หรือไม่มีอะไร commit เลย เมื่อมีฐานข้อมูลส่วนตัวสามตัว transaction เดียวนั้นเป็นไปไม่ได้
 
-## Problem
+## ปัญหา
 
-คุณอาจคว้า distributed transaction มาใช้ กลไกคลาสสิกอย่าง two-phase commit (2PC) สั่งให้ผู้เข้าร่วมทุกคน prepare แล้วบอกให้ทุกคน commit มันให้ atomicity กับคุณจริง แต่ด้วยราคาที่แพง: ผู้เข้าร่วมทุกคนถือ lock ไว้ตลอดระยะเวลา ผู้เข้าร่วมที่ช้าหรือ crash เพียงหนึ่งรายทำให้ทุกคนค้าง และ data store และ message broker สมัยใหม่จำนวนมากไม่รองรับมันเลย 2PC แลก availability และ scalability กับ strong consistency — ตรงข้ามกับสิ่งที่คุณแยกระบบออกมาเพื่อให้ได้
+คุณอาจนึกถึง distributed transaction กลไกคลาสสิกอย่าง two-phase commit (2PC) จะสั่งให้ผู้เข้าร่วมทุกรายเตรียมตัวก่อน แล้วค่อยสั่งให้ทุกรายพร้อมกัน commit วิธีนี้ให้ atomicity ได้จริง แต่ราคาแพงมาก ผู้เข้าร่วมทุกรายต้องถือ lock ไว้ตลอดช่วงเวลานั้น ถ้ามีรายเดียวช้าหรือ crash ที่เหลือก็ค้างตามหมด แถม data store และ message broker สมัยใหม่จำนวนมากยังไม่รองรับด้วยซ้ำ สรุปคือ 2PC เอา availability และ scalability ไปแลก strong consistency ซึ่งตรงข้ามกับเหตุผลที่คุณแยกระบบออกมาตั้งแต่แรก
 
 ดังนั้นแรงที่ขัดแย้งกันคือ: คุณต้องการให้การดำเนินงานที่พาดหลาย service ทำสำเร็จทั้งหมด หรือย้อนกลับทั้งหมด แต่คุณถือ global lock ไม่ได้ คุณสมมติไม่ได้ว่าทุก service ใช้ transaction manager ร่วมกัน และคุณต้องคง available ไว้แม้ตอนที่ service หนึ่งช้า
 
-## Solution
+## วิธีแก้
 
 **saga** คือลำดับของ local transaction แต่ละ step ทำงานทั้งหมดภายใน service เดียว commit ลงฐานข้อมูลของ service นั้นเอง แล้วจึง trigger step ถัดไป เพราะแต่ละ step commit อย่างอิสระ จึงไม่มี global lock และไม่มี transaction manager ร่วม
 
-ปมอยู่ที่การ rollback เมื่อ local transaction commit แล้ว คุณไม่สามารถ roll back มันทีหลังได้ง่าย ๆ แทนที่จะทำเช่นนั้น แต่ละ step มี **compensating transaction** — local transaction ที่เป็นด้านกลับเชิงความหมายซึ่งยกเลิกผลของมัน ถ้า step หนึ่งล้มเหลวระหว่างทางของ saga, saga จะรัน compensation สำหรับทุก step ที่สำเร็จไปแล้ว ในลำดับย้อนกลับ เพื่อนำระบบกลับสู่สถานะที่สอดคล้องกัน
+ปมอยู่ที่การ rollback พอ local transaction commit ไปแล้ว คุณจะย้อนกลับทีหลังไม่ได้ง่าย ๆ ทางออกคือให้แต่ละ step มี **compensating transaction** ประกบไว้ ที่เป็น local transaction ที่ทำหน้าที่กลับด้านเชิงความหมายเพื่อยกเลิกผลของ step นั้น ถ้า step ไหนล้มเหลวกลางทาง saga จะไล่รัน compensation ของทุก step ที่สำเร็จไปแล้วในลำดับย้อนกลับ เพื่อดึงระบบกลับสู่สถานะที่สอดคล้องกัน
 
 มีสองวิธีในการประสานงาน step เหล่านี้:
 
@@ -81,9 +81,9 @@ export const orchestrationDiagram = `sequenceDiagram
 
 <Mermaid code={orchestrationDiagram} title="Orchestration saga — ตัวประสานงานส่วนกลางออกคำสั่งและ trigger การ compensate เมื่อล้มเหลว" />
 
-## Example
+## ตัวอย่าง
 
-นี่คือ orchestration saga สำหรับ flow การสั่งซื้อ orchestrator รัน step ไปข้างหน้าตามลำดับ ถ้า step ใด throw มันจะรัน compensation สำหรับ step ที่สำเร็จไปแล้ว ในลำดับย้อนกลับ แต่ละตัวอย่างเป็นอิสระในตัวเองและเขียนตามแนวทางเฉพาะของภาษานั้น ๆ
+ตัวอย่างนี้คือ orchestration saga สำหรับ flow การสั่งซื้อ ตัว orchestrator จะรัน step ไปข้างหน้าตามลำดับ ถ้า step ไหน throw ก็จะไล่รัน compensation ของ step ที่สำเร็จไปแล้วในลำดับย้อนกลับ แต่ละตัวอย่างรันได้ด้วยตัวเองและเขียนตามสไตล์ของภาษานั้น ๆ
 
 <Tabs syncKey="lang">
   <TabItem label="TypeScript">
@@ -273,35 +273,35 @@ export const orchestrationDiagram = `sequenceDiagram
   </TabItem>
 </Tabs>
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้รับ:
 
 - **ความสอดคล้องโดยไม่ต้องใช้ 2PC.** การดำเนินงานที่พาดหลาย service ทำสำเร็จทั้งหมด หรือย้อนกลับผ่านการ compensation โดยไม่มี global lock และไม่มี transaction manager ร่วม — service ยังคง available และ loosely coupled
 - **ใช้ได้กับทุกอย่าง.** เพราะแต่ละ step เป็นเพียง local transaction ธรรมดาบวกข้อความ saga จึงทำงานได้ข้ามฐานข้อมูลและ broker ทุกชนิดที่ผสมกัน
 
-สิ่งที่มันมีต้นทุนกับคุณ:
+สิ่งที่คุณต้องจ่าย:
 
 - **eventual consistency ไม่ใช่ isolation.** ระหว่าง step ระบบอยู่ในสถานะบางส่วน transaction อื่นอาจสังเกตเห็น order ที่เครดิตถูกจองแล้วแต่สต๊อกยังไม่ได้ยืนยัน คุณต้องออกแบบรองรับสถานะกลางเหล่านี้ (เช่น ด้วย semantic lock อย่างสถานะ `PENDING`) แทนที่จะพึ่งพา isolation ของฐานข้อมูล
 - **คุณต้องออกแบบ compensation.** ทุก step ที่มีผลกระทบที่สังเกตเห็นได้ต้องการด้านกลับที่สมเหตุสมผล และ compensation ต้อง **idempotent** และรับมือกับการถูก retry ได้
-- **ความซับซ้อนของการประสานงาน.** choreography กระจาย workflow ไปตาม subscription จำนวนมากและอาจตามได้ยากเมื่อ step เพิ่มขึ้น ส่วน orchestration รวมศูนย์ logic ไว้แต่เพิ่ม component ที่ตัวมันเองต้องน่าเชื่อถือและกู้คืนได้
+- **การประสานงานซับซ้อนขึ้น** choreography กระจาย workflow ไปตาม subscription จำนวนมาก พอ step เยอะขึ้นก็ไล่ตามยาก ส่วน orchestration รวม logic ไว้ที่เดียวก็จริง แต่เพิ่ม component ใหม่ที่ต้องน่าเชื่อถือและกู้คืนตัวเองได้
 
 กฎเชิงปฏิบัติ: ใช้ **choreography** สำหรับ flow ที่สั้นและเรียบง่ายโดยมีผู้เข้าร่วมไม่กี่ตัว และใช้ **orchestration** เมื่อ flow มี branch มีหลาย step หรือต้องการให้คิดวิเคราะห์ในภาพรวมได้
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Database per Service](/microservices/th/data-management/database-per-service/) — ขอบเขตที่ทำให้ saga จำเป็น
 - [Event Sourcing](/microservices/th/data-management/event-sourcing/) — วิธีที่น่าเชื่อถือในการ publish event ที่ saga พึ่งพา
 - [CQRS](/microservices/th/data-management/cqrs/) — มักใช้เพื่อ query สถานะกลางที่ saga สร้างขึ้น
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | จัดการ distributed transaction โดยไม่ต้องใช้ 2-phase commit | eventual consistency — state อาจไม่ consistent ชั่วคราว |
 | service ยังคง autonomous — ไม่มี global lock | compensating transaction ซับซ้อน โดยเฉพาะถ้า fail กลางคัน |
 | ทนต่อ partial failure — rollback ได้ผ่าน compensating event | debug ยากเมื่อ saga ล้มเหลว — ต้อง trace ข้าม service |
 | scale ได้ดี — ไม่มี global coordinator lock ทั้งระบบ | idempotency ของทุก step เป็นสิ่งจำเป็น |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Saga ที่ไม่ Idempotent** — step ใน saga ทำซ้ำไม่ได้โดยปลอดภัย
 อาการ:
@@ -313,7 +313,7 @@ export const orchestrationDiagram = `sequenceDiagram
 - compensating logic ซับซ้อนมาก ทีมไม่มั่นใจว่า rollback ถูก
 - failure ตรงกลาง saga ทำให้ระบบอยู่ใน inconsistent state นาน
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Uber Eats:**
 > - order placement เป็น saga: validate order → charge payment → notify restaurant → assign driver
@@ -341,10 +341,10 @@ export const quizSaga = [
   {
     q: 'saga ยกเลิกงานที่ commit ไปแล้วใน step ก่อนหน้าได้อย่างไร?',
     options: [
-      'มันสั่ง ROLLBACK ของฐานข้อมูลบน service ปลายทาง',
-      'มันรัน compensating transaction — local transaction ที่เป็นด้านกลับเชิงความหมาย',
-      'มันลบ row โดยตรงผ่าน SQL',
-      'มันยกเลิกอะไรไม่ได้เลยเมื่อ commit ไปแล้ว',
+      'สั่ง ROLLBACK ของ database บน service ปลายทาง',
+      'รัน compensating transaction ที่เป็น local transaction ที่กลับด้านเชิงความหมาย',
+      'ลบ row ตรง ๆ ผ่าน SQL',
+      'ยกเลิกอะไรไม่ได้เลยเมื่อ commit ไปแล้ว',
     ],
     answer: 1,
   },
@@ -361,10 +361,10 @@ export const quizSaga = [
   {
     q: 'ข้อใดเป็นข้อเสียที่แท้จริงของ saga เมื่อเทียบกับ ACID transaction เดียว?',
     options: [
-      'มันต้องการให้ทุก service ใช้ฐานข้อมูลเดียวร่วมกัน',
-      'มันไม่ให้ความสอดคล้องเลยแม้แต่น้อย',
+      'บังคับให้ทุก service ใช้ database ร่วมกันตัวเดียว',
+      'ไม่ให้ความสอดคล้องเลยแม้แต่น้อย',
       'ไม่มี isolation ระหว่าง step ดังนั้นการดำเนินงานอื่นอาจสังเกตเห็นสถานะกลางที่ยังไม่สมบูรณ์',
-      'มันใช้กับ message broker ไม่ได้',
+      'ใช้กับ message broker ไม่ได้',
     ],
     answer: 2,
   },

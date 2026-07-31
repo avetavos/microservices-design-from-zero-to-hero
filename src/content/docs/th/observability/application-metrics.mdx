@@ -1,6 +1,6 @@
 ---
 title: Application Metrics
-description: 'เปิดเผย counters, gauges และ histograms — request rate, error rate และ latency ซึ่งเป็นสัญญาณ RED และ USE — เพื่อให้ dashboards สรุปสุขภาพของทั้ง fleet และ alerts ทำงานก่อนที่ผู้ใช้จะสังเกตเห็น'
+description: 'เปิดเผย counters, gauges และ histograms — request rate, error rate และ latency ที่เป็นสัญญาณ RED และ USE — เพื่อให้ dashboards สรุปสุขภาพของทั้ง fleet และ alerts ทำงานก่อนที่ผู้ใช้จะสังเกตเห็น'
 sidebar:
   order: 5
 ---
@@ -11,25 +11,25 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
-logs และ traces มีรายละเอียดและเป็นราย ๆ คำขอ — เหมาะอย่างยิ่งเมื่อคุณรู้แล้วว่ามีอะไรผิดและอยากสืบสวนคำขอหนึ่ง แต่มันตอบคำถามผิดสำหรับงานปฏิบัติการอีกครึ่งหนึ่ง คือ *ระบบแข็งแรงอยู่ตอนนี้โดยรวมหรือไม่?* คุณไม่สามารถเฝ้าดู log นับล้านบรรทัดต่อนาทีเพื่อสังเกตว่า error rate เพิ่งเพิ่มเป็นสองเท่า และคุณไม่สามารถเปิด trace เพื่อรู้ว่า p99 latency ทั้ง fleet กำลังค่อย ๆ ไต่ขึ้นตลอดบ่ายหรือไม่ คุณต้องการบทสรุปที่พอดีกับหน้าจอ และตัวเลขที่เครื่องสามารถเทียบกับ threshold ได้
+log และ trace ให้รายละเอียดระดับราย request เหมาะมากตอนที่คุณรู้แล้วว่ามีอะไรผิด แล้วอยากเจาะดู request ตัวนั้น แต่ตอบไม่ได้เลยกับงานปฏิบัติการอีกครึ่งหนึ่งที่ถามว่า *ตอนนี้ระบบโดยรวมยังแข็งแรงอยู่ไหม* คุณไม่มีทางไล่ดู log ล้านบรรทัดต่อนาทีเพื่อสังเกตว่า error rate เพิ่งเพิ่มเป็นสองเท่า และเปิด trace ทีละอันก็ไม่ช่วยให้รู้ว่า p99 latency ทั้ง fleet ค่อย ๆ ไต่ขึ้นตลอดบ่ายหรือเปล่า สิ่งที่คุณต้องการคือบทสรุปที่พอดีหน้าจอเดียว และตัวเลขที่เครื่องเอาไปเทียบกับ threshold ได้
 
-## Problem
+## ปัญหา
 
-สัญญาณที่มีรายละเอียดไม่ aggregate อย่างราคาถูก การนับ error ด้วยการ tail logs นั้นช้าและเปราะบาง; การคำนวณ latency percentile ข้ามทุก replica ด้วยการอ่าน traces นั้นแพงและเป็นการทำหลัง event และคุณต้องการมากกว่า snapshot ปัจจุบัน — คุณต้องการ trend ตามเวลา เพื่อให้คุณเห็นการเสื่อมสภาพที่กำลังก่อตัวและ alert *ก่อน* ที่มันจะกลายเป็นเหตุขัดข้อง แทนที่จะอ่านเกี่ยวกับมันหลังจากนั้น
+สัญญาณระดับรายละเอียดเอามา aggregate ได้ไม่ถูกเลย การนับ error ด้วยการ tail log ทั้งช้าและเปราะบาง การคำนวณ latency percentile ข้ามทุก replica ด้วยการอ่าน trace ก็แพงและได้คำตอบหลังเหตุการณ์จบไปแล้ว ที่สำคัญคุณต้องการมากกว่า snapshot ณ ปัจจุบัน คุณต้องการ trend ตามเวลา เพื่อให้เห็นการเสื่อมสภาพตั้งแต่ยังก่อตัว แล้ว alert *ก่อน* ที่จะกลายเป็นเหตุขัดข้อง ไม่ใช่มาอ่านย้อนหลังทีหลัง
 
 แล้วคุณจะผลิตบทสรุปเชิงตัวเลขที่ราคาถูก อัปเดตอย่างต่อเนื่องของพฤติกรรมบริการของคุณได้อย่างไร — request rate, errors, latency, การใช้ทรัพยากร — ที่ dashboard สามารถวาดกราฟและระบบ alerting สามารถเฝ้าดูได้
 
-## Solution
+## วิธีแก้
 
-**Application metrics** คือการวัดเชิงตัวเลขที่บริการของคุณรักษาไว้ในหน่วยความจำและเปิดเผยให้ระบบ monitoring เก็บไป มันมาในสามรูปทรงหลัก:
+**Application metrics** คือค่าวัดเชิงตัวเลขที่ service ของคุณเก็บไว้ในหน่วยความจำแล้วเปิดให้ระบบ monitoring มาดึงไป มีสามรูปแบบหลัก:
 
-- **Counter** — ค่าที่ขึ้นได้อย่างเดียวเท่านั้น (หรือรีเซ็ตเป็นศูนย์เมื่อ restart): จำนวนคำขอที่ให้บริการทั้งหมด, จำนวน error ทั้งหมด คุณวาดกราฟ *อัตรา* การเปลี่ยนแปลงของมัน
+- **Counter** — ค่าที่ขึ้นได้อย่างเดียว หรือรีเซ็ตเป็นศูนย์ตอน restart เช่น จำนวน request ที่ให้บริการทั้งหมด หรือจำนวน error ทั้งหมด สิ่งที่คุณเอาไปวาดกราฟคือ *อัตรา* การเปลี่ยนแปลง
 - **Gauge** — ค่าที่ขึ้นและลง: คำขอที่ in-flight ปัจจุบัน, ความลึกของ queue, ขนาดของ connection pool, หน่วยความจำที่ใช้อยู่
-- **Histogram** — การกระจายของค่าที่สังเกตได้ ถูกจัดลงถังตามช่วง: ระยะเวลาของคำขอ, ขนาดของ payload จากมันคุณคำนวณ percentile อย่าง p50, p95 และ p99 — ซื่อตรงกว่าค่าเฉลี่ยมาก
+- **Histogram** — การกระจายของค่าที่วัดได้ จัดลงถังตามช่วง เช่น ระยะเวลาของ request หรือขนาด payload แล้วคำนวณ percentile อย่าง p50, p95 และ p99 ออกมา ซึ่งบอกความจริงได้ตรงกว่าค่าเฉลี่ยมาก
 
-การตั้งค่าทั่วไปคือให้แต่ละบริการเปิดเผยค่า metric ปัจจุบันของมันที่ endpoint หนึ่ง (เช่น `/metrics`) และให้ **scraper** poll endpoint นั้นเป็นช่วง ๆ จัดเก็บแต่ละค่าที่อ่านได้เป็น time series ใน metrics database ที่ขับเคลื่อน dashboards และ alerts สอง framework เล็ก ๆ บอกคุณว่า metric *ใด* สำคัญ: **RED** (Rate, Errors, Duration) สำหรับบริการที่ขับเคลื่อนด้วยคำขอ และ **USE** (Utilization, Saturation, Errors) สำหรับทรัพยากรอย่าง CPU, memory และ queue
+รูปแบบที่ใช้กันทั่วไปคือให้แต่ละ service เปิดค่า metric ปัจจุบันไว้ที่ endpoint หนึ่ง เช่น `/metrics` แล้วให้ **scraper** มา poll เป็นช่วง ๆ เก็บทุกค่าที่อ่านได้เป็น time series ลง metrics database ที่เป็นตัวป้อน dashboard และ alert อีกที ส่วนคำถามว่า metric *ไหน* สำคัญ มีสอง framework สั้น ๆ ช่วยตอบ ได้แก่ **RED** คือ Rate, Errors, Duration สำหรับ service ที่ขับเคลื่อนด้วย request และ **USE** คือ Utilization, Saturation, Errors สำหรับทรัพยากรอย่าง CPU, memory และ queue
 
 export const metricsDiagram = `flowchart LR
   subgraph App[Service replica]
@@ -41,11 +41,11 @@ export const metricsDiagram = `flowchart LR
   TSDB --> DASH[Dashboards]
   TSDB --> ALERT[Alert rules]`;
 
-<Mermaid code={metricsDiagram} title="บริการอัปเดต metrics ในหน่วยความจำและเปิดเผยมัน; scraper poll และจัดเก็บ time series ที่ป้อนให้ dashboards และ alerts" />
+<Mermaid code={metricsDiagram} title="service อัปเดต metric ในหน่วยความจำแล้วเปิดออกมา scraper มา poll และเก็บเป็น time series ที่ป้อนให้ dashboard และ alert" />
 
-## Example
+## ตัวอย่าง
 
-สองการทำงานที่คุณหยิบใช้บ่อยที่สุด: เพิ่มค่า counter เมื่อคำขอเสร็จสิ้น (ติด label ตามผลลัพธ์) และสังเกต latency ของมันใน histogram สิ่งเหล่านี้ใช้ client สไตล์ Prometheus ซึ่งเป็น pattern โดยพฤตินัยข้ามภาษา
+สองอย่างที่คุณจะหยิบใช้บ่อยที่สุดคือ เพิ่มค่า counter เมื่อ request ทำเสร็จพร้อมติด label ตามผลลัพธ์ และบันทึก latency ของ request นั้นลง histogram ตัวอย่างข้างล่างใช้ client สไตล์ Prometheus ที่เป็น pattern มาตรฐานโดยพฤตินัยในทุกภาษา
 
 <Tabs syncKey="lang">
   <TabItem label="TypeScript">
@@ -158,33 +158,33 @@ export const metricsDiagram = `flowchart LR
   </TabItem>
 </Tabs>
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้รับ:
 
 - **สุขภาพของ fleet บนหน้าจอเดียว** กราฟ rate, errors และ duration สรุปคำขอนับพันข้ามทุก replica ลงเป็นไม่กี่เส้นที่คุณอ่านได้ในพริบตา
-- **Alerts ก่อนผู้ใช้บ่น** เพราะ metrics เป็น time series ที่ต่อเนื่อง คุณจึงสามารถ alert บน error rate ที่กำลังเพิ่มขึ้นหรือ p99 ที่ข้าม threshold และลงมือก่อนที่มันจะกลายเป็นเหตุขัดข้อง
+- **alert ได้ก่อนผู้ใช้บ่น** เพราะ metric เป็น time series ต่อเนื่อง คุณจึงตั้ง alert บน error rate ที่ไต่ขึ้นหรือ p99 ที่ข้าม threshold ได้ แล้วเข้าไปแก้ก่อนที่จะบานปลายเป็นเหตุขัดข้อง
 - **ราคาถูกและเปิดอยู่ตลอด** counter และ histogram แทบไม่มีต้นทุนในการอัปเดตในหน่วยความจำ และถูกเก็บด้วยการ poll ดังนั้น overhead จึงคงที่เมื่อทราฟฟิกโตขึ้น — ไม่เหมือนการ log ทุกคำขอ
 
-สิ่งที่มันมีต้นทุนกับคุณ:
+สิ่งที่คุณต้องจ่าย:
 
 - **Cardinality เป็นกับดัก** ทุกการผสมที่แตกต่างกันของค่า label เป็น time series แยกต่างหาก การใส่ user id หรือ raw URL ที่มี id ลงใน label สามารถระเบิดเป็น time series นับล้านและทำให้ metrics store ล่ม ให้ label เป็น low-cardinality — method, route template, status class
-- **ค่า aggregate ซ่อนรายตัว** metric บอกคุณว่า error rate เพิ่มขึ้น; มันบอกคุณไม่ได้ว่า *คำขอใด* ล้มเหลวหรือทำไม คุณยังต้องการ logs และ traces เพื่อเจาะลึก metrics ชี้; สัญญาณอื่นอธิบาย
+- **ค่า aggregate กลบรายตัว** metric บอกได้ว่า error rate เพิ่มขึ้น แต่บอกไม่ได้ว่า *request ไหน* ล้มเหลวและเพราะอะไร คุณยังต้องใช้ log และ trace เจาะลงไปอยู่ดี พูดง่าย ๆ คือ metric ชี้จุด ส่วนสัญญาณอื่นเป็นตัวอธิบาย
 - **Percentile ต้องการ histogram ไม่ใช่ค่าเฉลี่ย** latency เฉลี่ยที่ดูดีสามารถซ่อน p99 ที่แย่ได้ เลือก histogram bucket ที่ครอบคลุม service-level objective ของคุณ ไม่เช่นนั้น percentile ของคุณจะหยาบเกินไปจนไร้ประโยชน์
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
-- [Distributed Tracing](/microservices/th/observability/distributed-tracing/) — เมื่อ latency metric พุ่งขึ้น trace แสดงให้คุณเห็นว่า hop ใดก่อให้เกิดมัน
-- [Health Check API](/microservices/th/observability/health-check-api/) — health เป็นการตรวจแบบ binary; metrics เผยให้เห็นการเสื่อมถอยแบบค่อยเป็นค่อยไปที่นำหน้ามัน
+- [Distributed Tracing](/microservices/th/observability/distributed-tracing/) — เมื่อ latency metric พุ่ง trace จะชี้ให้เห็นว่า hop ไหนเป็นต้นเหตุ
+- [Health Check API](/microservices/th/observability/health-check-api/) — health check ตอบได้แค่ผ่านหรือไม่ผ่าน ส่วน metric เผยให้เห็นการเสื่อมถอยแบบค่อยเป็นค่อยไปที่เกิดขึ้นก่อนหน้านั้น
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | รู้ health ของระบบแบบ real-time โดยไม่ต้อง tail log | ต้องเลือก metric ที่ใช่ — metric มากเกินทำให้ noise สูง |
 | trigger alert เมื่อ metric เกิน threshold ได้อัตโนมัติ | cardinality สูง (เช่น tag ด้วย user_id) ทำให้ storage พุ่ง |
 | ดู trend ข้ามเวลา — เห็น degradation ก่อนที่จะพัง | metric ไม่บอก "ทำไม" — ต้องใช้ log และ trace ช่วย |
 | ใช้ตัดสินใจ capacity planning และ scaling | instrumenting code เพิ่ม complexity เล็กน้อย |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Metric Explosion (High Cardinality)** — ใช้ dynamic value เป็น label/tag
 อาการ:
@@ -197,7 +197,7 @@ export const metricsDiagram = `flowchart LR
 - นับ request count แต่ไม่นับ error rate หรือ latency percentile
 - dashboard สวยแต่ไม่ได้ช่วย debug incident
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Netflix:**
 > - ใช้ Atlas เป็น in-house time-series metric system
@@ -209,12 +209,12 @@ export const metricsDiagram = `flowchart LR
 > - SLO-based alerting — alert เมื่อ error budget หมด ไม่ใช่เมื่อ metric เกิน threshold เดี่ยว ๆ
 
 <Callout title="เลือกสัญญาณที่ถูกต้องสำหรับคำถาม">
-หยิบ metrics มาตอบคำถาม "ระบบโดยรวมเป็นอย่างไรตามเวลา?" และเพื่อขับเคลื่อน alerts หยิบ traces และ logs มาตอบคำถาม "เกิดอะไรขึ้นกับคำขอเดียวนี้?" anti-pattern ที่พบบ่อยคือการพยายามกู้คืนรายละเอียดราย ๆ คำขอจาก metrics ด้วยการเพิ่ม label ที่ high-cardinality — มันทำให้ metrics store ของคุณล้มละลายโดยไม่ให้สิ่งที่ logs และ traces ให้อยู่แล้ว ปล่อยให้แต่ละสัญญาณทำหน้าที่ของมัน
+ใช้ metric ตอบคำถามว่า "ระบบโดยรวมเป็นอย่างไรเมื่อเทียบตามเวลา" และใช้ขับเคลื่อน alert ส่วน trace กับ log เอาไว้ตอบว่า "เกิดอะไรขึ้นกับ request ตัวนี้" anti-pattern ที่เจอบ่อยคือพยายามดึงรายละเอียดราย request ออกมาจาก metric ด้วยการยัด label ที่ cardinality สูงเข้าไป วิธีนี้ทำให้ metrics store ของคุณพังงบ แล้วยังได้ข้อมูลไม่เท่าที่ log และ trace ให้อยู่แล้ว ปล่อยให้แต่ละสัญญาณทำหน้าที่ของตัวเองดีกว่า
 </Callout>
 
 export const quizMetrics = [
   {
-    q: 'Which metric type would you use for request latency so you can compute p95 and p99?',
+    q: 'ควรใช้ metric ชนิดใดกับ request latency เพื่อให้คำนวณ p95 และ p99 ได้',
     options: [
       'counter',
       'gauge',
@@ -224,7 +224,7 @@ export const quizMetrics = [
     answer: 2,
   },
   {
-    q: 'What do the RED signals stand for?',
+    q: 'สัญญาณแบบ RED ย่อมาจากอะไร',
     options: [
       'Reads, Edits, Deletes',
       'Rate, Errors, Duration',
@@ -234,12 +234,12 @@ export const quizMetrics = [
     answer: 1,
   },
   {
-    q: 'Why is putting a user id into a metric label dangerous?',
+    q: 'ทำไมการใส่ user id ลงใน metric label จึงอันตราย',
     options: [
-      'มันขัดต่อ license ของ Prometheus',
-      'มันสร้าง time series แยกต่อค่าที่แตกต่างกันแต่ละค่า ซึ่งสามารถระเบิด cardinality และทำให้ metrics store ล่ม',
+      'ผิดเงื่อนไข license ของ Prometheus',
+      'สร้าง time series แยกหนึ่งเส้นต่อค่าที่ต่างกันหนึ่งค่า ทำให้ cardinality ระเบิดและ metrics store ล่ม',
       'user id ไม่สามารถแปลงเป็น string ได้',
-      'มันทำให้ /metrics endpoint คืนค่า 503',
+      'ทำให้ /metrics endpoint คืนค่า 503',
     ],
     answer: 1,
   },

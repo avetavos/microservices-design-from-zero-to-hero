@@ -1,6 +1,6 @@
 ---
 title: Decompose by Business Capability
-description: 'นิยาม service รอบ ๆ สิ่งที่ธุรกิจทำ — Order Management, Billing, Shipping — แทนที่จะรอบ ๆ ชั้นทางเทคนิค เพื่อให้เส้นแบ่งของ service อิงตาม business capability ที่มั่นคงขององค์กรและแทบไม่ต้องขยับ'
+description: 'นิยาม service ตามสิ่งที่ธุรกิจทำ — Order Management, Billing, Shipping — แทนที่จะนิยามตามชั้นทางเทคนิค เส้นแบ่ง service จึงอิงกับ business capability ที่มั่นคงและแทบไม่ต้องขยับ'
 sidebar:
   order: 2
 ---
@@ -11,23 +11,23 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
-คุณกำลังจะแกะระบบออกเป็น service และคุณต้องการหลักการแรกมาชี้นำการตัดแบ่ง คุณต้องการเส้นแบ่งที่ยังคงมีเหตุผลในอีกสามปีข้างหน้า มีทีมเป็นเจ้าของที่สามารถส่งมอบงานได้โดยไม่ต้องเจรจาข้ามทีมตลอดเวลา สัญชาตญาณของวิศวกรหลายคนคือการหั่นตามเทคโนโลยี — service หนึ่งสำหรับ API, หนึ่งสำหรับ workflow engine, หนึ่งสำหรับ reporting jobs — เพราะนั่นคือวิธีที่ codebase ถูกจัดเรียงอยู่แล้วในหัวของพวกเขา
+คุณกำลังจะแกะระบบออกเป็น service และอยากได้หลักการสักข้อมาชี้นำการตัดแบ่ง คุณต้องการเส้นแบ่งที่ยังฟังขึ้นในอีกสามปีข้างหน้า และมีทีมเจ้าของที่ส่งงานได้โดยไม่ต้องเจรจาข้ามทีมตลอดเวลา วิศวกรหลายคนมีสัญชาตญาณจะหั่นตามเทคโนโลยี — service หนึ่งสำหรับ API หนึ่งสำหรับ workflow engine หนึ่งสำหรับ reporting job — เพราะภาพ codebase ในหัวเขาเรียงมาแบบนั้นอยู่แล้ว
 
-## Problem
+## ปัญหา
 
-เทคโนโลยีเปลี่ยนเร็วกว่าสิ่งที่ธุรกิจทำจริงมาก framework มาแล้วก็ไป, data store ถูกสับเปลี่ยน, API ย้ายจาก REST ไป gRPC — แต่ผู้ค้าปลีกก็ยังรับ order, เก็บเงินลูกค้า, และจัดส่งสินค้าอยู่ดี ถ้าคุณวาดเส้นแบ่งของ service รอบ ๆ เทคโนโลยีของวันนี้ ทุกครั้งที่เทคโนโลยีเหล่านั้นเปลี่ยนก็จะบังคับให้คุณต้อง decompose ใหม่ ที่แย่กว่านั้นคือ การหั่นตามชั้นรับประกันได้เลยว่าการเปลี่ยนแปลงทางธุรกิจที่ง่ายที่สุด — เช่น เพิ่มกฎส่วนลด — จะไปแตะ web service, logic service, และ data service พร้อมกัน เส้นที่คุณวาดไม่ตรงกับเส้นที่ระบบเปลี่ยนแปลงจริง
+เทคโนโลยีเปลี่ยนเร็วกว่าสิ่งที่ธุรกิจทำจริงมาก framework มาแล้วก็ไป data store โดนสับเปลี่ยน API ย้ายจาก REST ไป gRPC แต่ร้านค้าปลีกก็ยังรับ order เก็บเงินลูกค้า และจัดส่งสินค้าเหมือนเดิม ถ้าคุณวาดเส้นแบ่ง service ตามเทคโนโลยีของวันนี้ ทุกครั้งที่เทคโนโลยีเปลี่ยนคุณก็ต้อง decompose ใหม่ ที่แย่กว่านั้นคือการหั่นตามชั้นทำให้การเปลี่ยนแปลงทางธุรกิจที่ง่ายที่สุด อย่างการเพิ่มกฎส่วนลด ต้องไปแตะ web service, logic service และ data service พร้อมกัน เส้นที่คุณวาดไม่ตรงกับเส้นที่ระบบเปลี่ยนแปลงจริง
 
-ดังนั้นแรงต่าง ๆ คือ คุณต้องการเส้นแบ่งที่ *มั่นคง* ที่ให้ *cohesion สูง* (ทุกอย่างที่เปลี่ยนพร้อมกันอยู่ด้วยกัน) และ *coupling ต่ำ* (service แทบไม่ต้องเปลี่ยนพร้อม ๆ กัน) และที่แมปลงไปบนโครงสร้างขององค์กรได้อย่างหมดจด
+แรงที่ขัดกันจึงเป็นแบบนี้ คุณต้องการเส้นแบ่งที่ *มั่นคง* ให้ *cohesion สูง* คือทุกอย่างที่เปลี่ยนพร้อมกันอยู่ด้วยกัน และ *coupling ต่ำ* คือ service แทบไม่ต้องเปลี่ยนพร้อมกัน แถมต้อง map ลงโครงสร้างองค์กรได้พอดี
 
-## Solution
+## วิธีแก้
 
-**business capability** คือสิ่งที่องค์กรทำเพื่อสร้างคุณค่า มันตอบคำถามว่า "ธุรกิจนี้ *ทำ* อะไร?" โดยจงใจมองข้ามว่า *ทำอย่างไร* ในปัจจุบัน capability มั่นคงก็เพราะมันถูกนิยามด้วยวัตถุประสงค์ ไม่ใช่ implementation สำหรับบริษัท e-commerce capability อาจรวมถึง Order Management, Product Catalog, Inventory, Billing, Shipping, และ Customer Accounts
+**business capability** คือสิ่งที่องค์กรทำเพื่อสร้างคุณค่า เป็นคำตอบของคำถามว่า "ธุรกิจนี้ *ทำ* อะไร" โดยจงใจไม่สนใจว่าตอนนี้ *ทำอย่างไร* capability มั่นคงเพราะนิยามด้วยวัตถุประสงค์ ไม่ใช่ implementation สำหรับบริษัท e-commerce capability อาจได้แก่ Order Management, Product Catalog, Inventory, Billing, Shipping และ Customer Accounts
 
-pattern นี้คือการ **นิยามหนึ่ง service ต่อหนึ่ง business capability** (หรือต่อหนึ่งกลุ่ม capability ที่เกี่ยวข้องกันอย่างใกล้ชิด) คุณระบุ capability ได้ด้วยการศึกษาองค์กร คือ วัตถุประสงค์, โครงสร้าง, และ value stream ที่มันทำงาน capability มักเป็นลำดับชั้น — Order Management อาจประกอบด้วย Order Capture, Order Fulfilment, และ Returns — ซึ่งให้คันโยกตามธรรมชาติแก่คุณในการเลือกว่าจะทำให้แต่ละ service หยาบหรือละเอียดแค่ไหน
+pattern นี้คือ **หนึ่ง service ต่อหนึ่ง business capability** หรือต่อหนึ่งกลุ่ม capability ที่เกี่ยวข้องกันแน่น วิธีหา capability คือศึกษาองค์กร ทั้งวัตถุประสงค์ โครงสร้าง และ value stream ที่องค์กรทำงานอยู่ capability มักซ้อนกันเป็นลำดับชั้น เช่น Order Management อาจประกอบด้วย Order Capture, Order Fulfilment และ Returns ลำดับชั้นนี้แหละคือคันโยกตามธรรมชาติที่ให้คุณเลือกว่าจะทำ service หยาบหรือละเอียดแค่ไหน
 
-เพราะ capability สะท้อนว่าธุรกิจ *ทำอะไร* มากกว่า *ทำอย่างไร* เส้นแบ่งที่ได้จึงทนทาน คุณสามารถเขียนภายในของ service ใหม่ สับเปลี่ยน database หรือเปลี่ยน API ของมัน แล้วเส้นแบ่งก็ยังคงอยู่ เพราะ capability ที่มันเป็นตัวแทนนั้นไม่ได้เปลี่ยน
+เพราะ capability สะท้อนว่าธุรกิจ *ทำอะไร* ไม่ใช่ *ทำอย่างไร* เส้นแบ่งที่ได้จึงทนทาน คุณเขียนภายใน service ใหม่ สับ database หรือเปลี่ยน API ได้ แต่เส้นแบ่งยังอยู่ที่เดิม เพราะ capability ที่ service นั้นเป็นตัวแทนไม่ได้เปลี่ยนไปไหน
 
 export const capabilityDiagram = `flowchart LR
   subgraph Org[Business capabilities]
@@ -46,11 +46,11 @@ export const capabilityDiagram = `flowchart LR
   SHP --> SSHP[Shipping Service]
   ACC --> SACC[Account Service]`;
 
-<Mermaid code={capabilityDiagram} title="แต่ละ business capability กลายเป็น service หนึ่งตัว เส้นแบ่งอิงตามสิ่งที่ธุรกิจทำ ไม่ใช่วิธีที่มันถูกสร้าง" />
+<Mermaid code={capabilityDiagram} title="แต่ละ business capability กลายเป็น service หนึ่งตัว เส้นแบ่งอิงตามสิ่งที่ธุรกิจทำ ไม่ใช่วิธีสร้างระบบ" />
 
-## Example
+## ตัวอย่าง
 
-capability เป็นเรื่องเชิงแนวคิด แต่มันปรากฏออกมาอย่างเป็นรูปธรรมในรูปของ module ที่คุณใช้จัดระเบียบ code และความเป็นเจ้าของ snippet ด้านล่างไม่ใช่ algorithm มันเพียงบันทึก capability map เป็น manifest เล็ก ๆ ซึ่งเป็น artefact ประเภทที่ทีมเก็บไว้เพื่อทำให้เส้นแบ่งชัดเจนและตรวจทานได้
+capability เป็นเรื่องเชิงแนวคิด แต่ออกมาเป็นรูปธรรมในรูปของ module ที่คุณใช้จัดระเบียบ code และความเป็นเจ้าของ snippet ด้านล่างไม่ใช่ algorithm แต่เป็นการบันทึก capability map ไว้เป็น manifest เล็ก ๆ เป็นเอกสารแบบที่ทีมเก็บไว้เพื่อให้เส้นแบ่งชัดและตรวจทานกันได้
 
 <Tabs syncKey="lang">
   <TabItem label="TypeScript">
@@ -135,34 +135,34 @@ capability เป็นเรื่องเชิงแนวคิด แต�
   </TabItem>
 </Tabs>
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้:
 
-- **เส้นแบ่งที่มั่นคง** capability เปลี่ยนช้ากว่าเทคโนโลยีมาก service ที่วาดรอบ ๆ มันจึงแทบไม่ต้องถูกตัดใหม่ การเขียนใหม่ยังคงอยู่ภายใน service เดียว
-- **cohesion สูง, coupling ต่ำ** ทุกอย่างที่จำเป็นต่อการทำ capability หนึ่งอยู่ในที่เดียว ดังนั้นการเปลี่ยนแปลงทางธุรกิจส่วนใหญ่จึงตกลงใน service เดียวแทนที่จะกระเพื่อมข้ามหลาย service
-- **การแมปลงองค์กรอย่างหมดจด** capability มักเรียงตรงกับวิธีที่ธุรกิจคิดเกี่ยวกับตัวเองอยู่แล้ว ซึ่งทำให้การกำหนดความเป็นเจ้าของและความรับผิดชอบเป็นเรื่องง่าย
+- **เส้นแบ่งมั่นคง** capability เปลี่ยนช้ากว่าเทคโนโลยีมาก service ที่วาดตาม capability จึงแทบไม่ต้องตัดใหม่ การเขียนใหม่จบอยู่ใน service เดียว
+- **cohesion สูง coupling ต่ำ** ทุกอย่างที่ต้องใช้ทำ capability หนึ่งอยู่ในที่เดียวกัน การเปลี่ยนแปลงทางธุรกิจส่วนใหญ่จึงลงที่ service เดียว ไม่กระเพื่อมข้ามหลายตัว
+- **map ลงองค์กรได้พอดี** capability มักเรียงตรงกับวิธีที่ธุรกิจมองตัวเองอยู่แล้ว การกำหนดความเป็นเจ้าของและความรับผิดชอบจึงง่าย
 
 สิ่งที่คุณต้องจ่าย:
 
-- **คุณต้องเข้าใจธุรกิจจริง ๆ** นี่คือส่วนที่ยาก การระบุ capability ได้ดีต้องอาศัยความรู้เรื่อง domain และการพูดคุยกับคนนอกฝ่ายวิศวกรรม map ที่ตื้นเขินจะให้เส้นแบ่งที่ตื้นเขิน
-- **ความหยาบ-ละเอียดเป็นเรื่องของวิจารณญาณ** capability ซ้อนกันได้ การตัดสินว่า Order Capture และ Returns เป็นหนึ่ง service หรือสองนั้นไม่ใช่เรื่องกลไก หยาบเกินไปคุณก็สร้าง mini-monolith ขึ้นมาใหม่ ละเอียดเกินไปคุณก็จมอยู่กับการคุยกันข้าม service
-- **มันไม่ได้ให้โมเดลร่วมแก่คุณด้วยตัวมันเอง** สอง service อาจใช้คำว่า "order" เพื่อหมายถึงสิ่งที่ต่างกันเล็กน้อย การ decompose ด้วย capability หยุดก่อนจะแก้ปัญหานั้น ซึ่งเป็นจุดที่การ decompose ด้วย subdomain เข้ามารับช่วงพอดี
+- **คุณต้องเข้าใจธุรกิจจริง ๆ** นี่คือส่วนที่ยาก การระบุ capability ให้ดีต้องอาศัยความรู้ domain และต้องคุยกับคนนอกฝ่ายวิศวกรรม map ตื้น ๆ ก็ได้เส้นแบ่งตื้น ๆ
+- **ความหยาบละเอียดต้องใช้วิจารณญาณ** capability ซ้อนกันได้ การตัดสินว่า Order Capture กับ Returns ควรเป็นหนึ่งหรือสอง service ไม่มีสูตรตายตัว หยาบไปก็ได้ mini-monolith กลับมา ละเอียดไปก็จมอยู่กับการคุยข้าม service
+- **ไม่ได้แก้เรื่องโมเดลร่วมให้** สอง service อาจใช้คำว่า "order" ในความหมายที่ต่างกันนิดหน่อย การแบ่งด้วย capability หยุดก่อนจะแก้เรื่องนี้ และนี่คือจุดที่การแบ่งด้วย subdomain เข้ามารับช่วงต่อพอดี
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
-- [Decompose by Subdomain](/microservices/th/decomposition/decompose-by-subdomain/) — วิธีที่เสริมกันและขับเคลื่อนด้วยโมเดล ในการค้นหาและทำให้เส้นแบ่งเดียวกันคมชัดขึ้น
-- [Service per Team](/microservices/th/decomposition/service-per-team/) — เพราะ capability แมปลงทีมได้ มันจึงทำให้ความเป็นเจ้าของเป็นเรื่องธรรมชาติ
-- [ภาพรวมการ decompose](/microservices/th/decomposition/) — กลยุทธ์นี้เข้ากันกับกลยุทธ์อื่น ๆ อย่างไร
+- [Decompose by Subdomain](/microservices/th/decomposition/decompose-by-subdomain/) — วิธีเสริมที่ขับเคลื่อนด้วยโมเดล ใช้หาและเกลาเส้นแบ่งชุดเดียวกันให้คมขึ้น
+- [Service per Team](/microservices/th/decomposition/service-per-team/) — เพราะ capability map ลงทีมได้ ความเป็นเจ้าของจึงลงตัวโดยธรรมชาติ
+- [ภาพรวมการ decompose](/microservices/th/decomposition/) — กลยุทธ์นี้เข้ากับกลยุทธ์อื่นอย่างไร
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | service boundary สอดคล้องกับ org structure — ลด cross-team coordination | ต้องเข้าใจ business capability ก่อน — ถ้าผิดต้องแก้ทีหลัง |
 | แต่ละ service เปลี่ยนได้ตาม business ไม่กระทบ service อื่น | business capability อาจ overlap — เส้นแบ่งไม่ชัดเสมอไป |
 | Conway's Law เป็นประโยชน์ — team = service | capability coarse-grained เกินไป → service ใหญ่ไป, fine-grained เกินไป → service เล็กเกิน |
 | ง่ายต่อการอธิบายให้ stakeholder เข้าใจ | ต้องการ business analysis ก่อน — ไม่ใช่แค่ technical design |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Copy-paste Org Chart** — แปลง org chart ตรง ๆ เป็น service โดยไม่วิเคราะห์ capability
 อาการ:
@@ -174,7 +174,7 @@ capability เป็นเรื่องเชิงแนวคิด แต�
 - service boundary เปลี่ยนทุก quarter ตาม business priority
 - refactor service บ่อยมากจนไม่มีเวลา build feature
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Amazon:**
 > - แบ่ง service ตาม business capability: catalog, ordering, payment, fulfillment, recommendation
@@ -186,37 +186,37 @@ capability เป็นเรื่องเชิงแนวคิด แต�
 > - แต่ละ capability deploy และ scale อิสระ
 
 <Callout title="อะไร ไม่ใช่ อย่างไร">
-กลเม็ดทั้งหมดของ pattern นี้คือการถามว่า "ธุรกิจทำอะไร?" และดื้อรั้นปฏิเสธที่จะตอบว่า "ปัจจุบันมันถูกสร้างอย่างไร" ทันทีที่ชื่อ service บรรยายถึงเทคโนโลยีหรือชั้นหนึ่ง — `gateway-service`, `database-service` — คุณก็คงหั่นผิดแกนไปแล้ว ชื่อ capability อ่านได้เหมือนบทต่าง ๆ ในเรื่องราวของบริษัทเอง คือ Order Management, Billing, Shipping
+เคล็ดลับทั้งหมดของ pattern นี้คือถามว่า "ธุรกิจทำอะไร" แล้วดื้อไม่ยอมตอบว่า "ตอนนี้ระบบสร้างมาแบบไหน" ทันทีที่ชื่อ service เริ่มบอกชื่อเทคโนโลยีหรือชื่อชั้น เช่น `gateway-service` หรือ `database-service` แปลว่าคุณหั่นผิดแกนไปแล้ว ชื่อ capability ควรอ่านเหมือนบทต่าง ๆ ในเรื่องราวของบริษัท เช่น Order Management, Billing, Shipping
 </Callout>
 
 export const quizCapability = [
   {
-    q: 'What is a business capability?',
+    q: 'business capability คืออะไร',
     options: [
       'เทคโนโลยีเฉพาะอย่างที่ระบบใช้',
-      'สิ่งที่องค์กรทำเพื่อสร้างคุณค่า ซึ่งถูกนิยามด้วยวัตถุประสงค์มากกว่า implementation',
+      'สิ่งที่องค์กรทำเพื่อสร้างคุณค่า นิยามด้วยวัตถุประสงค์ ไม่ใช่ implementation',
       'ชั้นหนึ่งในสถาปัตยกรรมของแอปพลิเคชัน',
-      'การจัดกลุ่มของตารางใน database',
+      'กลุ่มของตารางใน database',
     ],
     answer: 1,
   },
   {
-    q: 'Why are boundaries drawn around business capabilities considered stable?',
+    q: 'ทำไมเส้นแบ่งที่วาดตาม business capability จึงถือว่ามั่นคง',
     options: [
-      'เพราะกฎหมายกำหนดให้มันต้องคงที่',
-      'เพราะ capability สะท้อน *สิ่งที่* ธุรกิจทำ ซึ่งเปลี่ยนช้ากว่าเทคโนโลยีที่ใช้ทำมันมาก',
-      'เพราะ service ไม่สามารถ redeploy ได้อีกเลยเมื่อสร้างแล้ว',
-      'เพราะ capability ถูกเลือกโดยผู้ขาย database',
+      'เพราะมีกฎหมายกำหนดให้ห้ามเปลี่ยน',
+      'เพราะ capability สะท้อน *สิ่งที่* ธุรกิจทำ ซึ่งเปลี่ยนช้ากว่าเทคโนโลยีที่ใช้ทำมาก',
+      'เพราะ service จะ redeploy ไม่ได้อีกเลยเมื่อสร้างเสร็จ',
+      'เพราะผู้ขาย database เป็นคนเลือก capability ให้',
     ],
     answer: 1,
   },
   {
-    q: 'Which is a genuine drawback of decomposing by business capability?',
+    q: 'ข้อใดคือข้อเสียจริงของการแบ่งด้วย business capability',
     options: [
-      'มันบังคับให้ทุก service ใช้ database ร่วมกันเพียงตัวเดียว',
-      'มันต้องอาศัยความเข้าใจ domain อย่างแท้จริง และการเลือกความหยาบ-ละเอียดที่ถูกต้องเป็นเรื่องของวิจารณญาณ',
-      'มันทำให้ service ไม่สามารถ deploy ได้อย่างอิสระ',
-      'มันใช้ได้กับภาษาโปรแกรมเดียวเท่านั้น',
+      'บังคับให้ทุก service ใช้ database ร่วมกันเพียงตัวเดียว',
+      'ต้องอาศัยความเข้าใจ domain อย่างแท้จริง และการเลือกความหยาบละเอียดที่พอดีต้องใช้วิจารณญาณ',
+      'ทำให้ service deploy อย่างอิสระไม่ได้',
+      'ใช้ได้กับภาษาโปรแกรมเดียวเท่านั้น',
     ],
     answer: 1,
   },

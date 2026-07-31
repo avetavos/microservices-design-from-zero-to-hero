@@ -11,25 +11,25 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
 service ของคุณคุยกันอยู่ตลอดเวลา และทุก call เหล่านั้นต้องการมาตรการป้องกันชุดเดียวกันไม่กี่อย่าง: traffic ควรถูกเข้ารหัส, request ที่ล้มเหลวควรถูก retry ตามจำนวนที่จำกัด, callee ที่ช้าควรชน timeout แทนที่จะค้าง caller ไว้ และทุก call ควรปล่อย metric และ trace span ออกมา ในโมดูล reliability และ observability คุณได้เรียนรู้การ build สิ่งเหล่านี้เข้าไปใน service — circuit breaker, retry, การ instrument
 
-ปัญหาคือตอนนี้คุณมียี่สิบ service ในสี่ภาษา และแต่ละตัวต้อง implement มันทั้งหมดให้ถูกต้องและเหมือนกัน retry logic ของทีม Go ต่างจากของทีม Java เล็กน้อย mTLS ถูกตั้งค่าสามแบบต่างกัน service หนึ่งลืมปล่อย trace ไปเลย networking logic แบบ cross-cutting ตัวเดียวกันถูก implement ใหม่ ไม่สอดคล้องกัน อยู่ทุกที่
+ปัญหาคือตอนนี้คุณมียี่สิบ service เขียนด้วยสี่ภาษา และทุกตัวต้อง implement เรื่องพวกนี้ให้ถูกและเหมือนกันหมด retry logic ของทีม Go ต่างจากของทีม Java นิดหน่อย mTLS ตั้งค่าไว้สามแบบไม่เหมือนกัน แล้วมี service หนึ่งลืมปล่อย trace ไปเลย สรุปคือ networking logic ชุดเดียวกันถูก implement ซ้ำแบบไม่สอดคล้องกันกระจายอยู่ทุกที่
 
-## Problem
+## ปัญหา
 
-คุณต้องการให้ทุก call ระหว่าง service ถูกเข้ารหัส, retry, timeout, ถูกสังเกต และ route ตาม policy เดียวที่สอดคล้องกัน — โดยไม่ต้องขอให้ทุกทีมในทุกภาษาเขียนและดูแล logic นั้นด้วยมือ คุณต้องการเปลี่ยน policy (เข้มงวด timeout, เลื่อน 5% ของ traffic ไปยัง canary) จากส่วนกลางโดยไม่ต้อง redeploy service และคุณต้องการให้มันทำงานเหมือนกันไม่ว่า service จะเป็น Go, Java, Python หรือ Rust
+คุณอยากให้ทุก call ระหว่าง service ถูกเข้ารหัส มี retry มี timeout ถูกเก็บ telemetry และ route ตาม policy ชุดเดียวที่สอดคล้องกัน โดยไม่ต้องให้ทุกทีมในทุกภาษามานั่งเขียนและดูแล logic นั้นเอง คุณอยากปรับ policy จากส่วนกลาง เช่น บีบ timeout ให้แคบลง หรือเลื่อน traffic 5% ไปหา canary โดยไม่ต้อง redeploy service และอยากให้ทำงานเหมือนกันหมดไม่ว่า service จะเขียนด้วย Go, Java, Python หรือ Rust
 
-ดังนั้นแรงที่ขัดแย้งกันคือ: พฤติกรรม networking ที่สอดคล้องกันและถูกควบคุมจากส่วนกลาง ข้ามกองทัพแบบ polyglot โดยใช้กับ service ที่แบก business logic โดยไม่ต้องแก้ไขหรือ redeploy มัน
+แรงที่ขัดกันจึงเป็นแบบนี้ คุณต้องการพฤติกรรม networking ที่สอดคล้องกันและคุมได้จากส่วนกลาง ครอบระบบแบบ polyglot ทั้งหมด และต้องใช้กับ service ที่แบก business logic อยู่ได้โดยไม่ต้องแก้ code หรือ redeploy
 
-## Solution
+## วิธีแก้
 
-รับเอา **service mesh** มาใช้ mesh ย้ายเรื่อง communication เหล่านี้ทั้งหมดออกจาก service และเข้าไปไว้ใน **sidecar proxy** — process proxy เล็ก ๆ ที่ deploy ในหน่วยเดียวกับแต่ละ service instance ทุก byte ที่ service ส่งหรือรับจะผ่าน sidecar ของมัน sidecar ไม่ใช่ code ของคุณ ที่ทำ mutual TLS, ใช้ retry และ timeout, บังคับ routing rule และบันทึก metric และ trace
+คำตอบคือใช้ **service mesh** ซึ่งย้ายเรื่อง communication ทั้งหมดออกจาก service ไปไว้ใน **sidecar proxy** คือ proxy process เล็ก ๆ ที่ deploy อยู่ในหน่วยเดียวกับ service instance แต่ละตัว ทุก byte ที่ service ส่งออกหรือรับเข้าจะวิ่งผ่าน sidecar และตัวที่ทำ mutual TLS ใส่ retry และ timeout บังคับ routing rule และเก็บ metric กับ trace ก็คือ sidecar ไม่ใช่ code ของคุณ
 
-เพราะ proxy อยู่ในเส้นทาง network และเป็นกลางต่อภาษา service จึงไม่รับรู้ถึงมัน Go service และ Java service ได้พฤติกรรม mTLS, retry และ telemetry เหมือนกัน เพราะ proxy ตัวเดียวกัน implement มันให้ทั้งสอง
+เพราะ proxy วางอยู่บนเส้นทาง network และไม่ผูกกับภาษาใด ตัว service จึงไม่ต้องรู้ด้วยซ้ำว่ามี proxy อยู่ Go service กับ Java service ได้พฤติกรรม mTLS, retry และ telemetry เหมือนกันเป๊ะ เพราะ proxy ตัวเดียวกันเป็นคน implement ให้ทั้งคู่
 
-กองทัพของ sidecar คือ **data plane** — มันแบก traffic จริง ส่วน **control plane** ที่แยกต่างหากเป็นผู้ตั้งค่ามัน: คุณแสดง policy ครั้งเดียว (route นี้, timeout นี้, traffic split นี้) แล้ว control plane จะ push configuration ที่ได้ไปยังทุก sidecar การเปลี่ยน policy คือการ update control plane ไม่ใช่การ redeploy service
+กองทัพ sidecar ทั้งหมดเรียกว่า **data plane** ที่เป็นตัวแบก traffic จริง ส่วน **control plane** ที่แยกออกมาต่างหากทำหน้าที่ตั้งค่าให้ คุณประกาศ policy ครั้งเดียว เช่น route นี้ timeout นี้ traffic split นี้ แล้ว control plane จะ push configuration ที่ได้ไปยังทุก sidecar การเปลี่ยน policy จึงเป็นแค่การ update control plane ไม่ใช่การ redeploy service
 
 export const meshDiagram = `flowchart TB
   CP[Control plane: policy + certificates]
@@ -49,7 +49,7 @@ export const meshDiagram = `flowchart TB
 
 <Mermaid code={meshDiagram} title="แต่ละ service รันข้าง sidecar proxy (data plane); control plane push policy และ certificate ไปยังทุก sidecar" />
 
-## Example
+## ตัวอย่าง
 
 คุณอธิบายพฤติกรรม traffic เป็น policy ที่ control plane กระจายออกไป policy นี้ตั้ง timeout และ retry แบบจำกัดสำหรับ call ไปยัง payment service และ split traffic เพื่อให้ 90% ไปยังเวอร์ชัน stable และ 10% ไปยัง canary — โดยไม่ต้องไปแตะ code ของ payment service เลย
 
@@ -76,11 +76,11 @@ spec:
 
 control plane แปลสิ่งนี้เป็น configuration สำหรับทุก sidecar ที่ call `payment-service` เพื่อเลื่อน canary ไปข้างหน้า คุณเปลี่ยน weight ที่นี่ ไม่มี service ใดถูก build ใหม่หรือ redeploy
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้:
 
-- **networking แบบ cross-cutting ที่สอดคล้องกัน** mTLS, retry, timeout และ telemetry ทำงานเหมือนกันสำหรับทุก service ไม่ว่าจะภาษาใด เพราะ proxy ตัวเดียว implement มันทั้งหมด
+- **networking แบบ cross-cutting ที่สอดคล้องกันทั้งระบบ** mTLS, retry, timeout และ telemetry ทำงานเหมือนกันในทุก service ไม่ว่าเขียนด้วยภาษาอะไร เพราะ proxy ตัวเดียวเป็นคน implement ให้ทั้งหมด
 - **การควบคุมจากส่วนกลางโดยไม่ต้องเขียน code** policy ด้าน routing, security และ resilience อยู่ใน control plane การปล่อย canary, การเลื่อน traffic และการ timeout ที่เข้มขึ้นเป็นการเปลี่ยน configuration ไม่ใช่การ redeploy
 - **observability และ zero-trust ในตัว** ทุก hop ถูก trace และวัดอัตโนมัติ และ traffic ระหว่าง service ถูกเข้ารหัสและพิสูจน์ตัวตนโดยค่าเริ่มต้น
 
@@ -90,22 +90,22 @@ control plane แปลสิ่งนี้เป็น configuration สำห
 - **ความซับซ้อนด้าน operation** mesh เป็นระบบ distributed ที่ซับซ้อนซึ่งคุณต้องติดตั้ง, upgrade และ debug control plane ที่ตั้งค่าผิดสามารถทำลาย communication ทั่วทั้งกองทัพได้
 - **อีกชั้นหนึ่งที่ต้องคิดถึง** เมื่อ call ล้มเหลว คำตอบอาจอยู่ใน service ของคุณ, sidecar หรือ policy ของ control plane — มีชิ้นส่วนที่ขยับได้มากขึ้นระหว่างต้นเหตุกับอาการ
 
-กฎที่ใช้ได้จริง: mesh คุ้มค่าเมื่อคุณมี service แบบ polyglot จำนวนมากและมีความต้องการจริงด้าน mTLS, การควบคุม traffic และ telemetry ที่สม่ำเสมอ สำหรับ service ไม่กี่ตัว มันมักเป็นเครื่องจักรที่มากเกินกว่าที่ปัญหาต้องการ
+กฎที่ใช้ได้จริงคือ mesh จะคุ้มก็ต่อเมื่อคุณมี service แบบ polyglot จำนวนมาก และมีความต้องการจริงเรื่อง mTLS การควบคุม traffic และ telemetry ที่สม่ำเสมอ ถ้ามี service แค่ไม่กี่ตัว mesh มักเป็นเครื่องจักรที่ใหญ่เกินกว่าปัญหาที่มี
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Service per Container](/microservices/th/deployment-and-cross-cutting/service-per-container/) — sidecar มักเป็น container ตัวที่สองที่ deploy ข้าง service container
 - [Microservice Chassis](/microservices/th/deployment-and-cross-cutting/microservice-chassis/) — ทางเลือกแบบ in-process สำหรับบางเรื่องเดียวกัน mesh และ chassis มักถูกใช้ร่วมกัน
 - [Externalized Configuration](/microservices/th/deployment-and-cross-cutting/externalized-configuration/) — policy ของ mesh เองก็เป็น externalized configuration ที่ถูก push โดย control plane
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | traffic management, retry, circuit breaker ทำที่ infrastructure — ไม่ต้องแก้ code | เพิ่ม complexity ของ infrastructure มาก — sidecar ทุก pod |
 | mTLS ระหว่าง service อัตโนมัติ — zero-trust security | latency เพิ่มเล็กน้อยจาก sidecar proxy |
 | observability ครบ: metrics, tracing, logs สำหรับทุก service call | ต้องการ expertise ในการ configure และ debug Istio/Linkerd |
 | เปลี่ยน policy ได้โดยไม่ต้อง redeploy service | resource overhead — sidecar แต่ละตัวใช้ memory และ CPU |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Service Mesh ตั้งแต่วันแรก** — adopt service mesh ก่อนที่จะมี service หลายตัวจริง ๆ
 อาการ:
@@ -118,7 +118,7 @@ control plane แปลสิ่งนี้เป็น configuration สำห
 - service ใหม่เพิ่มเข้า cluster แล้วคุยกับ service เก่าไม่ได้
 - certificate expire ทำให้ production ล่ม
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Google (Istio):**
 > - สร้าง Istio จาก internal service mesh ที่ใช้ใน Google production
@@ -128,8 +128,8 @@ control plane แปลสิ่งนี้เป็น configuration สำห
 > - ผู้สร้าง Envoy proxy — เริ่มจาก internal need
 > - ใช้ mesh สำหรับ observability ก่อน — ได้ tracing ทั้งระบบโดยไม่ต้องแก้ service
 
-<Callout title="Mesh ย้าย logic ออกจาก code ของคุณ ไม่ใช่ทำให้มันหายไป">
-service mesh ไม่ได้ทำให้ retry, timeout และ mTLS หายไป — มันย้ายพวกมันจาก application code ของคุณเข้าไปไว้ใน sidecar ที่จัดการจากส่วนกลาง ประโยชน์คือความสม่ำเสมอและการควบคุมจากส่วนกลาง ราคาคือ proxy บนทุก hop และระบบใหม่ที่ทรงพลังที่ต้อง operate มันเป็นการแลกเปลี่ยนที่คุณทำเมื่อความสอดคล้องข้ามหลาย service สำคัญกว่า latency และความซับซ้อนที่เพิ่มขึ้น
+<Callout title="Mesh ย้าย logic ออกจาก code ไม่ได้ทำให้ logic หายไป">
+service mesh ไม่ได้ทำให้ retry, timeout และ mTLS หายไปไหน แค่ย้ายออกจาก application code ของคุณไปไว้ใน sidecar ที่จัดการจากส่วนกลาง สิ่งที่ได้คือความสม่ำเสมอและการควบคุมจากจุดเดียว สิ่งที่ต้องจ่ายคือ proxy เพิ่มบนทุก hop และระบบใหม่ที่ทรงพลังแต่ต้องดูแลเอง นี่คือการแลกที่คุ้มเมื่อความสอดคล้องข้ามหลาย service สำคัญกว่า latency และความซับซ้อนที่เพิ่มขึ้น
 </Callout>
 
 export const quizMesh = [
@@ -147,8 +147,8 @@ export const quizMesh = [
     q: 'อะไรคือความแตกต่างระหว่าง data plane และ control plane?',
     options: [
       'data plane เก็บข้อมูล; control plane เก็บ log',
-      'data plane คือกองทัพ sidecar proxy ที่แบก traffic; control plane ตั้งค่ามันด้วย policy และ certificate',
-      'มันเป็นสองชื่อของ component เดียวกัน',
+      'data plane คือกองทัพ sidecar proxy ที่แบก traffic ส่วน control plane เป็นตัวตั้งค่าให้ด้วย policy และ certificate',
+      'เป็นชื่อสองชื่อของ component เดียวกัน',
       'control plane แบก traffic และ data plane ตั้ง policy',
     ],
     answer: 1,
@@ -156,9 +156,9 @@ export const quizMesh = [
   {
     q: 'ทำไม service mesh จึงใช้พฤติกรรมเดียวกันกับ service ที่เขียนด้วยภาษาต่างกันได้?',
     options: [
-      'เพราะมันกำหนดให้ทุก service ต้องเขียนใหม่ด้วยภาษาเดียว',
-      'เพราะ sidecar proxy ที่เป็นกลางต่อภาษาอยู่ในเส้นทาง network และจัดการเรื่องเหล่านี้ ดังนั้น service จึงไม่รับรู้ถึงมัน',
-      'เพราะมันทำงานได้กับ HTTP เท่านั้น',
+      'เพราะบังคับให้ทุก service ต้องเขียนใหม่ด้วยภาษาเดียวกัน',
+      'เพราะ sidecar proxy ที่ไม่ผูกกับภาษาใดวางอยู่บนเส้นทาง network และจัดการเรื่องเหล่านี้ให้ ตัว service จึงไม่ต้องรู้เลย',
+      'เพราะทำงานได้กับ HTTP เท่านั้น',
       'เพราะแต่ละทีมคัดลอก code เดียวกันด้วยมือ',
     ],
     answer: 1,
@@ -168,7 +168,7 @@ export const quizMesh = [
     options: [
       'service ไม่สามารถ call กันได้อีกต่อไป',
       'ทุก call ผ่าน proxy เพิ่มเติม เพิ่ม latency และการใช้ resource และตัว mesh เองก็เป็นระบบที่ซับซ้อนในการ operate',
-      'มันบังคับให้ traffic ทั้งหมดไม่ถูกเข้ารหัส',
+      'บังคับให้ traffic ทั้งหมดไม่ถูกเข้ารหัส',
       'การเปลี่ยน policy ต้อง redeploy ทุก service เสมอ',
     ],
     answer: 1,

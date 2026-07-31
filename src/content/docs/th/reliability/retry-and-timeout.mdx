@@ -1,6 +1,6 @@
 ---
 title: Retry and Timeout
-description: 'กำหนดขอบเขตให้ทุกการเรียก remote ด้วย timeout ที่เข้มงวดเพื่อให้มันค้างตลอดกาลไม่ได้ จากนั้น retry ความล้มเหลวแบบ transient ด้วย exponential backoff และ jitter การ retry ต้องเล็งไปที่ idempotent operation และต้องจับคู่กับ circuit breaker เพื่อหลีกเลี่ยง retry storm'
+description: 'ใส่ timeout ที่เข้มงวดให้ทุกการเรียก remote เพื่อไม่ให้ค้างได้ตลอดกาล แล้ว retry เฉพาะความล้มเหลวแบบ transient ด้วย exponential backoff และ jitter ทั้งนี้ retry ได้เฉพาะ idempotent operation และต้องจับคู่กับ circuit breaker เพื่อกัน retry storm'
 sidebar:
   order: 3
 ---
@@ -11,25 +11,25 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
-การเรียก remote ไม่เหมือนกับการเรียกฟังก์ชันภายในเครื่อง มันเดินทางผ่านเครือข่ายที่ทำ packet หล่นหาย ผ่าน load balancer ที่บางครั้ง reset connection ไปยังบริการที่อาจอยู่ระหว่างการ rolling deploy หรือกำลัง garbage-collecting ชั่วครู่ ปัญหาเหล่านี้จำนวนมากเป็นแบบ *transient* — มันคงอยู่เพียงมิลลิวินาทีและความพยายามครั้งถัดไปก็จะสำเร็จ การ reset connection, การได้ `503` ชั่วขณะในขณะที่ pod กำลัง restart, การสะดุดของเครือข่ายเล็กน้อย: ไม่มีอันไหนหมายความว่า dependency พังจริง ๆ
+การเรียก remote ไม่เหมือนการเรียกฟังก์ชันในเครื่อง เพราะต้องวิ่งผ่านเครือข่ายที่ทำ packet หายได้ ผ่าน load balancer ที่บางทีก็ reset connection ไปยัง service ที่อาจกำลัง rolling deploy อยู่ หรือกำลังทำ garbage collection ชั่วครู่ ปัญหาพวกนี้ส่วนใหญ่เป็นแบบ *transient* คืออยู่แค่ไม่กี่มิลลิวินาที แล้วลองใหม่ครั้งหน้าก็สำเร็จ ทั้ง connection reset, `503` ชั่วขณะตอน pod restart, หรือเครือข่ายสะดุดนิดหน่อย ไม่มีอันไหนแปลว่า dependency พังจริง
 
-## Problem
+## ปัญหา
 
-มีโหมดความล้มเหลวสองแบบซ่อนอยู่ในทุกการเรียก remote แบบแรกคือ **การรอแบบไม่มีขอบเขต**: การเรียกที่ไม่มีขีดจำกัดเวลาสามารถค้างได้ตลอดระยะเวลาของ TCP timeout — เป็นนาทีในค่าเริ่มต้นบางอย่าง — ในขณะที่ thread นั่งว่างถือ connection ไว้ แบบที่สองคือ **การสะดุดแบบ transient**: ความพยายามครั้งเดียวล้มเหลวด้วยเหตุผลที่ผ่านพ้นไปแล้ว และการยอมแพ้ไปเลยจะเปลี่ยนการสะดุดที่กู้คืนได้ให้กลายเป็น error ที่ผู้ใช้มองเห็น
+มีรูปแบบความล้มเหลวสองแบบซ่อนอยู่ในทุกการเรียก remote แบบแรกคือ **การรอแบบไม่มีขอบเขต**: การเรียกที่ไม่มีขีดจำกัดเวลาสามารถค้างได้ตลอดระยะเวลาของ TCP timeout — เป็นนาทีในค่าเริ่มต้นบางอย่าง — ขณะที่ thread นั่งว่างถือ connection ไว้ แบบที่สองคือ **การสะดุดแบบ transient**: ความพยายามครั้งเดียวล้มเหลวด้วยเหตุผลที่ผ่านพ้นไปแล้ว และการยอมแพ้ไปเลยจะเปลี่ยนการสะดุดที่กู้คืนได้ให้กลายเป็น error ที่ผู้ใช้มองเห็น
 
-แต่การแก้แบบไร้เดียงสากลับทำให้สิ่งต่าง ๆ แย่ลง การ retry ทันทีโดยไม่หน่วงเวลาคือการกระหน่ำ dependency ที่กำลังฟื้นตัว การ retry แบบพร้อมเพรียงกันข้าม client หลายพันตัวสร้าง **thundering herd** — คลื่นของการ retry ที่ซิงค์กันซึ่งมาถึงในขณะเดียวกันทั้งหมดและล้ม dependency กลับไปอีกครั้ง และการ retry operation แบบ *non-idempotent* — "หักเงินจากบัตรนี้", "จัดส่งคำสั่งซื้อนี้" — อาจทำให้มันถูกประมวลผลสองครั้ง
+แต่การแก้แบบง่าย ๆ กลับทำให้แย่ลง การ retry ทันทีโดยไม่หน่วงเวลาคือการไปกระหน่ำ dependency ที่กำลังจะฟื้น การ retry พร้อมกันจาก client หลายพันตัวก็สร้าง **thundering herd** คือคลื่น retry ที่ซิงค์กันแล้วถล่มเข้ามาพร้อมกัน ล้ม dependency ซ้ำอีกรอบ ส่วนการ retry operation แบบ *non-idempotent* อย่าง "หักเงินจากบัตรใบนี้" หรือ "จัดส่ง order นี้" ก็เสี่ยงทำให้งานเดียวถูกประมวลผลสองครั้ง
 
 ดังนั้นแรงที่ตึงเครียดกันคือ: คุณอยากกู้คืนจากการสะดุดโดยอัตโนมัติ คุณต้องไม่รอตลอดกาล คุณต้องไม่ขยายภาระให้ dependency ที่กำลังดิ้นรน และคุณต้องไม่ทำให้ side effect ซ้ำซ้อน
 
-## Solution
+## วิธีแก้
 
 ผสานวินัยสองอย่างเข้ากับทุกการเรียก remote
 
 **Timeout** กำหนดขอบเขตบนที่เข้มงวดว่าความพยายามครั้งเดียวจะใช้เวลาได้นานแค่ไหน เมื่องบเวลาหมดลง ความพยายามนั้นจะถูกยกเลิกและนับเป็นความล้มเหลว สิ่งนี้จำกัด latency ที่ผู้เรียกจะได้พบเจอและปล่อยทรัพยากรทันที
 
-**Retry ด้วย exponential backoff และ jitter** เมื่อเกิดความล้มเหลวแบบ *transient* ก็ลองอีกครั้ง — แต่รอนานขึ้นในระหว่างความพยายามแต่ละครั้ง (การหน่วงเวลาเพิ่มขึ้นแบบ exponential: ประมาณ `base`, `base × 2`, `base × 4`, …) และเพิ่ม **jitter** แบบสุ่มให้กับการหน่วงเวลาแต่ละครั้งเพื่อให้ client ที่ทำงานพร้อมกันกระจายตัวออกแทนที่จะ retry พร้อมเพรียงกัน จำกัดจำนวนความพยายามเพื่อให้ความล้มเหลวปรากฏขึ้นในที่สุด และ retry เฉพาะ operation ที่เป็น **idempotent** เท่านั้น — การรันมันสองครั้งให้ผลเหมือนกับรันครั้งเดียว
+**Retry ด้วย exponential backoff และ jitter** เมื่อเจอความล้มเหลวแบบ *transient* ให้ลองใหม่ แต่รอนานขึ้นเรื่อย ๆ ในแต่ละครั้ง โดยหน่วงเวลาเพิ่มแบบ exponential ประมาณ `base`, `base × 2`, `base × 4` ไปเรื่อย ๆ แล้วเติม **jitter** แบบสุ่มลงในเวลาหน่วงแต่ละครั้ง เพื่อให้ client ที่ทำงานพร้อมกันกระจายตัวออก ไม่ retry พร้อมกันเป็นแถว จำกัดจำนวนครั้งไว้ด้วย ความล้มเหลวจริงจะได้โผล่ออกมาสักที และ retry เฉพาะ operation ที่เป็น **idempotent** เท่านั้น คือรันสองครั้งแล้วได้ผลเท่ากับรันครั้งเดียว
 
 export const retryFlow = `sequenceDiagram
   participant C as Caller
@@ -46,9 +46,9 @@ export const retryFlow = `sequenceDiagram
 
 <Mermaid code={retryFlow} title="timeout กำหนดขอบเขตให้แต่ละความพยายาม การ retry รอนานขึ้นเรื่อย ๆ พร้อม jitter จนกว่าจะมีครั้งหนึ่งสำเร็จหรืองบหมด" />
 
-## Example
+## ตัวอย่าง
 
-นี่คือ helper ที่รัน operation ด้วย timeout ต่อความพยายาม และ retry ความล้มเหลวแบบ transient โดยใช้ exponential backoff บวก jitter มันสมมติว่า operation เป็น idempotent แต่ละตัวอย่างเป็นอิสระในตัวเองและเขียนตามแบบฉบับของแต่ละภาษา
+ตัวอย่างนี้คือ helper ที่รัน operation โดยตั้ง timeout ต่อความพยายามหนึ่งครั้ง แล้ว retry ความล้มเหลวแบบ transient ด้วย exponential backoff บวก jitter โดยตั้งสมมติฐานว่า operation เป็น idempotent แต่ละตัวอย่างรันได้ด้วยตัวเองและเขียนตามสไตล์ของภาษานั้น ๆ
 
 <Tabs syncKey="lang">
   <TabItem label="TypeScript">
@@ -207,34 +207,34 @@ export const retryFlow = `sequenceDiagram
   </TabItem>
 </Tabs>
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้รับ:
 
-- **latency ที่มีขอบเขต** เพราะทุกความพยายามมี timeout จึงไม่มีการเรียกใดค้างตลอดกาล และผู้เรียกรู้เวลากรณีเลวร้ายที่สุดที่มันจะใช้ได้ (ประมาณจำนวนความพยายามคูณ timeout บวกการหน่วงเวลาแบบ backoff)
+- **latency มีเพดานชัดเจน** เพราะทุกความพยายามมี timeout จึงไม่มีการเรียกไหนค้างตลอดกาล และผู้เรียกคำนวณเวลากรณีแย่ที่สุดได้ คร่าว ๆ คือจำนวนครั้งคูณ timeout บวกเวลาหน่วงจาก backoff
 - **การฟื้นตัวอัตโนมัติจากการสะดุด** การ reset แบบ transient, `503` ชั่วขณะ และการสะดุดของเครือข่ายชั่วครู่จะรักษาตัวเองโดยไม่ทำให้ error ปรากฏต่อผู้ใช้
 - **ภาระที่กระจายตัว** jitter ทำลายการซิงค์ที่สร้าง thundering herd ดังนั้น dependency ที่กำลังฟื้นตัวจึงไม่ถูกล้มด้วยกำแพงของการ retry พร้อมกัน
 
-สิ่งที่มันมีต้นทุนกับคุณ:
+สิ่งที่คุณต้องจ่าย:
 
 - **ความเสี่ยงต่อ retry storm** การ retry ทวีภาระ หาก dependency รับภาระเกินจริง ๆ — ไม่ใช่แค่สะดุด — การ retry แบบไร้เดียงสาคือการเติมเชื้อไฟ นี่คือเหตุผลที่ retry ต้องจับคู่กับ **circuit breaker** อย่างแน่นอน: เมื่อ breaker trip การ retry จะหยุดโดยสิ้นเชิงจนกว่า dependency จะฟื้นตัว
-- **idempotency เป็นสิ่งจำเป็น** การ retry operation แบบ non-idempotent อาจทำให้ side effect ของมันถูกประมวลผลสองครั้ง อาจจะจำกัดการ retry ไว้เฉพาะ operation ที่ปลอดภัย (การอ่าน, การเขียนแบบ idempotent) หรือทำให้การเขียนเป็น idempotent ด้วย idempotency key เพื่อให้รายการซ้ำถูกตรวจจับและเพิกเฉย
+- **idempotency เป็นเงื่อนไขบังคับ** การ retry operation แบบ non-idempotent เสี่ยงทำให้ side effect เกิดขึ้นสองรอบ ทางเลือกคือจำกัด retry ไว้เฉพาะ operation ที่ปลอดภัย เช่น การอ่านและการเขียนแบบ idempotent หรือทำให้การเขียนเป็น idempotent ด้วย idempotency key เพื่อให้ระบบตรวจเจอรายการซ้ำแล้วทิ้งไป
 - **การจูนงบประมาณ** ความพยายามมากเกินไปหรือ timeout นานเกินไปทำให้การเรียกที่ล้มเหลวมีราคาแพงสำหรับผู้เรียก น้อยเกินไปทำให้การ retry ไร้ความหมาย งบเวลารวมต้องอยู่ภายใน deadline ของผู้เรียกเอง
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Circuit Breaker](/microservices/th/reliability/circuit-breaker/) — คู่หูสำคัญที่หยุดการ retry ไม่ให้กลายเป็น storm
-- [Bulkhead](/microservices/th/reliability/bulkhead/) — กำหนดขอบเขตทรัพยากรที่การ retry สามารถกินได้ในขณะที่มันรอ
-- [Saga](/microservices/th/data-management/saga/) — compensating transaction ของมันต้องเป็น idempotent อย่างแม่นยำเพราะมันอาจถูก retry
+- [Bulkhead](/microservices/th/reliability/bulkhead/) — จำกัดเพดานทรัพยากรที่การ retry จะกินได้ระหว่างที่รออยู่
+- [Saga](/microservices/th/data-management/saga/) — compensating transaction ต้องเป็น idempotent ด้วยเหตุผลเดียวกัน เพราะมีโอกาสโดน retry
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
-| จัดการ transient failure อัตโนมัติ — network blip ไม่กระทบ user | retry อาจทำให้ load บน dependency เพิ่มขึ้นเมื่อมันกำลัง overload |
+| จัดการ transient failure อัตโนมัติ — network blip ไม่กระทบ user | retry อาจไปเพิ่ม load ให้ dependency ตอนที่กำลัง overload อยู่ |
 | timeout ป้องกัน thread leak จาก slow dependency | timeout สั้นเกินทำให้ fail operation ที่ควรจะสำเร็จ |
 | exponential backoff ลด thundering herd | retry storm — หลาย client retry พร้อมกัน อาจ DDoS dependency |
 | jitter กระจาย retry ไม่ให้พร้อมกัน | non-idempotent operation ต้องระวัง retry ทำซ้ำ |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Retry Non-idempotent Operation** — retry POST /payment โดยไม่ตรวจสอบ idempotency
 อาการ:
@@ -247,7 +247,7 @@ export const retryFlow = `sequenceDiagram
 - ทำให้ service ฟื้นตัวช้าลงหรือล้มหนักกว่าเดิม
 - ใช้ exponential backoff + jitter เสมอ
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **AWS SDK:**
 > - built-in retry ด้วย exponential backoff สำหรับทุก API call
@@ -259,7 +259,7 @@ export const retryFlow = `sequenceDiagram
 > - max retry delay 32 วินาที ป้องกัน retry storm
 
 <Callout title="retry เฉพาะสิ่งที่ทำซ้ำได้อย่างปลอดภัย">
-การ retry สามารถทำให้ request *เดียวกัน* ถูกประมวลผลมากกว่าหนึ่งครั้ง — ความพยายามครั้งแรกอาจสำเร็จจริงบนเซิร์ฟเวอร์แล้วแม้ว่า response จะไปไม่ถึงคุณ สำหรับการอ่านสิ่งนี้ไม่เป็นอันตราย สำหรับการเขียนมันไม่เป็นเช่นนั้น: การ retry "หักเงินจากบัตร" อาจเรียกเก็บเงินซ้ำสองครั้ง retry เฉพาะ idempotent operation เท่านั้น หรือมอบ idempotency key ให้กับการเขียนแต่ละครั้งที่เซิร์ฟเวอร์ใช้เพื่อรู้จักและทิ้งรายการซ้ำ หากปราศจาก idempotency นโยบายการ retry คือบั๊กด้านความถูกต้องที่รอจะเกิดขึ้น
+การ retry ทำให้ request *เดียวกัน* ถูกประมวลผลได้มากกว่าหนึ่งครั้ง เพราะความพยายามครั้งแรกอาจสำเร็จบน server ไปแล้ว เพียงแต่ response ไม่กลับมาถึงคุณ ถ้าเป็นการอ่านก็ไม่มีอันตราย แต่ถ้าเป็นการเขียนคนละเรื่อง การ retry คำสั่ง "หักเงินจากบัตร" อาจเก็บเงินซ้ำสองรอบ ดังนั้น retry เฉพาะ idempotent operation เท่านั้น หรือแนบ idempotency key ไปกับทุกการเขียน เพื่อให้ server จำได้และทิ้งรายการซ้ำ ถ้าไม่มี idempotency นโยบาย retry ก็คือบั๊กด้านความถูกต้องที่รอวันปะทุ
 </Callout>
 
 export const quizRetryTimeout = [
@@ -276,10 +276,10 @@ export const quizRetryTimeout = [
   {
     q: 'การเพิ่ม jitter ให้การหน่วงเวลาในการ retry แก้ปัญหาอะไร?',
     options: [
-      'มันทำให้การ retry เร็วขึ้น',
-      'มันกระจาย client ที่ทำงานพร้อมกันออกตามเวลา ป้องกัน thundering herd ของการ retry ที่ซิงค์กัน',
-      'มันเข้ารหัส payload ของการ retry',
-      'มันรับประกันว่าการ retry จะสำเร็จ',
+      'ทำให้การ retry เร็วขึ้น',
+      'กระจาย client ที่ทำงานพร้อมกันออกตามเวลา กัน thundering herd จากการ retry ที่ซิงค์กัน',
+      'เข้ารหัส payload ของการ retry',
+      'รับประกันว่าการ retry จะสำเร็จ',
     ],
     answer: 1,
   },
@@ -287,7 +287,7 @@ export const quizRetryTimeout = [
     q: 'operation แบบใดที่ปลอดภัยต่อการ retry โดยไม่ต้องระวังเป็นพิเศษ?',
     options: [
       'operation อะไรก็ได้ทั้งหมด',
-      'idempotent operation ซึ่งการรันมันสองครั้งให้ผลเหมือนกับรันครั้งเดียว',
+      'idempotent operation ซึ่งรันสองครั้งแล้วได้ผลเท่ากับรันครั้งเดียว',
       'เฉพาะ operation ที่เขียนลงฐานข้อมูล',
       'เฉพาะ operation ที่ใช้เวลาน้อยกว่าหนึ่งวินาที',
     ],

@@ -11,21 +11,21 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
-service แต่ละตัวของคุณเป็นเจ้าของฐานข้อมูลส่วนตัว ดังนั้นหน้ารายละเอียด order จึงกลายเป็นปัญหา มันต้องการตัว order เองจาก Order service, ชื่อและ tier ของผู้ซื้อจาก Customer service และสถานะการจัดส่งจาก Shipping service ใน monolith นี่เป็น join สามตาราง ตอนนี้ตารางเหล่านั้นอยู่ในสามฐานข้อมูลที่ไม่มี query เดียวเอื้อมถึงได้
+แต่ละ service ของคุณเป็นเจ้าของ database ส่วนตัว หน้ารายละเอียด order เลยกลายเป็นปัญหา เพราะต้องใช้ทั้งตัว order เองจาก Order service ชื่อกับ tier ของผู้ซื้อจาก Customer service และสถานะการจัดส่งจาก Shipping service ถ้าเป็น monolith นี่คือ join สามตารางธรรมดา แต่ตอนนี้ตารางทั้งสามอยู่คนละ database ที่ไม่มี query เดียวเอื้อมถึงได้
 
-## Problem
+## ปัญหา
 
 หน้านี้ก็ยังต้อง render อยู่ดี คุณต้องรวบรวมข้อมูลจากหลาย service และนำเสนอเป็นผลลัพธ์รวมหนึ่งเดียว แต่คุณไม่มีฐานข้อมูลร่วมให้ join ข้ามได้ และคุณก็ไม่อยากประดิษฐ์ชั้นการจัดเก็บใหม่ทั้งชั้นขึ้นมาเพียงเพื่อตอบ query เดียว
 
 คุณจะ implement query ที่ข้อมูลกระจายอยู่ตามหลาย service ได้อย่างไร โดยไม่ทำลายขอบเขต Database per Service และไม่ over-engineer?
 
-## Solution
+## วิธีแก้
 
-แนะนำ **API Composer** — component เล็ก ๆ (มักอยู่ใน API gateway หรือ backend-for-frontend) ที่มีหน้าที่เดียวคือตอบ query นี้ มันเรียกแต่ละ service ที่เป็นเจ้าของส่วนหนึ่งของคำตอบ รวบรวม response แล้ว join เข้าด้วยกันใน memory ก่อนคืนผลลัพธ์รวมกลับไป
+ทางแก้คือใส่ **API Composer** เข้ามา ที่เป็น component เล็ก ๆ มักอยู่ใน API gateway หรือ backend-for-frontend มีหน้าที่เดียวคือตอบ query นี้ โดยเรียกไปยังแต่ละ service ที่ถือคำตอบคนละส่วน รวบรวม response แล้ว join เข้าด้วยกันใน memory ก่อนคืนผลลัพธ์รวมกลับไป
 
-composer ไม่ถือข้อมูลของตัวเองเลย มันเป็นการประสานงานล้วน ๆ: กระจาย request ออกไป (ในอุดมคติคือแบบขนาน เพราะมันเป็นอิสระต่อกัน) แล้วจึง merge เพราะการเรียกทั้งสามไม่ได้พึ่งพากัน การยิงพวกมันพร้อมกันจึงทำให้ latency ใกล้เคียงกับการเรียกที่ช้าที่สุดเพียงตัวเดียว แทนที่จะเป็นผลรวมของทั้งสาม
+composer ไม่ถือข้อมูลของตัวเองเลย ทำหน้าที่ประสานงานล้วน ๆ คือกระจาย request ออกไป ซึ่งควรยิงแบบขนานเพราะแต่ละการเรียกเป็นอิสระต่อกัน แล้วค่อย merge ผลลัพธ์ เมื่อการเรียกทั้งสามไม่ต้องรอกัน การยิงพร้อมกันจะทำให้ latency ใกล้เคียงกับการเรียกที่ช้าที่สุดเพียงตัวเดียว ไม่ใช่ผลรวมของทั้งสาม
 
 export const apiCompositionDiagram = `flowchart LR
   Client[Client] --> Composer[API Composer]
@@ -39,7 +39,7 @@ export const apiCompositionDiagram = `flowchart LR
 
 <Mermaid code={apiCompositionDiagram} title="composer กระจายการเรียกออกไปยังแต่ละ service ที่เป็นเจ้าของ แล้ว join response เข้าด้วยกันใน memory" />
 
-## Example
+## ตัวอย่าง
 
 composer ด้านล่างดึง order, customer และ shipment แบบขนาน แล้วเย็บเข้าด้วยกันเป็น view object เดียว การ merge เป็น in-memory join ที่ใช้ ID ที่ order ถืออยู่แล้วเป็นกุญแจ
 
@@ -152,34 +152,34 @@ composer ด้านล่างดึง order, customer และ shipment �
   </TabItem>
 </Tabs>
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้รับ:
 
-- **ความเรียบง่าย.** ไม่มีการจัดเก็บใหม่ ไม่มี event pipeline ถ้าคุณเรียก service ได้ คุณก็ compose พวกมันได้ มันเป็นตัวเลือกแรกที่ชัดเจนสำหรับ query ข้าม service
-- **ทันสมัยเสมอ.** เพราะมันอ่านสด ๆ จากเจ้าของแต่ละรายตอน request ผลลัพธ์จึงสะท้อนสถานะล่าสุด — ไม่มี replication lag
+- **เรียบง่าย** ไม่ต้องเพิ่มที่จัดเก็บใหม่ ไม่ต้องมี event pipeline ถ้าเรียก service ได้ ก็ compose ได้ทันที นี่คือตัวเลือกแรกที่ควรหยิบสำหรับ query ข้าม service
+- **ข้อมูลสดเสมอ** เพราะอ่านสด ๆ จากเจ้าของข้อมูลแต่ละรายตอน request ผลลัพธ์จึงสะท้อนสถานะล่าสุด ไม่มี replication lag
 
-สิ่งที่มันมีต้นทุนกับคุณ:
+สิ่งที่คุณต้องจ่าย:
 
-- **in-memory join ไม่มีประสิทธิภาพ.** การ join ผลลัพธ์ชุดใหญ่ใน memory ของแอปพลิเคชันช้ากว่าการให้ฐานข้อมูลทำมันด้วย index มาก query ที่ filter หรือ sort ข้าม service (เช่น "order มูลค่าสูงสุด 20 รายการสำหรับลูกค้า gold-tier") อาจบังคับให้ composer ดึงข้อมูลปริมาณมหาศาลจากแต่ละ service มาแล้วทิ้งส่วนใหญ่ไป
+- **in-memory join ไม่มีประสิทธิภาพ** การ join ผลลัพธ์ก้อนใหญ่ใน memory ของแอปพลิเคชันช้ากว่าให้ database ทำด้วย index มาก query ที่ต้อง filter หรือ sort ข้าม service เช่น "order มูลค่าสูงสุด 20 รายการของลูกค้า gold tier" อาจบังคับให้ composer ดึงข้อมูลมหาศาลจากทุก service มาแล้วทิ้งเกือบหมด
 - **availability เป็นผลคูณของส่วนต่าง ๆ.** composer ต้องการให้ทุก service ที่เรียกตอบกลับ ถ้าตัวใดล่มหรือช้า query ทั้งหมดก็จะแย่ตามไปด้วย — เว้นแต่คุณจะเพิ่ม timeout และการจัดการ partial-result
 - **consistency ลดลง.** ชิ้นส่วนต่าง ๆ ถูกอ่านในช่วงเวลาที่ต่างกันเล็กน้อย ดังนั้น view รวมจึงอาจผสมสถานะที่ไม่เคยมีอยู่ด้วยกันในขณะเดียวกันเลย
 
 เมื่อ in-memory join กลายเป็นคอขวด — ข้อมูลใหญ่ การ filter ซับซ้อน หรือเป้าหมาย latency ที่เข้มงวด — ให้ยกระดับไปสู่ read model ที่ดูแลไว้ด้วย [CQRS](/microservices/th/data-management/cqrs/) ซึ่ง pre-join ข้อมูลไว้ล่วงหน้า
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Database per Service](/microservices/th/data-management/database-per-service/) — ขอบเขตที่เปลี่ยน join ให้กลายเป็น composition
 - [CQRS](/microservices/th/data-management/cqrs/) — ทางเลือกที่หนักกว่าสำหรับ query ที่แพงเกินกว่าจะ compose ตอน request
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | ไม่ต้องเปลี่ยน service — compose ที่ application layer | eventual consistency — ข้อมูลจาก service ต่าง ๆ อาจไม่ sync |
 | query ข้าม service ได้โดยไม่ต้อง join database | error ใน service หนึ่งทำให้ composite response พัง |
 | แต่ละ service ยังคุม data ของตัวเองได้เต็ม | in-memory join ช้าถ้า dataset ใหญ่ |
 | implement ได้ที่ API Gateway หรือ BFF | ต้อง handle partial failure — บาง service ตอบ บาง service ไม่ตอบ |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Unbounded Composition** — compose service มากเกินไปใน request เดียว
 อาการ:
@@ -192,7 +192,7 @@ composer ด้านล่างดึง order, customer และ shipment �
 - orchestrator เป็น god service ที่รู้มากเกินไป
 - ทุก feature ใหม่ต้องแก้ orchestrator
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Amazon:**
 > - หน้า product detail page รวมข้อมูลจากหลาย service: pricing, inventory, review, recommendation
@@ -200,7 +200,7 @@ composer ด้านล่างดึง order, customer และ shipment �
 > - service ไหนตอบช้า → ใช้ cached version แทน
 
 <Callout title="เริ่มที่นี่ ยกระดับเมื่อจำเป็นเท่านั้น">
-API Composition เป็น pattern สำหรับ query ข้าม service ที่ถูกที่สุด และ query ส่วนใหญ่ก็ไม่เคยเติบโตเกินมันไปได้ คว้า CQRS มาใช้เมื่อคุณได้วัดแล้วว่า in-memory join ช้าจริงหรือดูดข้อมูลมากจริงเท่านั้น — ไม่ใช่ก่อนหน้านั้น read model ที่สร้างก่อนเวลาอันควรเป็นแหล่งของความซับซ้อนโดยไม่ตั้งใจที่พบบ่อย
+API Composition คือ pattern สำหรับ query ข้าม service ที่ถูกที่สุด และ query ส่วนใหญ่ก็ไม่เคยโตเกินจนใช้ไม่ได้ ให้หยิบ CQRS มาใช้ต่อเมื่อวัดแล้วว่า in-memory join ช้าจริงหรือดูดข้อมูลมากจริง ไม่ใช่ก่อนหน้านั้น read model ที่สร้างเร็วเกินไปคือแหล่งความซับซ้อนโดยไม่ตั้งใจที่เจอบ่อยที่สุด
 </Callout>
 
 export const quizApiComposition = [
@@ -208,14 +208,14 @@ export const quizApiComposition = [
     q: 'API Composer ทำอะไร?',
     options: [
       'เก็บสำเนา denormalized ของข้อมูลทุก service',
-      'เรียกแต่ละ service ที่เป็นเจ้าของส่วนหนึ่งของคำตอบ แล้ว join response ของพวกมันใน memory',
+      'เรียกไปยังแต่ละ service ที่ถือคำตอบคนละส่วน แล้ว join response ทั้งหมดใน memory',
       'เชื่อมต่อกับฐานข้อมูลของแต่ละ service โดยตรงเพื่อรัน join',
       'แทนที่ service ทั้งหลายด้วยฐานข้อมูลร่วมเดียว',
     ],
     answer: 1,
   },
   {
-    q: 'ทำไม composer จึงควรยิงการเรียกแบบขนานเมื่อพวกมันเป็นอิสระต่อกัน?',
+    q: 'ทำไม composer จึงควรยิงการเรียกแบบขนานเมื่อแต่ละการเรียกเป็นอิสระต่อกัน',
     options: [
       'เพื่อรับประกัน strong consistency',
       'เพื่อให้ latency รวมใกล้เคียงกับการเรียกที่ช้าที่สุดเพียงตัวเดียว แทนที่จะเป็นผลรวมของทุกการเรียก',
@@ -227,10 +227,10 @@ export const quizApiComposition = [
   {
     q: 'ข้อเสียหลักของ API Composition สำหรับ query ขนาดใหญ่หรือที่ filter หนักคืออะไร?',
     options: [
-      'มันทำลายขอบเขต Database per Service',
-      'มันต้องการ two-phase commit',
+      'ทำลายเส้นแบ่งของ Database per Service',
+      'ต้องใช้ two-phase commit',
       'in-memory join ไม่มีประสิทธิภาพและอาจดึงข้อมูลปริมาณมากมาเพียงเพื่อทิ้งส่วนใหญ่ไป',
-      'มันคืนข้อมูลปัจจุบันไม่ได้',
+      'คืนข้อมูลล่าสุดไม่ได้',
     ],
     answer: 2,
   },

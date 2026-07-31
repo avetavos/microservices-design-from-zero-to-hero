@@ -1,6 +1,6 @@
 ---
 title: Microservice Chassis
-description: 'มอบ baseline ในตัวชุดเดียวกันให้ทุก service ใหม่ — configuration, structured logging, metric, health check และ service discovery — ด้วยการเริ่มมันบน framework หรือ chassis ร่วม เพื่อให้ทีมเขียน business logic แทนที่จะประดิษฐ์ plumbing แบบเดิมใหม่ในแต่ละ service'
+description: 'มอบ baseline ในตัวชุดเดียวกันให้ทุก service ใหม่ — configuration, structured logging, metric, health check และ service discovery — ด้วยการเริ่มต้นจาก framework หรือ chassis ร่วม เพื่อให้ทีมได้เขียน business logic แทนที่จะสร้าง plumbing เดิม ๆ ขึ้นมาใหม่ในทุก service'
 sidebar:
   order: 5
 ---
@@ -11,25 +11,25 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
-ทุก service ที่คุณ build ต้องการเครื่องจักรไม่หรูหราชุดเดียวกันก่อนที่มันจะทำอะไรที่มีประโยชน์ได้ มันต้องโหลด configuration ของมัน ตั้งค่า structured logging พร้อม request correlation เปิดเผย metric ในรูปแบบที่ระบบ monitoring ของคุณคาดหวัง ตอบ health และ readiness probe ให้ orchestrator และ register ตัวเองเพื่อให้ถูกค้นพบ ไม่มีอะไรในนี้เป็น business logic แต่มันเป็นเงื่อนไขเบื้องต้นให้ business logic รันได้อย่างปลอดภัย
+ทุก service ที่คุณ build ต้องมีเครื่องจักรพื้น ๆ ชุดเดียวกันก่อนถึงจะทำงานที่มีประโยชน์ได้ ต้องโหลด configuration ตั้ง structured logging พร้อม request correlation เปิด metric ในรูปแบบที่ระบบ monitoring คาดหวัง ตอบ health และ readiness probe ให้ orchestrator แล้ว register ตัวเองเพื่อให้ตัวอื่นค้นเจอ ไม่มีข้อไหนเป็น business logic เลย แต่ทุกข้อคือเงื่อนไขที่ทำให้ business logic รันได้อย่างปลอดภัย
 
 ตอนคุณเขียน service เดียว คุณประกอบ plumbing นี้ครั้งเดียว พอถึง service ที่สิบ คุณสังเกตว่า code หลายร้อยบรรทัดเดียวกันถูก copy, paste และค่อย ๆ แตกต่างไปเงียบ ๆ: service หนึ่งเปิดเผย `/healthz` อีกตัว `/health` ตัวหนึ่ง log เป็น JSON อีกตัวเป็น plain text metric ถูกตั้งชื่อไม่สอดคล้องกัน cross-cutting baseline ถูก implement ใหม่ ต่างกันเล็กน้อย ในทุก service
 
-## Problem
+## ปัญหา
 
 คุณต้องการให้ทุก service ใหม่เริ่มต้นชีวิตด้วย configuration, logging, metric, health check และ discovery ที่เดินสายไว้แล้วและสอดคล้องกันทั้งกองทัพ — เพื่อให้ service เปิดเผย health endpoint เดียวกัน ปล่อย log ในรูปทรงเดียวกัน และรายงาน metric ด้วยชื่อเดียวกันกับทุก service อื่น คุณต้องการให้ developer ที่สร้าง service ใหม่เขียน business logic ตั้งแต่วันแรก ไม่ใช่ใช้เวลาหนึ่งสัปดาห์ประกอบ boilerplate ใหม่ และคุณต้องการ upgrade baseline นั้นในที่เดียวแทนที่จะใน repository ยี่สิบแห่ง
 
-ดังนั้นแรงที่ขัดแย้งกันคือ: operational baseline ที่สอดคล้องกันและสำเร็จรูปในทุก service โดยใช้แรงต่อ service น้อยที่สุดและมีที่เดียวให้พัฒนามัน
+สิ่งที่ต้องการจึงเป็น operational baseline ชุดเดียวที่สอดคล้องกันและพร้อมใช้ในทุก service โดยลงแรงต่อ service ให้น้อยที่สุด และมีที่เดียวสำหรับพัฒนาต่อ
 
-## Solution
+## วิธีแก้
 
-build **microservice chassis**: framework, library หรือฐานที่รวม cross-cutting concerns เข้าด้วยกันเพื่อให้ service ใหม่สืบทอดมัน chassis เป็นเจ้าของ plumbing — มันอ่าน configuration, ตั้งค่า structured logging, register metric endpoint, ติดตั้ง health และ readiness probe และจัดการ discovery registration — และเปิดเผยผิวสัมผัสเล็ก ๆ ที่คุณเสียบ business logic เข้าไป
+build **microservice chassis** ขึ้นมา ซึ่งคือ framework, library หรือฐานที่รวม cross-cutting concerns ไว้ให้ service ใหม่หยิบไปใช้ได้ทันที chassis รับหน้าที่ดูแล plumbing ทั้งหมด ทั้งอ่าน configuration ตั้ง structured logging ลงทะเบียน metric endpoint ติดตั้ง health และ readiness probe และจัดการ discovery registration แล้วเปิดผิวสัมผัสเล็ก ๆ ไว้ให้คุณเสียบ business logic เข้าไป
 
 งานของ developer หดเหลือ: เริ่มจาก chassis เพิ่ม route และ domain logic แล้วส่งมอบ ทุกอย่างด้าน operation มีอยู่แล้วและเหมือนกับทุก service อื่นที่ build บน chassis chassis มักจับคู่กับ **service template** — repository ตั้งต้น, generator หรือโครงร่าง — เพื่อให้การสร้าง service ใหม่หมายถึงการ generate จาก template และเติม business code
 
-เพราะ baseline อยู่ใน component ร่วมเดียว การปรับปรุงมัน (metric field ใหม่, log format ที่เข้มขึ้น, health check ที่ดีกว่า) เป็นการเปลี่ยนครั้งเดียวที่คุณ roll out ด้วยการเลื่อนเวอร์ชัน chassis ข้าม service ต่าง ๆ แทนที่จะแก้แต่ละ repository ด้วยมือ
+เพราะ baseline อยู่ใน component ร่วมตัวเดียว การปรับปรุงอย่างเพิ่ม metric field ใหม่ ทำ log format ให้เข้มขึ้น หรือทำ health check ให้ดีขึ้น จึงเป็นการแก้ครั้งเดียว แล้ว roll out ด้วยการเลื่อนเวอร์ชัน chassis ในแต่ละ service แทนที่จะไล่แก้ทีละ repository ด้วยมือ
 
 export const chassisDiagram = `flowchart TB
   subgraph Service[A service built on the chassis]
@@ -48,9 +48,9 @@ export const chassisDiagram = `flowchart TB
 
 <Mermaid code={chassisDiagram} title="chassis ห่อหุ้ม business logic โดยให้ config, logging, metric, health และ discovery; developer เพิ่มเพียง domain code" />
 
-## Example
+## ตัวอย่าง
 
-ที่นี่ service ถูกสร้างบน chassis การเรียก bootstrap ครั้งเดียวเดินสาย config, logging, metric, health และ discovery สิ่งเดียวที่ developer เพิ่มคือ route ที่มีความหมายเชิงธุรกิจ แต่ละตัวอย่างเป็นแบบ idiomatic ตามภาษาของมัน
+ตัวอย่างนี้คือ service ที่สร้างบน chassis การเรียก bootstrap ครั้งเดียวต่อสาย config, logging, metric, health และ discovery ให้ครบ สิ่งเดียวที่ developer ต้องเพิ่มคือ route ที่มีความหมายเชิงธุรกิจ แต่ละตัวอย่างเขียนตามสไตล์ของภาษานั้น ๆ
 
 <Tabs syncKey="lang">
   <TabItem label="TypeScript">
@@ -132,36 +132,36 @@ export const chassisDiagram = `flowchart TB
   </TabItem>
 </Tabs>
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้:
 
-- **ความสอดคล้องแบบฟรี ๆ** ทุก service เปิดเผย health endpoint, รูปทรง log และชื่อ metric เดียวกัน เพราะ component ร่วมเดียวให้มัน observability และ operability เลิกเป็นการเดาแบบต่างทีมต่างทำ
+- **ได้ความสอดคล้องมาฟรี ๆ** ทุก service เปิด health endpoint รูปแบบ log และชื่อ metric ชุดเดียวกัน เพราะได้มาจาก component ร่วมตัวเดียว observability และ operability เลิกเป็นเรื่องที่แต่ละทีมเดาเอาเอง
 - **สร้าง service ได้เร็วขึ้น** service ใหม่เริ่มต้นด้วย operational baseline ที่มีอยู่แล้ว ดังนั้น developer จึงเขียน domain code แทนการประกอบ plumbing ใหม่
 - **ที่เดียวให้พัฒนา baseline** การปรับปรุง logging, metric หรือ health ลงใน chassis และ roll out ด้วยการเลื่อนเวอร์ชัน ไม่ใช่การแก้ทุก repository
 
 สิ่งที่คุณต้องเสีย:
 
-- **แรงต่อภาษา** กองทัพแบบ polyglot ต้องการ chassis ต่อภาษา และการรักษาให้พวกมันมี feature เทียบเท่ากันเป็นงานจริงที่ทำต่อเนื่อง
+- **ต้องลงแรงแยกตามภาษา** ระบบแบบ polyglot ต้องมี chassis หนึ่งตัวต่อหนึ่งภาษา และการดูแลให้ทุกตัวมี feature เท่าเทียมกันคืองานที่ต้องทำต่อเนื่องไม่จบ
 - **การ coupling และแรงเสียดทานด้านการทำเวอร์ชัน** ทุก service พึ่งพา chassis การเปลี่ยนแบบ breaking บังคับให้ต้อง upgrade แบบประสานงานกัน และ chassis ที่เก่าค้างสามารถรั้ง service ไว้ได้
-- **ความเสี่ยงของการบวม** chassis ที่พยายามทำทุกอย่างจะหนักและมีความเห็นมากเกินไป จงให้มันโฟกัสที่ cross-cutting concerns จริง ๆ ไม่ใช่ helper เชิงธุรกิจ
+- **เสี่ยงบวม** chassis ที่พยายามทำทุกอย่างจะหนักและบังคับสไตล์มากเกินไป ให้โฟกัสเฉพาะ cross-cutting concerns จริง ๆ ไม่ใช่ helper เชิงธุรกิจ
 
-ข้อสังเกตที่ใช้ได้จริง: chassis จัดการเรื่อง *in-process* (config, logging, metric, health) ในขณะที่ [Service Mesh](/microservices/th/deployment-and-cross-cutting/service-mesh/) จัดการ networking *between-process* หลายทีมใช้ทั้งสองอย่าง
+ข้อสังเกตที่ใช้ได้จริง: chassis จัดการเรื่อง *in-process* (config, logging, metric, health) ส่วน [Service Mesh](/microservices/th/deployment-and-cross-cutting/service-mesh/) จัดการ networking *between-process* หลายทีมใช้ทั้งสองอย่าง
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Externalized Configuration](/microservices/th/deployment-and-cross-cutting/externalized-configuration/) — chassis มักเป็นตัวที่อ่านและใช้ externalized config
 - [Service Mesh](/microservices/th/deployment-and-cross-cutting/service-mesh/) — จัดการ networking cross-cutting concerns ที่ chassis ปล่อยให้ sidecar ทำ
 - [Service per Container](/microservices/th/deployment-and-cross-cutting/service-per-container/) — service ที่ build บน chassis ก็ยังถูก package และรันแบบหนึ่ง service ต่อหนึ่ง container
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | cross-cutting concerns (logging, health check, metrics) ทำครั้งเดียว | chassis กลายเป็น dependency ที่ทุก service ผูกกัน |
 | ทุก service มี baseline ของ observability และ security เหมือนกัน | อัปเดต chassis ต้อง rebuild และ redeploy ทุก service |
 | new service เริ่มต้นได้เร็ว — clone chassis แล้วเพิ่ม business logic | chassis อาจ bloat ถ้าใส่ฟีเจอร์มากเกิน |
 | standard ชัดเจน — ทุกทีมทำงานแบบเดียวกัน | หลาย language stack = หลาย chassis |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Fat Chassis** — ใส่ business logic ลงใน chassis
 อาการ:
@@ -174,7 +174,7 @@ export const chassisDiagram = `flowchart TB
 - vulnerability ใน logging library แก้ใน chassis ใหม่ แต่ service เก่ายังใช้ version เก่า
 - ไม่มี automated update mechanism
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Netflix OSS:**
 > - สร้าง Spring Cloud Netflix เป็น chassis สำหรับ Java service
@@ -186,7 +186,7 @@ export const chassisDiagram = `flowchart TB
 > - ทุก service ใหม่เริ่มจาก template ที่มี logging, tracing, metrics พร้อม
 
 <Callout title="chassis เป็นจุดเริ่มต้น ไม่ใช่กรงขัง">
-เป้าหมายคือการกำจัด plumbing ที่ไม่สร้างความแตกต่าง ไม่ใช่การกำหนดว่าทุก service ต้อง build อย่างไร จงให้ chassis โฟกัสที่ cross-cutting concerns จริง ๆ — config, logging, metric, health, discovery — และปล่อยให้ service มีอิสระเหนือการออกแบบ domain วันที่ chassis เริ่มสั่งว่าคุณต้อง model order อย่างไร มันก็ล้ำเส้นไปแล้ว
+เป้าหมายคือกำจัด plumbing ที่ไม่สร้างความแตกต่าง ไม่ใช่กำหนดว่าทุก service ต้อง build แบบไหน ให้ chassis โฟกัสที่ cross-cutting concerns จริง ๆ ได้แก่ config, logging, metric, health, discovery แล้วปล่อยให้แต่ละ service มีอิสระเต็มที่ในการออกแบบ domain วันไหนที่ chassis เริ่มสั่งว่าคุณต้อง model order อย่างไร วันนั้นคือวันที่ล้ำเส้นแล้ว
 </Callout>
 
 export const quizChassis = [
@@ -194,7 +194,7 @@ export const quizChassis = [
     q: 'microservice chassis คืออะไร?',
     options: [
       'แร็ค server ทางกายภาพที่บรรจุเครื่อง service',
-      'framework หรือฐานร่วมที่รวม cross-cutting concerns — config, logging, metric, health, discovery — เพื่อให้แต่ละ service ใหม่สืบทอดมัน',
+      'framework หรือฐานร่วมที่รวม cross-cutting concerns ทั้ง config, logging, metric, health, discovery ไว้ให้ service ใหม่หยิบไปใช้ได้เลย',
       'ฐานข้อมูลที่แชร์โดยทุก service',
       'เครื่องมือที่ compile service เป็น container',
     ],
@@ -203,17 +203,17 @@ export const quizChassis = [
   {
     q: 'chassis แก้ปัญหาอะไรเป็นหลัก?',
     options: [
-      'มันกำจัดความจำเป็นในการมีฐานข้อมูล',
-      'มันหยุด plumbing ด้าน logging, metric, health และ config ตัวเดียวกันจากการถูก implement ใหม่ ไม่สอดคล้องกัน ในทุก service',
-      'มันเข้ารหัส traffic ระหว่าง service',
-      'มันแทนที่ orchestrator',
+      'ทำให้ไม่ต้องมี database',
+      'ทำให้ plumbing ชุดเดิมทั้ง logging, metric, health และ config ไม่ต้องถูก implement ใหม่แบบไม่สอดคล้องกันในทุก service',
+      'เข้ารหัส traffic ระหว่าง service',
+      'มาแทนที่ orchestrator',
     ],
     answer: 1,
   },
   {
     q: 'chassis ต่างจาก service mesh อย่างไร?',
     options: [
-      'มันเป็นสิ่งเดียวกันภายใต้ชื่อต่างกัน',
+      'เป็นสิ่งเดียวกัน แค่เรียกคนละชื่อ',
       'chassis จัดการเรื่อง in-process เช่น config และ logging; mesh จัดการ networking between-process เช่น mTLS และ retry',
       'chassis รันใน control plane และ mesh รันในฐานข้อมูล',
       'chassis ทำงานได้เฉพาะกับ serverless function',
@@ -225,8 +225,8 @@ export const quizChassis = [
     options: [
       'service ไม่สามารถเปิดเผย health check ได้อีกต่อไป',
       'กองทัพแบบ polyglot ต้องการ chassis หนึ่งตัวต่อภาษา และทุก service ถูก couple กับเวอร์ชันของ chassis',
-      'มันบังคับให้ทุก service เข้าสู่ฐานข้อมูลร่วมเดียว',
-      'มันป้องกันไม่ให้ service ถูก deploy อย่างอิสระ',
+      'บังคับให้ทุก service ใช้ database ร่วมกันตัวเดียว',
+      'ทำให้ service deploy แยกอิสระไม่ได้',
     ],
     answer: 1,
   },

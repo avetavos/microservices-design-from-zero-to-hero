@@ -1,6 +1,6 @@
 ---
 title: Transactional Outbox
-description: 'ทำให้การ publish เป็น atomic ไปพร้อมกับการเขียนทางธุรกิจ: insert ข้อความขาออกลงในตาราง outbox ใน local transaction เดียวกันกับการเปลี่ยนแปลง state แล้วให้ relay แยกต่างหากส่งมันไปยัง broker'
+description: 'ทำให้การ publish เป็น atomic ไปพร้อมกับการเขียนทางธุรกิจ ด้วยการ insert ข้อความขาออกลงตาราง outbox ภายใน local transaction เดียวกับการเปลี่ยน state แล้วให้ relay แยกต่างหากส่งต่อไปยัง broker'
 sidebar:
   order: 2
 ---
@@ -11,21 +11,21 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
-เซอร์วิสของคุณต้องบันทึกการเปลี่ยนแปลงทางธุรกิจและบอกระบบส่วนที่เหลือเกี่ยวกับมัน อย่างที่บทนำของโมดูลแสดงให้เห็น การทำทั้งสองอย่างเป็นการเขียนสองครั้งที่อิสระต่อกัน — ครั้งหนึ่งลงฐานข้อมูล อีกครั้งลง broker — เปิดช่องว่างที่การ crash ทำให้เกิด event แบบ ghost หรือ lost คุณต้องการวิธีที่ทำให้ข้อความมีชะตากรรมร่วมกับการเปลี่ยนแปลงทางธุรกิจ: ถ้าการเปลี่ยนแปลง commit ข้อความก็จะถูกส่งในที่สุด ถ้าการเปลี่ยนแปลง roll back ก็ไม่มีข้อความอยู่เลย
+service ของคุณต้องบันทึกการเปลี่ยนแปลงทางธุรกิจ พร้อมกับบอกระบบส่วนที่เหลือให้รู้ด้วย อย่างที่บทนำของโมดูลชี้ให้เห็น การทำสองอย่างนี้เป็นการเขียนสองครั้งที่แยกจากกัน ครั้งหนึ่งลง database อีกครั้งลง broker จึงเปิดช่องให้ crash ทำให้เกิด ghost event หรือ event หาย สิ่งที่คุณต้องการคือวิธีที่ผูกชะตาข้อความไว้กับการเปลี่ยนแปลงทางธุรกิจ ถ้าการเปลี่ยนแปลง commit ข้อความก็ต้องถูกส่งในที่สุด ถ้า roll back ก็ต้องไม่มีข้อความเลย
 
-## Problem
+## ปัญหา
 
 คุณไม่สามารถนำ message broker เข้าร่วมใน database transaction ของคุณได้ และ two-phase commit ข้ามระบบทั้งสองก็เป็นสิ่งที่คุณตัดทิ้งไปแล้ว แต่คุณ *สามารถ* ควบคุมฐานข้อมูลของคุณเองได้อย่างสมบูรณ์ ภายใน local transaction เดียว คุณเขียนได้กี่แถวก็ได้ ลงกี่ตารางก็ได้ ตามต้องการ และทั้งหมดจะ commit หรือ roll back ด้วยกัน
 
-ดังนั้นแรงต่าง ๆ คือ: คุณต้องการ atomicity ระหว่าง "การเปลี่ยนแปลงทางธุรกิจเกิดขึ้น" กับ "ข้อความเกี่ยวกับมันมีอยู่" คุณมีเพียงระบบเดียวที่ให้ transaction กับคุณ (ฐานข้อมูลของคุณ) และคุณยังต้องการให้ข้อความออกจากฐานข้อมูลและไปถึง broker ในที่สุด
+แรงที่ขัดกันจึงเป็นแบบนี้ คุณต้องการ atomicity ระหว่าง "การเปลี่ยนแปลงทางธุรกิจเกิดขึ้นแล้ว" กับ "ข้อความที่บอกเรื่องนั้นมีอยู่จริง" แต่คุณมีระบบเดียวที่ให้ transaction ได้ คือ database และสุดท้ายข้อความก็ยังต้องออกจาก database ไปให้ถึง broker ให้ได้อยู่ดี
 
-## Solution
+## วิธีแก้
 
-เพิ่มตาราง **outbox** ลงในฐานข้อมูลของเซอร์วิส เมื่อคุณทำการเปลี่ยนแปลงทางธุรกิจ ให้เขียนข้อความขาออกเป็นแถวในตาราง outbox *ภายใน transaction เดียวกัน* กับการเปลี่ยนแปลงนั้น เพราะ insert ทั้งสองอยู่ใน local transaction เดียว มันจึง commit ด้วยกันหรือไม่เกิดเลย — dual write ยุบรวมเป็นการเขียน atomic ครั้งเดียว
+ให้เพิ่มตาราง **outbox** เข้าไปใน database ของ service เวลาที่มีการเปลี่ยนแปลงทางธุรกิจ ให้เขียนข้อความขาออกเป็นแถวในตาราง outbox *ภายใน transaction เดียวกัน* กับการเปลี่ยนแปลงนั้น เมื่อ insert ทั้งสองอยู่ใน local transaction เดียว ก็จะ commit พร้อมกันหรือไม่เกิดขึ้นเลย dual write จึงยุบเหลือการเขียน atomic ครั้งเดียว
 
-แถว outbox ไม่ใช่การส่ง มันเป็น *เจตนา* ที่คงทนถาวรว่าจะส่ง คอมโพเนนต์แยกต่างหากที่เรียกว่า **message relay** จะอ่านแถว outbox ที่ commit แล้วและ publish ไปยัง broker โดยทำเครื่องหมายแต่ละแถวว่าส่งแล้ว (หรือลบทิ้ง) เมื่อ broker ตอบรับ วิธีที่ relay อ่าน outbox เป็นหัวข้อของอีกสองบทเรียนถัดไป — โดยการ tailing transaction log หรือโดยการ polling ตาราง
+แถวใน outbox ไม่ใช่การส่ง แต่เป็น *เจตนา* ที่บันทึกไว้อย่างคงทนว่าจะส่ง จากนั้นมี component แยกต่างหากชื่อ **message relay** คอยอ่านแถว outbox ที่ commit แล้วไป publish ต่อยัง broker พร้อมทำเครื่องหมายแต่ละแถวว่าส่งแล้วหรือลบทิ้งเมื่อ broker ตอบรับ ส่วนวิธีที่ relay อ่าน outbox เป็นเนื้อหาของอีกสองบทเรียนถัดไป คือ tail transaction log หรือ poll ตาราง
 
 export const outboxDiagram = `flowchart LR
   subgraph Service
@@ -44,7 +44,7 @@ export const outboxDiagram = `flowchart LR
 
 <Mermaid code={outboxDiagram} title="แถวธุรกิจและแถว outbox commit ใน transaction เดียว; relay drain outbox ไปยัง broker" />
 
-## Example
+## ตัวอย่าง
 
 การเคลื่อนไหวหลักคือ transaction เดียวที่ insert แถวธุรกิจและแถว outbox ด้วยกัน payload ที่ถูก serialize และ metadata ของข้อความไปอยู่ใน outbox ไม่มีการ publish อะไรจาก code path นี้เลย
 
@@ -176,7 +176,7 @@ export const outboxDiagram = `flowchart LR
   </TabItem>
 </Tabs>
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้:
 
@@ -186,24 +186,24 @@ export const outboxDiagram = `flowchart LR
 
 สิ่งที่คุณต้องแลก:
 
-- **การส่งแบบ at-least-once ไม่ใช่ exactly-once** relay สามารถ crash หลัง publish แต่ก่อนทำเครื่องหมายแถวว่าส่งแล้ว มันจึงจะ publish ซ้ำ ดังนั้น consumer ต้องเป็น idempotent — บทเรียนสุดท้ายของโมดูลนี้
+- **ได้ at-least-once ไม่ใช่ exactly-once** relay อาจ crash หลัง publish แต่ก่อนทำเครื่องหมายแถวว่าส่งแล้ว รอบถัดไปจึง publish ซ้ำ ดังนั้น consumer ต้องเป็น idempotent ที่เป็นบทเรียนสุดท้ายของโมดูลนี้
 - **relay ที่ต้องสร้างและรัน** ต้องมีใครสักคน drain outbox อีกสองบทเรียนถัดไปครอบคลุมสองวิธีในการทำ
 - **การดูแลรักษา outbox** แถวที่ส่งแล้วต้องถูกตัดทิ้ง ไม่เช่นนั้นตารางจะโตขึ้นไม่สิ้นสุด
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Transaction Log Tailing](/microservices/th/transactional-messaging/transaction-log-tailing/) — วิธีหนึ่งในการสร้าง relay โดยไม่ต้อง polling
 - [Polling Publisher](/microservices/th/transactional-messaging/polling-publisher/) — วิธีที่ง่ายกว่าในการสร้าง relay
 - [Idempotent Consumer](/microservices/th/transactional-messaging/idempotent-consumer/) — จำเป็นเพราะ outbox รับประกันเพียงการส่งแบบ at-least-once
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | guarantee ว่า event ถูกส่งถ้า transaction สำเร็จ — ไม่มี event หาย | ต้องเพิ่ม outbox table และ publisher component |
 | ไม่มี distributed transaction ระหว่าง database และ message broker | เพิ่ม latency เล็กน้อย — event ไม่ได้ส่ง synchronous ทันที |
 | ทำงานกับ message broker ใด ๆ | outbox table ต้อง cleanup อย่างสม่ำเสมอ |
 | reliable foundation สำหรับ event-driven architecture | ต้องเลือก polling publisher หรือ transaction log tailing เป็น mechanism |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Outbox ที่ผสม concern** — เก็บ event หลาย type ใน outbox เดียวโดยไม่มี routing
 อาการ:
@@ -216,7 +216,7 @@ export const outboxDiagram = `flowchart LR
 - event ค้างใน outbox นาน — consumer ไม่ได้รับ event
 - ต้องมี retry mechanism และ dead letter handling สำหรับ publisher
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Eventuate (Chris Richardson):**
 > - framework สำหรับ Transactional Outbox pattern
@@ -228,7 +228,7 @@ export const outboxDiagram = `flowchart LR
 > - ทำให้ payment, inventory, notification sync กันได้อย่างน่าเชื่อถือ
 
 <Callout title="แถว outbox คือเจตนา ไม่ใช่การส่ง">
-การ commit แถว outbox ไม่ได้หมายความว่าข้อความถูกส่งแล้ว — มันหมายความว่าเซอร์วิสได้ *สัญญา* ว่าจะส่ง การส่งเป็นงานแยกต่างหากที่ retry ได้ การแยกนี้คือเหตุผลที่แพตเทิร์นนี้ใช้ได้: ส่วน atomic ที่ยากเกิดขึ้นภายในฐานข้อมูลเดียว และส่วน network ที่ไม่น่าเชื่อถือถูกผลักไปเป็นขั้นตอนที่ retry ได้จนกว่าจะสำเร็จ
+การ commit แถว outbox ไม่ได้แปลว่าข้อความถูกส่งแล้ว แต่แปลว่า service ได้ *ให้คำมั่น* ไว้ว่าจะส่ง ส่วนการส่งจริงเป็นงานแยกที่ retry ได้ การแยกสองส่วนนี้คือเหตุผลที่ pattern นี้ใช้ได้ผล เพราะส่วน atomic ที่ยากเกิดขึ้นภายใน database เดียว ส่วนงานที่ต้องพึ่งเครือข่ายซึ่งไม่น่าเชื่อถือถูกผลักไปเป็นขั้นตอนที่ retry ซ้ำได้จนกว่าจะสำเร็จ
 </Callout>
 
 export const quizOutbox = [

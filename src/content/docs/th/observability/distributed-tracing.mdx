@@ -1,6 +1,6 @@
 ---
 title: Distributed Tracing
-description: 'ให้ trace id แก่ทุกคำขอจากภายนอก, propagate มันพร้อม span id ข้ามทุก hop และสร้าง call tree เต็มรูปแบบพร้อม timing ขึ้นใหม่ เพื่อให้คุณเห็นได้อย่างชัดเจนว่าคำขอที่ช้าหรือล้มเหลวใช้เวลาไปที่ใด'
+description: 'ออก trace id ให้ทุก request จากภายนอก แล้ว propagate ไปพร้อม span id ข้ามทุก hop จากนั้นประกอบ call tree พร้อม timing ขึ้นมาใหม่ เพื่อให้เห็นชัดว่า request ที่ช้าหรือล้มเหลวหมดเวลาไปตรงไหน'
 sidebar:
   order: 4
 ---
@@ -11,21 +11,21 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
-logs ที่ถูกรวบรวมและเชื่อมโยงทำให้คุณค้นหาทุกบรรทัดของคำขอหนึ่งและอ่านมันตามลำดับได้ นั่นตอบว่า *เกิดอะไรขึ้น* แต่มีคำถามที่ logs ตอบได้ไม่ดี คือ *เวลาหายไปที่ไหน?* checkout ที่ใช้เวลาสี่วินาทีข้าม gateway, order service, payment service และ inventory service แต่ละตัวอาจเรียก database หรือ cache ด้วย ที่ไหนสักแห่งในต้นไม้ของการเรียกที่ซ้อนกันนั้น สามในสี่วินาทีถูกใช้ไป — แต่รายการบรรทัด log แบบแบน ๆ ต่อให้เชื่อมโยงได้อย่างสมบูรณ์แบบ ก็ไม่แสดงรูปร่างของต้นไม้หรือระยะเวลาของแต่ละกิ่งให้คุณดู
+log ที่รวบรวมและเชื่อมโยงไว้แล้วช่วยให้คุณค้นทุกบรรทัดของ request หนึ่งมาอ่านเรียงตามลำดับได้ ซึ่งตอบคำถามว่า *เกิดอะไรขึ้น* แต่มีอีกคำถามที่ log ตอบได้ไม่ดีเลยคือ *เวลาหายไปไหน* checkout ที่ใช้เวลาสี่วินาทีวิ่งผ่าน gateway, order service, payment service และ inventory service โดยแต่ละตัวอาจเรียก database หรือ cache ต่อไปอีก ในต้นไม้ของการเรียกที่ซ้อนกันนั้น มีสามในสี่วินาทีหายไปที่จุดใดจุดหนึ่ง แต่รายการ log แบบแบน ๆ ต่อให้เชื่อมโยงกันได้สมบูรณ์แบบ ก็ไม่แสดงรูปร่างของต้นไม้หรือระยะเวลาของแต่ละกิ่งให้ดูอยู่ดี
 
-## Problem
+## ปัญหา
 
-correlation id บอกคุณว่า log บรรทัดชุดหนึ่งเป็นพวกเดียวกัน แต่ไม่ได้บอกว่ามัน *เกี่ยวข้องกัน* อย่างไร มันไม่ได้บอกว่าการเรียก payment เกิดขึ้น *ภายใน* การเรียก order, ว่าการเรียก inventory รัน *หลังจาก* payment คืนค่ากลับ หรือว่า database query ใต้ inventory ใช้เวลา 2.8 จาก 4 วินาทีของคำขอ หากปราศจากโครงสร้างที่เป็นเชิงสาเหตุและมี timing นั้น คุณก็กลับไปเพ่งมอง timestamp ข้ามบริการเพื่อเดา critical path — และ timestamp จากเครื่องที่ต่างกันก็ไม่ได้ตรงกันเป๊ะ ๆ ด้วยซ้ำ
+correlation id บอกได้แค่ว่า log ชุดนี้เป็นพวกเดียวกัน แต่ไม่บอกว่า *เกี่ยวข้องกันอย่างไร* ไม่บอกว่าการเรียก payment เกิดขึ้น *ภายใน* การเรียก order ไม่บอกว่าการเรียก inventory รัน *หลังจาก* payment คืนค่ากลับมา และไม่บอกว่า database query ใต้ inventory กินเวลาไป 2.8 จาก 4 วินาทีของ request นั้น ถ้าไม่มีโครงสร้างเชิงสาเหตุที่มี timing กำกับ คุณก็ต้องกลับไปเพ่ง timestamp ข้าม service เพื่อเดา critical path เอาเอง ทั้งที่ timestamp จากคนละเครื่องยังไม่ตรงกันเป๊ะด้วยซ้ำ
 
 แล้วคุณจะสร้าง nested call tree เต็มของคำขอหนึ่งขึ้นใหม่ได้อย่างไร พร้อมระยะเวลาของทุก hop ข้ามบริการที่แต่ละตัวเห็นเฉพาะส่วนของตัวเองเท่านั้น
 
-## Solution
+## วิธีแก้
 
-**Distributed tracing** สร้างแบบจำลองคำขอเป็น **trace** ที่ประกอบขึ้นจาก **spans** trace คือการเดินทางทั้งหมดของคำขอจากภายนอกหนึ่งคำขอ; span คือหน่วยงานเดียวภายในนั้น — คำขอขาเข้าที่ถูกจัดการ, การเรียกขาออกที่ถูกทำ, query ที่ถูกรัน แต่ละ span บันทึก start time, duration และชื่อ และพก id สองตัว คือ **trace id** ที่ทุก span ในคำขอใช้ร่วมกัน และ **span id** ที่ไม่ซ้ำเป็นของตัวมันเอง แต่ละ span ยังระบุ **parent span id** ของมันด้วย และ parent link เหล่านั้นคือสิ่งที่สร้างต้นไม้ขึ้นใหม่
+**Distributed tracing** มองหนึ่ง request เป็นหนึ่ง **trace** ที่ประกอบขึ้นจาก **span** หลายอัน trace คือเส้นทางทั้งหมดของ request จากภายนอกหนึ่งครั้ง ส่วน span คือหน่วยงานหนึ่งหน่วยภายในนั้น เช่น request ขาเข้าที่ถูกจัดการ การเรียกขาออกหนึ่งครั้ง หรือ query หนึ่ง query แต่ละ span บันทึก start time, duration และชื่อ พร้อมพก id สองตัวคือ **trace id** ที่ทุก span ใน request เดียวกันใช้ร่วมกัน และ **span id** เฉพาะตัว นอกจากนี้แต่ละ span ยังระบุ **parent span id** ไว้ด้วย และ parent link เหล่านี้เองคือสิ่งที่ใช้ประกอบต้นไม้ขึ้นมาใหม่
 
-กลไกที่ทำให้สิ่งนี้ทำงานได้ข้ามขอบเขตของโปรเซสคือ **context propagation** เมื่อบริการทำการเรียกขาออก มันฉีด trace id ปัจจุบันและ span id ของตัวเองลงในคำขอ — โดยทั่วไปเป็น header ตามมาตรฐานอย่าง W3C Trace Context (`traceparent`) บริการที่รับอ่าน header เหล่านั้น, ปฏิบัติต่อ span id ขาเข้าเป็น parent ของมัน, เริ่ม span ใหม่ใต้มัน และต่อ ๆ ไปตามต้นไม้ลงมา ทุกบริการรายงาน span ของมันไปยัง collector กลาง ซึ่งเย็บมันกลับเข้าด้วยกันด้วย trace id และ parent link ให้เป็น waterfall ที่มี timing เดียว
+กลไกที่ทำให้ข้ามขอบเขต process ได้คือ **context propagation** เวลา service เรียกออกไปข้างนอก จะฉีด trace id ปัจจุบันกับ span id ของตัวเองลงไปใน request ปกติส่งเป็น header ตามมาตรฐาน W3C Trace Context (`traceparent`) ฝั่ง service ที่รับก็อ่าน header เหล่านั้น ถือว่า span id ขาเข้าเป็น parent แล้วเปิด span ใหม่ใต้ parent นั้น ไล่ต่อกันไปเรื่อย ๆ ตามต้นไม้ ทุก service รายงาน span ของตัวเองไปยัง collector กลาง ซึ่งจะเย็บทุกอย่างกลับเข้าด้วยกันด้วย trace id และ parent link ออกมาเป็น waterfall พร้อม timing ชุดเดียว
 
 export const traceDiagram = `sequenceDiagram
   participant GW as Gateway
@@ -44,9 +44,9 @@ export const traceDiagram = `sequenceDiagram
 
 <Mermaid code={traceDiagram} title="แต่ละ hop อ่าน traceparent ขาเข้า, เริ่ม child span และ propagate trace พร้อม span id ของตัวเองต่อไป — collector สร้างต้นไม้ขึ้นใหม่จาก trace id และ parent link" />
 
-## Example
+## ตัวอย่าง
 
-หัวใจของ tracing คือ propagation: อ่าน trace context จากคำขอขาเข้า และฉีดมันลงในทุกการเรียกขาออก ตัวอย่างเหล่านี้อ่าน `traceparent` header ขาเข้าและส่งต่อมันไป ซึ่งเป็นขั้นต่ำที่ทำให้ trace ไม่ขาดข้าม hop
+หัวใจของ tracing คือ propagation ให้อ่าน trace context จาก request ขาเข้า แล้วฉีดลงไปในทุกการเรียกขาออก ตัวอย่างข้างล่างอ่าน `traceparent` header ขาเข้าแล้วส่งต่อ ที่เป็นขั้นต่ำที่ทำให้ trace ไม่ขาดตอนข้าม hop
 
 <Tabs syncKey="lang">
   <TabItem label="TypeScript">
@@ -157,35 +157,35 @@ export const traceDiagram = `sequenceDiagram
   </TabItem>
 </Tabs>
 
-ในทางปฏิบัติคุณแทบไม่ต้องเขียน propagation นี้ด้วยมือ: instrumentation library (เช่นที่สร้างบน OpenTelemetry) ฉีดและ extract trace context, จับเวลา span และ export มันให้คุณ การเข้าใจกลไกนี้มีความสำคัญที่สุดเมื่อ trace ขาดอย่างลึกลับที่ hop ใด hop หนึ่ง
+ในทางปฏิบัติคุณแทบไม่ต้องเขียน propagation นี้เองเลย instrumentation library อย่างที่สร้างบน OpenTelemetry จะฉีดและ extract trace context จับเวลา span และ export ให้เสร็จสรรพ ความเข้าใจกลไกนี้จะมีค่าที่สุดตอนที่ trace ขาดหายอย่างลึกลับที่ hop ใด hop หนึ่ง
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้รับ:
 
 - **Critical path ที่ถูกทำให้มองเห็นได้** trace waterfall แสดงระยะเวลาของทุก hop ดังนั้นคุณจึงเห็นได้ในพริบตาว่า 2.8 จาก 4 วินาทีถูกใช้ไปใน inventory query หนึ่ง แทนการเดาข้าม log timestamp
 - **โครงสร้างเชิงสาเหตุ ไม่ใช่แค่ correlation** parent link สร้างขึ้นใหม่ว่า *การเรียกใดเกิดขึ้นภายในการเรียกใด* กู้คืนมุมมองแบบซ้อนที่ stack trace เดียวให้คุณใน monolith
-- **การระบุที่มาของข้อผิดพลาดข้ามบริการ** เมื่อคำขอล้มเหลว trace ชี้ไปยัง span และบริการที่มันพังพอดี ไม่ใช่แค่ gateway `500` แบบทั่ว ๆ ไป
+- **ชี้ต้นตอของ error ข้าม service ได้** เมื่อ request ล้มเหลว trace จะชี้ตรงไปที่ span และ service ที่พังจริง ไม่ใช่แค่ `500` กว้าง ๆ จาก gateway
 
-สิ่งที่มันมีต้นทุนกับคุณ:
+สิ่งที่คุณต้องจ่าย:
 
 - **Propagation ต้องไม่ขาด** hop เดียวที่ทำ trace context หล่นหาย — client ที่ไม่ได้ instrument, queue ที่ไม่พก header, ขอบเขตของ thread — จะแยก trace ออกเป็นสองและซ่อนต้นไม้ที่อยู่เลยจุดนั้นไป
 - **Sampling มักเป็นข้อบังคับ** การบันทึกทุก span ของทุกคำขอที่ทราฟฟิกสูงนั้นแพง คุณจึง sample เลือกกลยุทธ์ sampling ของคุณอย่างตั้งใจ เพราะ head-based sample อาจพลาดคำขอที่ล้มเหลวซึ่งหายากแต่คุณอยากเห็นที่สุด
 - **ความพยายามในการ instrument** ทุกบริการ, client library และขอบเขต async ต้องมีส่วนร่วม; ภาษาและ framework ที่ปะปนกันทำให้การครอบคลุมที่สม่ำเสมอเป็นงานจริง ๆ
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Log Aggregation](/microservices/th/observability/log-aggregation/) — ใส่ trace id ลงในทุกบรรทัด log แล้ว traces และ logs ก็อ้างอิงถึงกันและกัน
-- [Application Metrics](/microservices/th/observability/application-metrics/) — metrics บอกคุณว่า latency เพิ่มขึ้น; traces บอกคุณว่ามันเพิ่มขึ้น *ที่ไหน*
+- [Application Metrics](/microservices/th/observability/application-metrics/) — metric บอกว่า latency เพิ่มขึ้น ส่วน trace บอกว่าเพิ่มขึ้น *ตรงไหน*
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | เห็น request journey ข้าม service ทั้งหมดในที่เดียว | sampling ที่ไม่ดีทำให้พลาด trace สำคัญ |
 | ค้นหา bottleneck ใน distributed system ได้ | overhead ของ trace collection และ storage |
 | correlate log และ metric กับ specific request | require instrument ทุก service — ถ้า service หนึ่งไม่ instrument trace ขาด |
 | เห็น dependency map ของ service จาก trace data | ทีมต้องเรียนรู้ tool เพิ่ม (Jaeger, Zipkin, Tempo) |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Trace ทุก Request (100% Sampling)** — ไม่ใช้ sampling ทำให้ storage พุ่ง
 อาการ:
@@ -198,7 +198,7 @@ export const traceDiagram = `sequenceDiagram
 - ไม่รู้ว่า service ไหนใช้เวลาเท่าไร
 - ต้อง instrument ทุก service และทุก async call
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Google (Dapper):**
 > - เป็น paper ที่เป็นต้นแบบของ distributed tracing ทั้งอุตสาหกรรม (2010)
@@ -209,32 +209,32 @@ export const traceDiagram = `sequenceDiagram
 > - ปัจจุบัน CNCF graduated project — ใช้แพร่หลายที่สุดในอุตสาหกรรม
 
 <Callout title="Logs, traces และ metrics คือชุดเครื่องมือเดียวกัน">
-สัญญาณทั้งสามนี้ตอบคำถามที่ต่างกันและแข็งแกร่งที่สุดเมื่ออยู่ด้วยกัน metrics เตือนคุณว่า p99 latency พุ่งขึ้น trace จากคำขอที่ช้าแสดงให้คุณเห็น hop ที่ก่อให้เกิดมัน logs ที่ถูกรวบรวมและ filter ด้วย id ของ trace นั้นแสดงให้คุณเห็นข้อความ error ภายใน hop นั้น ประทับ trace id เดียวกันลงในทั้งสามแล้วคุณก็เคลื่อนไหวระหว่างมันได้อย่างลื่นไหลระหว่าง event แทนการเริ่มการสืบสวนแต่ละครั้งจากศูนย์
+สัญญาณทั้งสามตอบคนละคำถามและทรงพลังที่สุดเมื่อใช้ร่วมกัน metric เตือนคุณว่า p99 latency พุ่ง trace ของ request ที่ช้าชี้ให้เห็น hop ที่เป็นต้นเหตุ ส่วน log ที่รวบรวมไว้แล้ว filter ด้วย trace id เดียวกันจะเผยข้อความ error ภายใน hop นั้น แค่ประทับ trace id เดียวกันลงในทั้งสามสัญญาณ คุณก็สลับไปมาระหว่างกันได้ลื่นไหลตอนเกิดเหตุ แทนที่จะต้องเริ่มสืบสวนใหม่จากศูนย์ทุกครั้ง
 </Callout>
 
 export const quizTracing = [
   {
-    q: 'What is the relationship between a trace and a span?',
+    q: 'trace กับ span สัมพันธ์กันอย่างไร',
     options: [
-      'span คือคำขอทั้งหมด; trace คือหน่วยงานหนึ่งภายในมัน',
-      'trace คือการเดินทางของคำขอทั้งหมด; span คือหน่วยงานเดียวที่มี timing ภายในมัน',
-      'มันเป็นสองชื่อสำหรับสิ่งเดียวกัน',
+      'span คือ request ทั้งก้อน ส่วน trace คือหน่วยงานหนึ่งหน่วยภายใน request นั้น',
+      'trace คือเส้นทางทั้งหมดของ request ส่วน span คือหน่วยงานหนึ่งหน่วยพร้อม timing ภายใน trace',
+      'เป็นชื่อสองชื่อของสิ่งเดียวกัน',
       'trace คือบรรทัด log; span คือ metric',
     ],
     answer: 1,
   },
   {
-    q: 'What reconstructs the nested call tree of a trace?',
+    q: 'อะไรคือสิ่งที่ใช้ประกอบ call tree แบบซ้อนกันของ trace ขึ้นมาใหม่',
     options: [
       'wall-clock timestamp บนแต่ละบรรทัด log',
-      'แต่ละ span บันทึก parent span id ของมัน บวกกับ trace id ที่ใช้ร่วมกัน เย็บเข้าด้วยกันโดย collector',
+      'แต่ละ span บันทึก parent span id ไว้ บวกกับ trace id ที่ใช้ร่วมกัน แล้ว collector เย็บทั้งหมดเข้าด้วยกัน',
       'ลำดับที่บริการถูก deploy',
       'ขนาดของ payload ของแต่ละคำขอ',
     ],
     answer: 1,
   },
   {
-    q: 'What happens if one hop fails to propagate the trace context?',
+    q: 'จะเกิดอะไรขึ้นถ้ามี hop หนึ่งไม่ propagate trace context ต่อ',
     options: [
       'ไม่มีอะไรเกิดขึ้น; collector เติมช่องว่างให้โดยอัตโนมัติ',
       'trace แยกออกและ call tree ที่อยู่เลย hop นั้นไปก็สูญหาย',

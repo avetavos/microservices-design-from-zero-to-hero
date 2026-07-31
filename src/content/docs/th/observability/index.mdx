@@ -10,21 +10,21 @@ import Callout from '../../../../components/Callout.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-## Context
+## บริบท
 
 ในโลกของ monolith การดีบักแทบจะเป็นเรื่องที่จับต้องได้ คำขอเข้ามา วิ่งผ่านโปรเซสเดียว แตะ log file ไฟล์เดียว แล้วก็คืนค่ากลับมาหรือไม่ก็โยน stack trace ที่คุณสามารถอ่านได้ตั้งแต่ต้นจนจบ เมื่อมีอะไรผิดพลาด คุณก็เปิด terminal, tail `app.log`, แนบ profiler และเฝ้าดูเรื่องราวทั้งหมดคลี่คลายในที่เดียว
 
 จากนั้นคุณก็แยกโปรเซสนั้นออกเป็นยี่สิบบริการที่รันบน replica หลายสิบตัวอยู่หลัง load balancer คลิกเดียวของผู้ใช้ตอนนี้แตกออกเป็นต้นไม้ของการเรียกที่กระจายไปตามเครื่องที่คุณอาจไม่เคยล็อกอินเข้าไปเลย, replica ที่เกิดและดับไปทุกครั้งที่ deploy และโปรเซสที่ local log file หายวับไปในวินาทีที่ container ถูกรีไซเคิล
 
-## Problem
+## ปัญหา
 
-นิสัยเดิม ๆ ที่ว่า SSH เข้าเครื่องแล้วมองหาดู เงียบ ๆ ก็ใช้ไม่ได้แล้ว เครื่องไหนล่ะ คำขอนั้นแตะมันไปแปดเครื่อง replica ที่ให้บริการมันถูก autoscaler ฆ่าทิ้งไปเมื่อสองนาทีที่แล้ว พร้อมพา log ของมันไปด้วย ข้อผิดพลาดที่ลูกค้าของคุณรายงานเป็น HTTP 500 ที่ gateway คืนกลับมา ซึ่งเบาะแสเดียวของมันคือ downstream timeout ที่มันบอกชื่อไม่ได้
+นิสัยเดิม ๆ ที่ว่า SSH เข้าเครื่องแล้วไล่ดู log ใช้ไม่ได้อีกแล้ว เพราะเครื่องไหนล่ะ request นั้นวิ่งผ่านไปแปดเครื่อง แล้ว replica ที่ให้บริการก็โดน autoscaler ฆ่าทิ้งไปเมื่อสองนาทีก่อน พร้อมพา log ไปด้วย ส่วน error ที่ลูกค้าแจ้งมาคือ HTTP 500 ที่ gateway คืนกลับไป ซึ่งมีเบาะแสเดียวคือ downstream timeout ที่บอกชื่อ service ไม่ได้ด้วยซ้ำ
 
 ดังนั้นคำถามหลักของโมดูลนี้คือ เมื่อไม่มีเครื่องเดียวที่ถือความจริงทั้งหมด คุณจะเข้าใจได้อย่างไรว่าระบบของคุณกำลังทำอะไรอยู่ ดีพอที่จะดีบัก event ตอนตีสาม และดีพอที่จะสังเกตปัญหาก่อนที่ลูกค้าจะสังเกตเห็น
 
-## Solution
+## วิธีแก้
 
-คำตอบคือ **observability** การ instrument ทุกบริการเพื่อให้พฤติกรรมของมันสามารถถูกสร้างขึ้นใหม่จากภายนอกได้ จากสัญญาณที่มันปล่อยออกมา โดยไม่ต้องล็อกอินเข้าไปที่ใดเลย สัญญาณเหล่านั้นมาในสี่รูปแบบที่เสริมกัน และคุณต้องการทั้งสี่อย่าง
+คำตอบคือ **observability** คือการ instrument ทุก service เพื่อให้ประกอบภาพพฤติกรรมขึ้นมาใหม่ได้จากภายนอก โดยอาศัยสัญญาณที่ service ปล่อยออกมา ไม่ต้องล็อกอินเข้าไปที่ไหนเลย สัญญาณเหล่านั้นมีสี่รูปแบบที่เสริมกัน และคุณต้องใช้ครบทั้งสี่
 
 export const overviewDiagram = `flowchart LR
   subgraph Services
@@ -52,28 +52,28 @@ export const overviewDiagram = `flowchart LR
 
 แต่ละ pattern ในโมดูลนี้ครอบคลุมหนึ่งในสัญญาณเหล่านั้น
 
-- **Health Check API** — ทุกบริการเปิดเผย endpoint ที่รายงานว่ามันยังมีชีวิตอยู่และพร้อมให้บริการหรือไม่ เพื่อให้ orchestrator และ load balancer สามารถ route หลบ instance ที่ป่วยได้โดยอัตโนมัติ
+- **Health Check API** — ทุก service เปิด endpoint ที่รายงานว่ายังมีชีวิตและพร้อมให้บริการหรือไม่ เพื่อให้ orchestrator และ load balancer route หลบ instance ที่ป่วยได้เอง
 - **Log Aggregation** — ส่ง structured logs จากทุก replica ไปยัง store กลางที่ค้นหาได้ ผูกเข้าด้วยกันด้วย correlation id เพื่อให้คำขอหนึ่งอ่านเป็นเรื่องราวเดียว
-- **Distributed Tracing** — ให้ trace id แก่ทุกคำขอจากภายนอก, propagate มันข้ามทุก hop และสร้าง call tree เต็มรูปแบบพร้อม timing ขึ้นใหม่ เพื่อให้คุณเห็นว่า latency และข้อผิดพลาดอยู่ที่ใดจริง ๆ
+- **Distributed Tracing** — ออก trace id ให้ทุก request จากภายนอก propagate ข้ามทุก hop แล้วประกอบ call tree พร้อม timing ขึ้นมาใหม่ เพื่อให้เห็นว่า latency และ error อยู่ตรงไหนกันแน่
 - **Application Metrics** — เปิดเผย counters, gauges และ histograms สำหรับ request rate, errors และ latency เพื่อให้ dashboards และ alerts สามารถสรุปสุขภาพของทั้ง fleet ได้ในพริบตา
-- **Audit Logging** — บันทึกว่าใครทำอะไรและเมื่อใด เป็น record ที่คงทนและตรวจจับการดัดแปลงได้ แยกออกจาก debug logs เพราะมันตอบคำถามที่ต่างออกไป
+- **Audit Logging** — บันทึกว่าใครทำอะไรเมื่อไร ในรูป record ที่คงทนและตรวจจับการดัดแปลงได้ แยกออกจาก debug log เพราะตอบคนละคำถามกัน
 
-## What This Module Covers
+## โมดูลนี้ครอบคลุมอะไรบ้าง
 
-เราเริ่มจากสัญญาณที่ถูกที่สุดและเชิงปฏิบัติการมากที่สุด (Health Check API), เคลื่อนผ่านสามเสาหลักที่อธิบายพฤติกรรม (logs, traces, metrics) และจบด้วย record เฉพาะทางที่ตอบโจทย์ด้านความปลอดภัยและการกำกับดูแล (Audit Logging) แต่ละบทเรียนมีรูปแบบเดียวกัน คือ สถานการณ์ที่นำไปสู่ pattern, แรงที่ตึงเครียดกัน, สิ่งที่ pattern ทำ, ไดอะแกรม, code instrumentation ที่รันได้หรือตัวอย่าง log ที่เป็นรูปธรรม และการมองอย่างซื่อตรงว่ามันมีต้นทุนอะไรกับคุณบ้าง
+เราเริ่มจากสัญญาณที่ถูกที่สุดและใช้งานเชิงปฏิบัติการมากที่สุดอย่าง Health Check API แล้วไล่ผ่านสามเสาหลักที่อธิบายพฤติกรรมคือ log, trace และ metric จากนั้นปิดท้ายด้วย record เฉพาะทางที่ตอบโจทย์ด้านความปลอดภัยและการกำกับดูแลอย่าง Audit Logging ทุกบทเรียนใช้รูปแบบเดียวกัน ได้แก่ สถานการณ์ที่นำไปสู่ pattern แรงที่ขัดกัน สิ่งที่ pattern ทำ ไดอะแกรม code instrumentation ที่รันได้จริงหรือตัวอย่าง log และการมองอย่างตรงไปตรงมาว่าต้องจ่ายอะไรบ้าง
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
-- [Health Check API](/microservices/th/observability/health-check-api/) — เริ่มที่นี่ มันเป็นสัญญาณที่ง่ายที่สุดและเป็นสิ่งที่ platform ของคุณพึ่งพาก่อนเป็นอันดับแรก
+- [Health Check API](/microservices/th/observability/health-check-api/) — เริ่มจากตัวนี้ เป็นสัญญาณที่ง่ายที่สุดและเป็นสิ่งแรกที่ platform ของคุณพึ่งพา
 - [Distributed Tracing](/microservices/th/observability/distributed-tracing/) — pattern ที่เข้ามาแทนที่ "อ่าน stack trace เดียว" ในโลกแบบกระจายได้ตรงที่สุด
 
 <Callout title="Monitoring ไม่ใช่ observability">
-Monitoring ตอบคำถามที่คุณรู้อยู่แล้วว่าจะต้องถาม — "CPU เกิน 80 เปอร์เซ็นต์หรือยัง?" Observability คือคุณสมบัติที่ทำให้คุณสามารถถามคำถาม *ใหม่* เกี่ยวกับระบบของคุณได้หลังจากที่มันรันอยู่แล้ว โดยไม่ต้อง ship codeใหม่ สัญญาณทั้งสี่ที่นี่คือวัตถุดิบ เป้าหมายคือการสามารถดีบักความล้มเหลวที่คุณไม่เคยเห็นมาก่อนได้จากภายนอก
+Monitoring ตอบคำถามที่คุณรู้ล่วงหน้าอยู่แล้วว่าจะถาม เช่น "CPU เกิน 80 เปอร์เซ็นต์หรือยัง" ส่วน observability คือคุณสมบัติที่ทำให้คุณถามคำถาม *ใหม่* กับระบบที่รันอยู่ได้ โดยไม่ต้อง ship code ใหม่ สัญญาณทั้งสี่ในโมดูลนี้คือวัตถุดิบ เป้าหมายคือดีบักความล้มเหลวที่ไม่เคยเจอมาก่อนได้จากภายนอก
 </Callout>
 
 export const quizIndex = [
   {
-    q: 'Why does "SSH into the box and tail the log" break down in a microservice system?',
+    q: 'ทำไมวิธี SSH เข้าเครื่องแล้ว tail log จึงใช้ไม่ได้ในระบบ microservice',
     options: [
       'SSH ถูกปิดใช้งานบนเซิร์ฟเวอร์ production ทั้งหมดตามนโยบาย',
       'คำขอเดียวกระจายไปตาม replica ที่อายุสั้นจำนวนมาก จึงไม่มีเครื่องหรือ log file ใดถือเรื่องราวทั้งหมด',
@@ -83,7 +83,7 @@ export const quizIndex = [
     answer: 1,
   },
   {
-    q: 'Which four signals does observability combine?',
+    q: 'observability ประกอบด้วยสัญญาณสี่อย่างใดบ้าง',
     options: [
       'CPU, memory, disk และ network',
       'Logs, metrics, traces และ health checks',
@@ -93,12 +93,12 @@ export const quizIndex = [
     answer: 1,
   },
   {
-    q: 'What distinguishes observability from plain monitoring?',
+    q: 'อะไรคือสิ่งที่แยก observability ออกจาก monitoring ธรรมดา',
     options: [
-      'Observability ทำให้คุณถามคำถามใหม่เกี่ยวกับระบบที่กำลังรันได้โดยไม่ต้อง ship codeใหม่ ส่วน monitoring ตรวจเงื่อนไขที่กำหนดไว้ล่วงหน้า',
+      'Observability ทำให้คุณถามคำถามใหม่เกี่ยวกับระบบที่กำลังรันได้โดยไม่ต้อง ship code ใหม่ ส่วน monitoring ตรวจเงื่อนไขที่กำหนดไว้ล่วงหน้า',
       'Observability ทำงานได้เฉพาะบน cloud เท่านั้น',
       'Monitoring ต้องใช้ distributed tracing แต่ observability ไม่ต้อง',
-      'มันเป็นคำที่ต่างกันสำหรับสิ่งเดียวกันเป๊ะ ๆ',
+      'เป็นคนละคำแต่หมายถึงสิ่งเดียวกันเป๊ะ ๆ',
     ],
     answer: 0,
   },

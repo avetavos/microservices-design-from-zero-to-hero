@@ -11,24 +11,24 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
-บริการ Order ต้องเรียกบริการ Customer ใน deployment ที่ตายตัว คุณอาจ hard-code `http://customer-service:8080` ลงไปแล้วก็จบ แต่ในสภาพแวดล้อมสมัยใหม่ บริการรันเป็น instance จำนวนมากภายใต้ autoscaling, container ถูกจัดตารางใหม่ข้ามโฮสต์ และแพลตฟอร์มกำหนดตำแหน่งบนเครือข่ายแบบไดนามิก ชุดของ instance Customer ที่ยังมีชีวิตอยู่ — รวมถึง IP address และพอร์ตของพวกมัน — เปลี่ยนไปทุกนาที ที่อยู่ที่ผู้เรียกต้องการนั้นไม่มีอยู่เป็นค่าคงที่ที่ไหนเลย
+Order service ต้องเรียก Customer service ถ้าเป็น deployment แบบตายตัว คุณก็แค่ hard-code `http://customer-service:8080` ลงไปแล้วจบ แต่ใน environment สมัยใหม่ service รันเป็น instance หลายตัวภายใต้ autoscaling container ถูกจัดตารางใหม่ข้ามโฮสต์ และแพลตฟอร์มกำหนดตำแหน่งบนเครือข่ายแบบไดนามิก ชุด instance ของ Customer ที่ยังมีชีวิตอยู่ พร้อมทั้ง IP address และพอร์ต จึงเปลี่ยนทุกนาที ที่อยู่ที่ผู้เรียกต้องใช้ไม่ได้อยู่นิ่งเป็นค่าคงที่ที่ไหนเลย
 
-## Problem
+## ปัญหา
 
-ผู้เรียกต้องได้มาซึ่งตำแหน่งบนเครือข่ายของ instance บริการ แต่ตำแหน่งนั้นเป็นแบบไดนามิก: instance เกิดและดับเมื่อมันขยายขนาด crash, redeploy และย้ายที่อยู่ ผู้เรียกยังต้องการกระจายคำขอของตนไปยัง instance ที่มีสุขภาพดีทั้งหมด และต้องหลีกเลี่ยงการส่งทราฟฟิกไปยัง instance ที่ตายไปแล้ว การ hard-code ที่อยู่เป็นไปไม่ได้ และไฟล์ config แบบ static ก็ล้าสมัยทันทีที่ instance รีสตาร์ทบนโฮสต์ใหม่ ผู้เรียกจะค้นหา instance ที่ยังมีชีวิตอยู่เพื่อพูดด้วยได้อย่างเชื่อถือได้อย่างไร?
+ผู้เรียกต้องรู้ตำแหน่งบนเครือข่ายของ instance ปลายทาง แต่ตำแหน่งนั้นเป็นแบบไดนามิก instance เกิดและดับตามการ scale บ้างก็ crash บ้างก็ redeploy แล้วย้ายที่อยู่ นอกจากนี้ผู้เรียกยังอยากกระจาย request ไปยัง instance ที่แข็งแรงทุกตัว และต้องไม่ส่ง traffic ไปหา instance ที่ตายแล้ว การ hard-code ที่อยู่จึงเป็นไปไม่ได้ ส่วนไฟล์ config แบบ static ก็ล้าสมัยทันทีที่ instance restart บนโฮสต์ใหม่ คำถามคือผู้เรียกจะค้นหา instance ที่ยังมีชีวิตได้อย่างน่าเชื่อถืออย่างไร
 
-## Solution
+## วิธีแก้
 
-หัวใจสำคัญคือ **service registry**: ฐานข้อมูลของบริการ, instance ของพวกมัน, และตำแหน่งกับสุขภาพของแต่ละ instance instance เข้าสู่ registry ได้สองวิธี:
+หัวใจสำคัญคือ **service registry** ที่เป็นฐานข้อมูลที่เก็บรายชื่อ service, instance ของแต่ละ service พร้อมตำแหน่งและสุขภาพ โดย instance เข้าสู่ registry ได้สองวิธี:
 
 - **Self-registration** — แต่ละ instance ลงทะเบียนตัวเองตอนเริ่มทำงาน ส่ง heartbeat เป็นระยะ และถอนการลงทะเบียนตอนปิด เรียบง่าย แต่ผูกมัดทุกบริการเข้ากับ API ของ registry
-- **Third-party registration** — registrar ที่แยกต่างหาก (มักเป็นแพลตฟอร์ม deployment) เฝ้าดู instance และอัปเดต registry แทนบริการ ดังนั้นcodeของบริการจึงไม่ต้องรับรู้ถึงมัน
+- **Third-party registration** — มี registrar แยกต่างหาก ซึ่งมักเป็นแพลตฟอร์ม deployment คอยเฝ้าดู instance แล้วอัปเดต registry ให้แทน ตัว code ของ service จึงไม่ต้องรู้เรื่องนี้เลย
 
 เมื่อมี registry แล้ว ผู้เรียกเข้าถึง instance ได้สองวิธี
 
-**Client-side discovery** client สอบถาม registry ได้รายการ instance ที่มีสุขภาพดี เลือกหนึ่งตัว (ทำ load-balancing ใน client เอง) แล้วเรียกมันโดยตรง
+**Client-side discovery** ฝั่ง client query registry เพื่อขอรายการ instance ที่แข็งแรง แล้วเลือกมาหนึ่งตัวโดยทำ load balancing เองในฝั่ง client จากนั้นเรียกไปที่ instance นั้นโดยตรง
 
 export const clientSide = `sequenceDiagram
   participant C as Client (Order Service)
@@ -58,7 +58,7 @@ export const serverSide = `sequenceDiagram
 
 <Mermaid code={serverSide} title="Server-side discovery — load balancer ที่ที่อยู่ที่เสถียร resolve registry และส่งต่อคำขอ" />
 
-## Example
+## ตัวอย่าง
 
 รายการ registry และบันทึกเกี่ยวกับ load-balancer registry เก็บตำแหน่งและสุขภาพของแต่ละ instance; load balancer จัดเส้นทางตามชื่อบริการไปยัง instance ใดก็ตามที่มีสุขภาพดีอยู่ในขณะนั้น
 
@@ -78,7 +78,7 @@ instances:
 # heartbeat is marked critical and dropped automatically.
 ```
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้:
 
@@ -87,26 +87,26 @@ instances:
 
 สิ่งที่คุณต้องจ่าย:
 
-- **registry เป็นโครงสร้างพื้นฐานที่สำคัญยิ่ง** มันต้องพร้อมใช้งานสูงและสอดคล้องกันมากพอที่จะเชื่อถือได้; ถ้ามันดับหรือคืนข้อมูลที่ล้าสมัย ผู้เรียกก็จะจัดเส้นทางไปยัง instance ที่ตายแล้ว มันมักถูกรันเป็น cluster ที่ทำ replication
+- **registry กลายเป็น infrastructure ที่สำคัญที่สุด** ต้อง available สูงและสอดคล้องมากพอจะเชื่อถือได้ ถ้า registry ดับหรือคืนข้อมูลเก่า ผู้เรียกก็จะส่ง traffic ไปหา instance ที่ตายแล้ว ปกติจึงรันเป็น cluster ที่ทำ replication ไว้
 - **การแลกได้แลกเสียระหว่างสองรูปแบบ** client-side discovery มีประสิทธิภาพ (ไม่มี hop เพิ่ม) แต่ใส่ logic การ discovery และ load-balancing เข้าไปในทุก client และทุกภาษาที่คุณใช้ server-side discovery ทำให้ client เรียบง่าย แต่เพิ่ม network hop และองค์ประกอบอีกตัวให้ต้องทำงาน
 - **การปรับจูน heartbeat** health check และ TTL ต้องถูกปรับจูน: ช้าเกินไปแล้ว instance ที่ตายแล้วก็ค้างอยู่; ก้าวร้าวเกินไปแล้วการสะดุดชั่วครู่ก็ขับ instance ที่มีสุขภาพดีออกไป
 
-แพลตฟอร์มจำนวนมาก — เช่น container orchestrator ที่มี DNS ในตัวและ service mesh — มอบ server-side discovery มาให้พร้อมใช้งานทันที ดังนั้น registry และการจัดเส้นทางจึงเป็นส่วนหนึ่งของโครงสร้างพื้นฐานมากกว่าจะเป็นcodeแอปพลิเคชันของคุณ
+แพลตฟอร์มหลายตัว เช่น container orchestrator ที่มี DNS ในตัว และ service mesh ให้ server-side discovery มาพร้อมใช้งานทันที registry และการจัดเส้นทางจึงกลายเป็นส่วนหนึ่งของ infrastructure มากกว่าจะเป็น code แอปพลิเคชันของคุณ
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Remote Procedure Invocation](/microservices/th/communication/remote-procedure-invocation/) — การเรียกแบบ synchronous ที่ต้องการที่อยู่ instance ที่จะส่งไปหา
 - [API Gateway](/microservices/th/communication/api-gateway/) — พึ่งพา discovery เพื่อจัดเส้นทางไปยัง instance ที่ยังมีชีวิตอยู่ของบริการภายใน
-- [Backends for Frontends](/microservices/th/communication/backends-for-frontends/) — แต่ละ BFF ทำ discovery หาบริการภายในที่มันประกอบขึ้น
+- [Backends for Frontends](/microservices/th/communication/backends-for-frontends/) — แต่ละ BFF ทำ discovery เพื่อหา service ภายในที่ต้องนำมาประกอบ
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | service ค้นหากันเองได้โดยไม่ต้อง hardcode IP | เพิ่ม infrastructure component (registry) ที่ต้องดูแล |
 | scale service ขึ้นลงได้โดย registry อัปเดตเอง | registry ล้มหมายถึงทุก service หาคู่สื่อสารไม่ได้ |
 | deploy service ใหม่โดยไม่ต้องแก้ config ของ caller | health check ที่ไม่ดีทำให้ส่ง request ไป service ที่ตายแล้ว |
 | รองรับ environment หลายแบบ (dev, staging, prod) | เพิ่ม latency เล็กน้อยจากการ lookup registry |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Static IP Discovery** — hardcode IP address ของ service ใน config
 
@@ -122,7 +122,7 @@ instances:
 - caller ส่ง request ไปหา instance ที่ไม่มีแล้ว
 - error rate สูง client side retry เพิ่มขึ้น
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Netflix (Eureka):**
 > - สร้าง Eureka เพื่อ Service Discovery บน AWS ที่ IP เปลี่ยนบ่อย
@@ -134,7 +134,7 @@ instances:
 > - Service object ทำหน้าที่เป็น stable endpoint แม้ Pod จะ restart
 
 <Callout title="คุณอาจมี discovery ฟรีอยู่แล้ว">
-ก่อนจะสร้าง registry ลองตรวจดูว่าแพลตฟอร์มของคุณให้อะไรมาบ้าง container orchestrator มักลงทะเบียนและ health-check pod และเปิดเผยพวกมันภายใต้ชื่อ DNS ที่เสถียรพร้อม load balancing ในตัว — นั่นคือ third-party registration บวกกับ server-side discovery ที่ส่งมาให้คุณ service mesh ก็เพิ่มสิ่งเดียวกันพร้อมการจัดเส้นทางและ retry ที่สมบูรณ์ยิ่งขึ้น เลือกใช้ registry library ที่ชัดเจนต่อเมื่อสภาพแวดล้อมของคุณยังไม่ได้แก้เรื่องนี้ไว้แล้วเท่านั้น
+ก่อนจะลงมือสร้าง registry เอง ลองดูก่อนว่าแพลตฟอร์มที่ใช้อยู่ให้อะไรมาแล้วบ้าง container orchestrator ส่วนใหญ่ลงทะเบียนและ health check pod ให้อยู่แล้ว พร้อมเปิดออกมาเป็นชื่อ DNS ที่นิ่งและมี load balancing ในตัว นั่นคือ third-party registration บวก server-side discovery ที่ได้มาฟรี ๆ ส่วน service mesh ก็ให้ของชุดเดียวกัน แถมมี routing และ retry ที่ครบกว่า เลือกใช้ registry library แยกต่างหากก็ต่อเมื่อ environment ของคุณยังไม่ได้แก้เรื่องนี้ไว้ให้เท่านั้น
 </Callout>
 
 export const quizDiscovery = [
@@ -142,7 +142,7 @@ export const quizDiscovery = [
     q: 'เหตุใดผู้เรียกจึงไม่สามารถ hard-code ที่อยู่ของบริการได้ง่าย ๆ?',
     options: [
       'เพราะที่อยู่เป็นความลับ',
-      'เพราะ instance เริ่ม หยุด ขยายขนาด และย้ายที่อยู่ ดังนั้นตำแหน่งของพวกมันจึงเปลี่ยนแบบไดนามิก',
+      'เพราะ instance เริ่ม หยุด scale และย้ายที่อยู่ตลอด ตำแหน่งบนเครือข่ายจึงเปลี่ยนแบบไดนามิก',
       'เพราะไม่อนุญาตให้ใช้ string ที่ hard-code ใน microservices',
       'เพราะ registry ห้ามไว้',
     ],
@@ -151,10 +151,10 @@ export const quizDiscovery = [
   {
     q: 'บทบาทของ service registry คืออะไร?',
     options: [
-      'มันเก็บข้อมูลทางธุรกิจของแต่ละบริการ',
-      'มันเป็นฐานข้อมูลของบริการ, instance, ตำแหน่ง และสุขภาพของพวกมัน ที่ผู้เรียกใช้ค้นหา instance ที่ยังมีชีวิตอยู่',
-      'มัน compile codeของบริการ',
-      'มันแทนที่ message broker',
+      'เก็บข้อมูลทางธุรกิจของแต่ละ service',
+      'เป็นฐานข้อมูลของ service, instance, ตำแหน่ง และสุขภาพ ที่ผู้เรียกใช้ค้นหา instance ที่ยังมีชีวิต',
+      'compile code ของ service',
+      'มาแทนที่ message broker',
     ],
     answer: 1,
   },
@@ -162,7 +162,7 @@ export const quizDiscovery = [
     q: 'client-side discovery แตกต่างจาก server-side discovery อย่างไร?',
     options: [
       'client-side เข้ารหัสทราฟฟิก; server-side ไม่ทำ',
-      'ใน client-side, client สอบถาม registry และทำ load-balancing เอง; ใน server-side, load balancer ที่ที่อยู่ที่เสถียรทำการค้นหาและส่งต่อ',
+      'ใน client-side, client สอบถาม registry และทำ load-balancing เอง; ใน server-side, load balancer ที่ที่อยู่ที่เสถียรค้นหาและส่งต่อ',
       'client-side ทำงานได้กับ REST เท่านั้น; server-side ได้กับ gRPC เท่านั้น',
       'ไม่มีความแตกต่าง',
     ],

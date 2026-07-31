@@ -11,21 +11,21 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
-ทุก relay ในโมดูลนี้ — ไม่ว่าจะ [tail transaction log](/microservices/th/transactional-messaging/transaction-log-tailing/) หรือ [poll outbox](/microservices/th/transactional-messaging/polling-publisher/) — ส่งแบบ **at least once** relay สามารถ publish ข้อความแล้ว crash ก่อนบันทึกว่าได้ทำไปแล้ว มันจึง publish ซ้ำเมื่อ restart broker เองก็ส่งซ้ำเมื่อ consumer ไม่ ack ทันเวลา ผลลัพธ์จึงหลีกเลี่ยงไม่ได้: consumer ของคุณบางครั้งจะได้รับข้อความเดียวกันมากกว่าหนึ่งครั้ง
+ทุก relay ในโมดูลนี้ — ไม่ว่าจะ [tail transaction log](/microservices/th/transactional-messaging/transaction-log-tailing/) หรือ [poll outbox](/microservices/th/transactional-messaging/polling-publisher/) — ส่งแบบ **at least once** relay สามารถ publish ข้อความแล้ว crash ก่อนบันทึกว่าทำไปแล้ว พอ restart จึง publish ซ้ำอีกรอบ broker เองก็ส่งซ้ำเมื่อ consumer ไม่ ack ทันเวลา ผลลัพธ์จึงหลีกเลี่ยงไม่ได้: consumer ของคุณบางครั้งจะได้รับข้อความเดียวกันมากกว่าหนึ่งครั้ง
 
-## Problem
+## ปัญหา
 
 handler จำนวนมากไม่ปลอดภัยที่จะรันสองครั้ง การเครดิตเงินเข้าบัญชี การลดสต็อก การชาร์จบัตร หรือการส่งของ ล้วนเป็นการดำเนินงานที่ duplicate ก่อให้เกิดความเสียหายจริง — ชาร์จซ้ำ สต็อกติดลบ พัสดุสองชิ้น คุณไม่สามารถป้องกันการส่งซ้ำได้ (นั่นเป็นกลไกความปลอดภัยของ broker) และคุณไม่สามารถเรียกร้องการส่งแบบ exactly-once จากระบบที่ไม่ได้ให้สิ่งนั้น
 
 ดังนั้นแรงต่าง ๆ คือ: ข้อความสามารถและจะถูกส่งซ้ำ บาง side effect ต้องไม่เกิดขึ้นสองครั้ง และคุณไม่สามารถผลักปัญหา deduplication กลับไปให้ broker
 
-## Solution
+## วิธีแก้
 
 ทำให้ consumer เป็น **idempotent** — การประมวลผลข้อความสองครั้งมีผลเหมือนกับการประมวลผลครั้งเดียว มีสองแนวทาง และ handler ที่ดีที่สุดรวมทั้งสองเข้าด้วยกัน
 
-แนวทางทั่วไปคือการ **ติดตาม message id ที่ประมวลผลแล้ว** ทุกข้อความพก id ที่ไม่ซ้ำกัน (กำหนดตอนที่สร้างแถว outbox) consumer เก็บตาราง `processed_messages` ไว้ เมื่อข้อความมาถึง มันพยายามบันทึก id และนำ side effect ไปใช้ *ใน local transaction เดียวกัน* ถ้า id มีอยู่แล้ว ข้อความนั้นเป็น duplicate และถูก ack โดยไม่นำ effect ไปใช้ซ้ำ การบันทึก id และทำงานใน transaction เดียวคือสิ่งที่ทำให้สิ่งนี้รัดกุม — การ crash จะ commit ทั้งคู่หรือไม่เกิดเลย
+แนวทางทั่วไปคือการ **ติดตาม message id ที่ประมวลผลแล้ว** ทุกข้อความพก id ที่ไม่ซ้ำกัน (กำหนดตอนที่สร้างแถว outbox) consumer เก็บตาราง `processed_messages` ไว้ พอข้อความมาถึง ก็พยายามบันทึก id แล้วนำ side effect ไปใช้ *ใน local transaction เดียวกัน* ถ้า id มีอยู่แล้ว ข้อความนั้นเป็น duplicate และถูก ack โดยไม่นำ effect ไปใช้ซ้ำ การบันทึก id และทำงานใน transaction เดียวคือสิ่งที่ทำให้สิ่งนี้รัดกุม — การ crash จะ commit ทั้งคู่หรือไม่เกิดเลย
 
 แนวทางตามธรรมชาติคือการ **ออกแบบ side effect ให้เป็น idempotent โดยเนื้อแท้**: upsert ที่ key ด้วย business id, conditional update ที่ป้องกันด้วย status หรือ `SET balance = X` แทน `balance = balance + Y` เมื่อการดำเนินงานเป็น idempotent โดยธรรมชาติ คุณอาจไม่ต้องการตาราง dedup เลย
 
@@ -41,9 +41,9 @@ export const idempotentDiagram = `sequenceDiagram
   Note over C,DB: duplicate detected, effect skipped
   C-->>B: ack (no double effect)`;
 
-<Mermaid code={idempotentDiagram} title="consumer บันทึกแต่ละ message id พร้อม effect ของมัน; duplicate ที่ถูกส่งซ้ำถูกตรวจจับและข้าม" />
+<Mermaid code={idempotentDiagram} title="consumer บันทึกแต่ละ message id พร้อม effect ที่เกิดขึ้น ข้อความซ้ำที่ถูกส่งมาใหม่จะถูกตรวจจับและข้ามไป" />
 
-## Example
+## ตัวอย่าง
 
 handler insert message id และนำ side effect ไปใช้ใน transaction เดียว การละเมิด unique-constraint บน id หมายถึง "ประมวลผลแล้ว" ดังนั้น duplicate จึงถูกกลืนและ ack
 
@@ -168,12 +168,12 @@ handler insert message id และนำ side effect ไปใช้ใน tran
   </TabItem>
 </Tabs>
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้:
 
 - **ความปลอดภัยจากการส่งซ้ำ** duplicate ถูกตรวจจับและข้าม ดังนั้นการส่งแบบ at-least-once จึงกลายเป็น *การประมวลผล* แบบ exactly-once อย่างมีประสิทธิภาพ — การรับประกันที่สำคัญจริง ๆ
-- **สัญญาที่สะอาดกับส่วนที่เหลือของโมดูล** เพราะ consumer เป็น idempotent outbox และ relay ของมันจึงเป็นอิสระที่จะเรียบง่ายและส่งซ้ำได้โดยไม่ต้องกลัว
+- **สัญญาที่สะอาดกับส่วนที่เหลือของโมดูล** เพราะ consumer เป็น idempotent ฝั่ง outbox และ relay จึงออกแบบให้เรียบง่ายและส่งซ้ำได้โดยไม่ต้องกลัว
 
 สิ่งที่คุณต้องแลก:
 
@@ -181,20 +181,20 @@ handler insert message id และนำ side effect ไปใช้ใน tran
 - **effect ต้องใช้ transaction ร่วมกัน** การบันทึก id และการนำ side effect ไปใช้ต้องเป็น atomic ถ้า side effect แตะระบบภายนอกที่ไม่สามารถเข้าร่วม transaction ได้ คุณก็กลับไปสู่ dual-write ขนาดเล็กกว่า — ในกรณีนั้นควรเลือกการดำเนินงานที่เป็น idempotent โดยธรรมชาติ
 - **การเรียงลำดับยังคงเป็นปัญหาของคุณ** idempotency หยุดการประมวลผลซ้ำ แต่ไม่รับประกันว่าข้อความจะมาถึงตามลำดับ ถ้าลำดับสำคัญ ให้จัดการแยกต่างหาก
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/) — กำหนด message id ที่ไม่ซ้ำกันซึ่งแพตเทิร์นนี้ใช้ทำ dedup
-- [Transaction Log Tailing](/microservices/th/transactional-messaging/transaction-log-tailing/) — relay ที่การส่งแบบ at-least-once ของมันถูกแพตเทิร์นนี้ดูดซับ
+- [Transaction Log Tailing](/microservices/th/transactional-messaging/transaction-log-tailing/) — relay ที่ส่งแบบ at-least-once ซึ่ง pattern นี้เข้ามาดูดซับให้
 - [Polling Publisher](/microservices/th/transactional-messaging/polling-publisher/) — อีก relay แบบ at-least-once ที่แพตเทิร์นนี้ป้องกัน
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | message ที่ deliver ซ้ำไม่ทำให้ผลลัพธ์เปลี่ยน | ต้องมี idempotency store — storage เพิ่ม |
 | ระบบทนต่อ at-least-once delivery guarantee | lookup idempotency key เพิ่ม latency เล็กน้อย |
 | retry อย่างปลอดภัยโดยไม่กลัว duplicate effect | idempotency key ต้อง expire อย่างระมัดระวัง |
 | ง่ายต่อการ reason เกี่ยวกับ correctness | ต้องออกแบบ idempotency key ให้ unique และ stable |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Idempotency Key ที่ไม่ Stable** — key เปลี่ยนทุก retry
 อาการ:
@@ -208,7 +208,7 @@ handler insert message id และนำ side effect ไปใช้ใน tran
 - query ช้าเมื่อ store ใหญ่มาก
 - กำหนด TTL ที่เหมาะสมตาม message retention ของ broker
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Stripe:**
 > - idempotency key บน payment API เป็น best practice ที่ document ชัดเจน

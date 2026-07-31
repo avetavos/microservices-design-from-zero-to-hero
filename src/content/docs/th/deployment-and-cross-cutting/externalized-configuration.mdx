@@ -1,6 +1,6 @@
 ---
 title: Externalized Configuration
-description: 'เก็บ configuration — endpoint, credential, feature flag — ไว้นอก image และ inject มันตอน runtime ผ่าน environment variable, config server หรือ secrets store เพื่อให้ artifact ที่ไม่เปลี่ยนแปลงเพียงชิ้นเดียวรันได้โดยไม่ต้องแก้ในทุกสภาพแวดล้อม'
+description: 'เก็บ configuration ทั้ง endpoint, credential และ feature flag ไว้นอก image แล้ว inject เข้ามาตอน runtime ผ่าน environment variable, config server หรือ secrets store เพื่อให้ artifact ก้อนเดียวที่ไม่เปลี่ยนแปลงรันได้ทุก environment โดยไม่ต้องแก้'
 sidebar:
   order: 6
 ---
@@ -11,21 +11,21 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
 ตอนนี้คุณ package แต่ละ service เป็น image ที่ไม่เปลี่ยนแปลงและเลื่อน image ตัวนั้นเป๊ะ ๆ จาก development ผ่าน staging ไปยัง production แต่ service ต้องการการตั้งค่าที่ต่างกันในแต่ละที่เหล่านั้น: database URL ที่ต่างกัน, ที่อยู่ message-broker ที่ต่างกัน, credential ที่ต่างกัน และ feature flag ที่เปิดใน staging และปิดใน production
 
-ถ้าการตั้งค่าเหล่านั้นถูกฝังเข้าไปใน image คุณก็ไม่มี artifact เดียวอีกต่อไป — คุณมี image หนึ่งตัวต่อหนึ่งสภาพแวดล้อม แต่ละตัว build จาก code เดียวกันแต่มีค่าต่างกัน compile เข้าไป image ที่คุณทดสอบใน staging ไม่ใช่ image ที่คุณรันใน production แย่กว่านั้น การฝัง database password เข้าไปหมายความว่า secret ของคุณตอนนี้นั่งอยู่ใน image layer ใน registry อ่านได้โดยใครก็ตามที่ pull มันได้
+ถ้าฝังค่าเหล่านั้นเข้าไปใน image คุณก็จะไม่มี artifact ก้อนเดียวอีกต่อไป แต่มี image หนึ่งตัวต่อหนึ่ง environment แต่ละตัว build จาก code ชุดเดียวกันแต่ compile ค่าต่างกันเข้าไป แปลว่า image ที่คุณทดสอบใน staging ไม่ใช่ image ที่รันจริงใน production ที่แย่กว่านั้นคือถ้าฝัง database password เข้าไปด้วย secret ของคุณจะไปนอนอยู่ใน image layer ใน registry ให้ใครก็ตามที่ pull ได้เปิดอ่าน
 
-## Problem
+## ปัญหา
 
-คุณต้องการให้ image ที่ build แล้วเพียงตัวเดียวรันได้โดยไม่ต้องแก้ในทุกสภาพแวดล้อม เพื่อให้สิ่งที่คุณทดสอบเป็นสิ่งที่คุณส่งมอบเป๊ะ ๆ นั่นหมายความว่าค่าที่เฉพาะสภาพแวดล้อม — endpoint, credential, feature flag — ไม่สามารถอยู่ภายใน image ได้ พวกมันต้องมาจากภายนอก ส่งให้เมื่อ service เริ่มทำงานในที่ใดที่หนึ่ง และค่าที่อ่อนไหว เช่น password และ token ต้องถูกจัดการเป็น secret ไม่ใช่ plain text ที่นั่งอยู่ใน image หรือ repository
+สิ่งที่คุณต้องการคือ image ที่ build แล้วก้อนเดียวรันได้ทุก environment โดยไม่ต้องแก้ ของที่ทดสอบจะได้เป็นของเดียวกับที่ส่งมอบเป๊ะ ๆ นั่นแปลว่าค่าที่ผูกกับ environment อย่าง endpoint, credential และ feature flag อยู่ใน image ไม่ได้ ต้องมาจากภายนอกและส่งเข้ามาตอนที่ service เริ่มรันในแต่ละที่ ส่วนค่าที่อ่อนไหวอย่าง password และ token ต้องจัดการในฐานะ secret ไม่ใช่ plain text ที่นอนอยู่ใน image หรือใน repository
 
 ดังนั้นแรงที่ขัดแย้งกันคือ: artifact หนึ่งชิ้นที่ไม่เปลี่ยนแปลงและเป็นกลางต่อสภาพแวดล้อม แต่มีการตั้งค่าที่ถูกต้อง เฉพาะสภาพแวดล้อม และปลอดภัยต่อ secret ตอน runtime
 
-## Solution
+## วิธีแก้
 
-รับเอา **externalized configuration** มาใช้: image บรรจุเฉพาะ code และค่าเริ่มต้นที่สมเหตุสมผล และทุกค่าที่เฉพาะสภาพแวดล้อมถูก **inject ตอน runtime** service อ่าน configuration ของมันเมื่อเริ่มทำงาน (และสำหรับบางแหล่ง ขณะที่มันรัน) แทนที่จะอ่านจากค่าคงที่ที่ compile เข้าไปในการ build
+คำตอบคือใช้ **externalized configuration** ให้ image บรรจุแค่ code กับค่าเริ่มต้นที่สมเหตุสมผล ส่วนค่าที่ผูกกับ environment ทั้งหมด **inject เข้ามาตอน runtime** ตัว service จะอ่าน configuration ตอนเริ่มทำงาน และถ้าเป็นบางแหล่งก็อ่านระหว่างรันได้ด้วย แทนที่จะอ่านจากค่าคงที่ที่ compile ติดมากับ build
 
 มีกลไกการ inject ที่พบบ่อยสามแบบ ซึ่งมักใช้ร่วมกัน:
 
@@ -49,9 +49,9 @@ export const configDiagram = `flowchart LR
 
 <Mermaid code={configDiagram} title="image ที่ไม่เปลี่ยนแปลงตัวเดียว; environment variable, config server และ secrets store inject ค่าต่อสภาพแวดล้อมตอนเริ่มทำงาน" />
 
-## Example
+## ตัวอย่าง
 
-image ไม่พ่วงค่า environment ใด ๆ การ deploy สำหรับแต่ละสภาพแวดล้อมจะ inject พวกมันเข้าไป: การตั้งค่าธรรมดามาจาก environment variable ในขณะที่ database password ถูกอ้างอิงจาก secret เพื่อให้มันไม่ปรากฏใน manifest หรือใน image
+image ไม่พ่วงค่าของ environment ใดมาด้วยเลย การ deploy ในแต่ละ environment จะเป็นตัว inject ค่าเข้าไป ค่าธรรมดามาจาก environment variable ส่วน database password อ้างอิงจาก secret จะได้ไม่โผล่ทั้งใน manifest และใน image
 
 ```yaml
 # Production deployment — same image as staging, different injected values.
@@ -73,34 +73,34 @@ env:
 
 service อ่านสิ่งเหล่านี้ตอนเริ่มทำงาน การเลื่อนขึ้น production หมายถึงการ deploy image *ตัวเดียวกัน* ด้วย manifest นี้แทนที่จะเป็นของ staging password ถูก resolve จาก secrets store ตอน launch และไม่เคยลงไปอยู่ใน image layer
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้:
 
 - **image เดียว ทุกสภาพแวดล้อม** artifact ที่ไม่เปลี่ยนแปลงเพียงชิ้นเดียวถูกเลื่อนจาก staging ไป production โดยไม่ต้องแก้ ดังนั้นสิ่งที่คุณทดสอบจึงเป็นสิ่งที่คุณรันเป๊ะ ๆ — ไม่มีการ build ใหม่ต่อสภาพแวดล้อม
-- **secret ที่ปลอดภัยกว่า** credential อยู่ใน secrets store และถูก inject ตอน runtime ทำให้มันอยู่นอก image layer และ source control
+- **secret ปลอดภัยขึ้น** credential อยู่ใน secrets store และ inject เข้ามาตอน runtime จึงไม่ตกค้างอยู่ใน image layer และไม่หลุดเข้า source control
 - **การตั้งค่าจากส่วนกลางที่เปลี่ยนได้** ด้วย config server configuration ของทั้งกองทัพอยู่ในที่เดียวที่ถูกควบคุม และบางค่าสามารถเปลี่ยนได้โดยไม่ต้อง build ใหม่หรือแม้แต่ redeploy
 
 สิ่งที่คุณต้องเสีย:
 
-- **การจัดการ secret กลายเป็นระบบจริง** คุณต้อง operate secrets store, ควบคุมการเข้าถึงมัน และ rotate credential — การ externalize config ไม่ได้ทำให้ secret ง่าย มันทำให้มันชัดเจน
-- **dependency ตอนเริ่มทำงาน** ถ้า service ดึง config จาก server หรือ secrets store แหล่งนั้นจะกลายเป็นสิ่งที่ service พึ่งพาเพื่อเริ่มทำงาน มันต้องมีความพร้อมใช้งานสูงและมี fallback ที่สมเหตุสมผล
+- **การจัดการ secret กลายเป็นระบบเต็มตัว** คุณต้องดูแล secrets store คุมสิทธิ์เข้าถึง และ rotate credential การ externalize config ไม่ได้ทำให้เรื่อง secret ง่ายขึ้น แค่ทำให้เห็นชัดขึ้นว่าต้องจัดการ
+- **มี dependency เพิ่มตอน startup** ถ้า service ดึง config จาก config server หรือ secrets store แหล่งนั้นจะกลายเป็น dependency ที่ต้องมีถึงจะเริ่มทำงานได้ จึงต้อง available สูงและมี fallback ที่สมเหตุสมผล
 - **การกระจัดกระจายและ drift ของ config** การตั้งค่าที่กระจายข้าม env var, config server และ secret สามารถ drift ระหว่างสภาพแวดล้อมได้ คุณต้องมีข้อตกลง, การ validate ตอนเริ่มทำงาน และแหล่งความจริงเดียวต่อแต่ละเรื่อง
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Service per Container](/microservices/th/deployment-and-cross-cutting/service-per-container/) — externalized configuration คือสิ่งที่ทำให้ container image ที่ไม่เปลี่ยนแปลงเป็นกลางต่อสภาพแวดล้อมอย่างแท้จริง
 - [Microservice Chassis](/microservices/th/deployment-and-cross-cutting/microservice-chassis/) — chassis มักเป็น component ที่อ่านและ validate configuration ที่ inject เข้ามา
 - [Serverless Deployment](/microservices/th/deployment-and-cross-cutting/serverless-deployment/) — function รับการตั้งค่าในแบบเดียวกัน จากค่าที่ inject เข้ามาแทนที่จะเป็นค่าคงที่ที่ฝังไว้
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | เปลี่ยน config โดยไม่ต้อง rebuild หรือ redeploy | config store เพิ่มเติมที่ต้องดูแล — อีก component ที่ล้มได้ |
 | config แตกต่างระหว่าง environment โดยไม่ต้องแก้ code | secret management ซับซ้อนขึ้น — ต้องป้องกัน secret ใน config store |
 | rollback config ได้โดยไม่ rollback code | config ที่ผิดทำให้ service พังทั้งหมดพร้อมกัน |
 | audit trail ว่า config เปลี่ยนเมื่อไรและโดยใคร | ต้องมี fallback ถ้า config store ไม่ available ตอน start |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **Secret ใน Environment Variable ธรรมดา** — ส่ง secret ผ่าน env var โดยไม่ encrypt
 อาการ:
@@ -113,7 +113,7 @@ service อ่านสิ่งเหล่านี้ตอนเริ่ม
 - ทำงานใน staging แต่พังใน production
 - timeout ใน dev ต่างจาก production ทำให้ load test ไม่ reflect ความเป็นจริง
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Netflix:**
 > - ใช้ Archaius สำหรับ dynamic configuration
@@ -125,8 +125,8 @@ service อ่านสิ่งเหล่านี้ตอนเริ่ม
 > - Secret object สำหรับ sensitive data (โดย default เป็นแค่ base64-encoded ไม่ได้ encrypt — ต้องเปิด encryption at rest / ใช้ KMS เองถึงจะ encrypt จริง)
 > - environment เปลี่ยน config โดยการ swap ConfigMap — ไม่ต้อง rebuild image
 
-<Callout title="build artifact ครั้งเดียว ตั้งค่ามันต่อที่">
-วินัยพูดได้ง่าย: code และค่าเริ่มต้นเข้าไปใน image; ทุกอย่างที่เปลี่ยนระหว่างสภาพแวดล้อมมาจากภายนอกมัน ทำสิ่งนี้ให้ถูก แล้ว artifact ที่ทดสอบแล้วเพียงชิ้นเดียวจะไหลจาก staging ไป production โดยไม่ถูกแตะต้อง โดยมี secret ส่งให้อย่างปลอดภัยที่ขอบ ฝัง configuration เข้าไป แล้วคุณก็ยกคำมั่นสำคัญของ immutable deploy ทิ้งไป
+<Callout title="build artifact ครั้งเดียว แล้วตั้งค่าแยกตามที่">
+วินัยข้อนี้พูดง่ายมาก code กับค่าเริ่มต้นอยู่ใน image ส่วนทุกอย่างที่เปลี่ยนไปตาม environment มาจากภายนอก ทำได้ถูก artifact ที่ผ่านการทดสอบก้อนเดียวจะไหลจาก staging ไป production โดยไม่ถูกแตะเลย พร้อม secret ที่ส่งเข้ามาอย่างปลอดภัยตรงขอบ แต่ถ้าฝัง configuration เข้าไปในนั้นเมื่อไร คุณก็โยนคำมั่นสำคัญที่สุดของ immutable deploy ทิ้งทันที
 </Callout>
 
 export const quizConfig = [
@@ -134,7 +134,7 @@ export const quizConfig = [
     q: 'อะไรคือแนวคิดหลักของ externalized configuration?',
     options: [
       'compile image คนละตัวสำหรับแต่ละสภาพแวดล้อม',
-      'เก็บค่าที่เฉพาะสภาพแวดล้อมไว้นอก image และ inject มันตอน runtime เพื่อให้ image เดียวรันได้ทุกที่',
+      'เก็บค่าที่ผูกกับ environment ไว้นอก image แล้ว inject เข้ามาตอน runtime เพื่อให้ image เดียวรันได้ทุกที่',
       'เก็บ configuration ทั้งหมดไว้ใน source code',
       'ปิด configuration ทั้งหมดใน production',
     ],
@@ -143,10 +143,10 @@ export const quizConfig = [
   {
     q: 'ทำไมการฝัง database password เข้าไปใน image จึงเป็นปัญหา?',
     options: [
-      'มันทำให้ image ใหญ่เกินไปจน deploy ไม่ได้',
-      'secret ไปจบลงใน image layer ใน registry อ่านได้โดยใครก็ตามที่ pull มันได้ และผูก image ไว้กับสภาพแวดล้อมเดียว',
+      'ทำให้ image ใหญ่เกินไปจน deploy ไม่ได้',
+      'secret ไปตกค้างใน image layer ใน registry ให้ใครที่ pull ได้เปิดอ่าน แถมผูก image ไว้กับ environment เดียว',
       'password ไม่สามารถเก็บเป็น text ได้เลย',
-      'มันป้องกันไม่ให้ service เริ่มทำงาน',
+      'ทำให้ service เริ่มทำงานไม่ได้',
     ],
     answer: 1,
   },

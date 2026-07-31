@@ -1,6 +1,6 @@
 ---
 title: Transaction Log Tailing
-description: 'Drain outbox โดยไม่ต้อง polling: relay อ่าน transaction log ของฐานข้อมูลผ่าน change data capture แล้ว publish ทุก insert ของ outbox ที่ commit แล้วไปยัง broker ทันทีที่มันปรากฏ'
+description: 'drain outbox โดยไม่ต้อง polling ให้ relay อ่าน transaction log ของ database ผ่าน change data capture แล้ว publish ทุก insert ของ outbox ที่ commit แล้วไปยัง broker ทันทีที่โผล่ขึ้นมา'
 sidebar:
   order: 3
 ---
@@ -11,21 +11,21 @@ import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Context
+## บริบท
 
 คุณมี [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/): การเปลี่ยนแปลงทางธุรกิจ commit เคียงข้างแถว outbox ใน local transaction เดียว ตอนนี้คุณต้องการ relay — คอมโพเนนต์ที่นำแถว outbox ที่ commit แล้วไป publish ยัง broker คุณต้องการให้การส่งรวดเร็วและเพิ่มภาระบนฐานข้อมูลแอปพลิเคชันให้น้อยที่สุดเท่าที่จะเป็นไปได้
 
-## Problem
+## ปัญหา
 
 relay แบบที่ชัดเจนที่สุดจะ query ตาราง outbox ซ้ำ ๆ เพื่อหาแถวใหม่ แต่ทุก query เสียงานของฐานข้อมูลไม่ว่าจะมีแถวใหม่หรือไม่ และความสดของการส่งถูกจำกัดด้วยความถี่ที่คุณ poll poll บ่อยคุณก็ใส่ภาระให้ฐานข้อมูล poll น้อยข้อความก็นั่งรอ ยังมีกับดักความถูกต้องที่แยบยลอีกอย่าง: คุณต้องสังเกตแถวตามลำดับ commit และไม่พลาดแม้แต่แถวเดียว
 
 ดังนั้นแรงต่าง ๆ คือ: คุณต้องการ latency ต่ำและ overhead ของฐานข้อมูลต่ำ คุณต้อง publish ทุกแถว outbox ที่ commit แล้วเพียงครั้งเดียว *จากมุมมองของ relay* และคุณคงไม่อยากรัน query loop ที่ยุ่งวุ่นวายกับ primary database ของคุณ
 
-## Solution
+## วิธีแก้
 
-ฐานข้อมูลเชิงสัมพันธ์ทุกตัวมีบันทึกที่เรียงลำดับและคงทนถาวรของการเปลี่ยนแปลงที่ commit แล้วอยู่แล้ว เพื่อใช้ในการ recovery และ replication ของตัวมันเอง — **transaction log** (write-ahead log ของ PostgreSQL, binlog ของ MySQL เป็นต้น) **Transaction log tailing** เปลี่ยน relay ให้กลายเป็น consumer ของ log นั้น แทนที่จะ query ตาราง outbox relay จะอ่านสตรีมของ log เลือก insert ที่ลงตาราง `outbox` ออกมา แล้ว publish แต่ละอันไปยัง broker — ตามลำดับ commit ทันทีที่ transaction commit
+relational database ทุกตัวมีบันทึกการเปลี่ยนแปลงที่ commit แล้วซึ่งเรียงลำดับและคงทนอยู่แล้ว เพื่อใช้ทำ recovery และ replication ของตัวเอง นั่นคือ **transaction log** เช่น write-ahead log ของ PostgreSQL หรือ binlog ของ MySQL **Transaction log tailing** เปลี่ยน relay ให้กลายเป็น consumer ของ log ชุดนั้น แทนที่จะ query ตาราง outbox ตัว relay จะอ่าน stream ของ log แล้วคัดเฉพาะ insert ที่ลงตาราง `outbox` ออกมา publish ไปยัง broker เรียงตามลำดับ commit ทันทีที่ transaction commit
 
-นี่คือ **change data capture (CDC)** เครื่องมืออย่าง Debezium เชื่อมต่อกับ log ถอดรหัสมัน และปล่อย change event ต่อหนึ่งแถว เพราะ relay อ่าน replication stream แทนที่จะรัน query มันจึงแทบไม่เพิ่มภาระให้ primary และแทบไม่เพิ่ม latency relay ติดตามตำแหน่งของมันใน log (offset เช่น LSN) ดังนั้นหลังจาก restart มันจะกลับมาทำงานต่อตรงจุดที่มันค้างไว้พอดี
+วิธีนี้เรียกว่า **change data capture (CDC)** เครื่องมืออย่าง Debezium ต่อเข้ากับ log ถอดรหัสออกมา แล้วปล่อย change event หนึ่งอันต่อหนึ่งแถว เพราะ relay อ่าน replication stream แทนที่จะรัน query จึงแทบไม่เพิ่มภาระให้ primary และแทบไม่เพิ่ม latency ตัว relay จะจำตำแหน่งของตัวเองใน log ไว้เป็น offset เช่น LSN หลัง restart จึงกลับมาทำงานต่อตรงจุดที่ค้างไว้พอดี
 
 export const logTailDiagram = `flowchart LR
   subgraph DB[Service Database]
@@ -41,9 +41,9 @@ export const logTailDiagram = `flowchart LR
 
 <Mermaid code={logTailDiagram} title="relay tail transaction log ผ่าน CDC และ publish insert ของ outbox โดยไม่ต้อง polling" />
 
-## Example
+## ตัวอย่าง
 
-log tailing มักเป็นแพตเทิร์นเชิง infrastructure: คุณรัน CDC connector แทนที่จะเขียน query loop relay ถูก configure ไม่ใช่เขียนcode connector แบบ Debezium ที่เฝ้าตาราง `outbox` มีหน้าตาแบบนี้ — มันจับ insert และส่งแต่ละ event ไปยัง topic ที่ได้มาจาก metadata ของ outbox
+log tailing เป็น pattern เชิง infrastructure เป็นหลัก คุณรัน CDC connector แทนที่จะเขียน query loop เอง ตัว relay จึงมาจากการ configure ไม่ใช่การเขียน code ตัวอย่างข้างล่างคือ connector แบบ Debezium ที่เฝ้าตาราง `outbox` โดยจับ insert แล้วส่งแต่ละ event ไปยัง topic ที่ได้จาก metadata ของ outbox
 
 ```yaml
 # CDC connector: tail the WAL and publish outbox inserts to the broker.
@@ -67,41 +67,41 @@ config:
   transforms.outbox.route.topic.replacement: ${routedByValue}.events
 ```
 
-connector จดจำตำแหน่งใน log ของมัน ดังนั้น restart จะกลับมาทำงานต่อจาก offset ที่ commit ล่าสุดแทนที่จะ replay ทุกอย่างใหม่:
+connector จำตำแหน่งของตัวเองใน log ไว้ พอ restart จึงกลับมาทำงานต่อจาก offset ที่ commit ล่าสุด แทนที่จะ replay ทุกอย่างใหม่ทั้งหมด:
 
 ```text
 offset: { "lsn": 24197848, "txId": 5912, "ts_usec": 1718900000000000 }
 resume → continue streaming WAL after lsn 24197848
 ```
 
-## Resulting Context
+## ผลลัพธ์ที่ตามมา
 
 สิ่งที่คุณได้:
 
-- **ไม่ต้อง polling, latency ต่ำ** ข้อความถูก publish แทบจะทันทีที่ transaction ของมัน commit เพราะ relay กำลังอ่าน replication stream แบบ live
+- **ไม่ต้อง polling และ latency ต่ำ** ข้อความถูก publish แทบจะทันทีที่ transaction ต้นทาง commit เพราะ relay อ่าน replication stream แบบ live อยู่แล้ว
 - **ภาระน้อยที่สุดบน primary** การอ่าน log เป็น path ราคาถูกเดียวกันกับที่ replica ใช้อยู่แล้ว ไม่มี query loop ที่ยุ่งวุ่นวายกระหน่ำตาราง outbox
 - **การเรียงลำดับที่ถูกต้องโดยอัตโนมัติ** transaction log เรียงตามลำดับ commit อยู่แล้ว ดังนั้น relay จึง publish ตามลำดับนั้นโดยไม่ต้องทำงานเพิ่ม
 
 สิ่งที่คุณต้องแลก:
 
-- **ภาระเชิงปฏิบัติการ** คุณต้องรันและ monitor CDC connector (Kafka Connect, Debezium หรือเทียบเท่า) ให้สิทธิ์ replication และ configure log retention เพื่อให้ relay ไม่ตามไม่ทันและเสียตำแหน่งของมัน
+- **ภาระเชิงปฏิบัติการ** คุณต้องรันและ monitor CDC connector อย่าง Kafka Connect, Debezium หรือเทียบเท่า ต้องให้สิทธิ์ replication และตั้ง log retention ให้ดี ไม่งั้น relay ตามไม่ทันแล้วเสียตำแหน่งไป
 - **การผูกติดกับฐานข้อมูล** connector เจาะจงกับรูปแบบ log ของฐานข้อมูลของคุณ การเปลี่ยนฐานข้อมูลหมายถึงการเปลี่ยน connector
 - **ยังคงเป็น at-least-once** การ restart connector สามารถปล่อยการเปลี่ยนแปลงล่าสุดที่ยังไม่ถูก ack ออกมาซ้ำ ดังนั้น consumer ต้องยังคงเป็น idempotent
 
-## Related
+## เนื้อหาที่เกี่ยวข้อง
 
 - [Transactional Outbox](/microservices/th/transactional-messaging/transactional-outbox/) — จัดหาแถวที่ relay นี้ tail
 - [Polling Publisher](/microservices/th/transactional-messaging/polling-publisher/) — ทางเลือก relay ที่ง่ายกว่าเมื่อ CDC มากเกินไปที่จะทำงาน
 - [Idempotent Consumer](/microservices/th/transactional-messaging/idempotent-consumer/) — จำเป็นเพราะ log tailing ก็ส่งแบบ at least once เช่นกัน
 
-| Benefits | Trade-offs |
+| ข้อดี | ข้อแลกเปลี่ยน |
 |---|---|
 | latency ต่ำมาก — detect change แทบ real-time | ผูกกับ database-specific mechanism (binlog, WAL, change stream) |
 | ไม่เพิ่ม load บน database จาก polling | ต้องการ expertise ในการ configure CDC tool (Debezium) |
 | reliable — event มาจาก database log โดยตรง | log format เปลี่ยนเมื่ออัปเกรด database version |
 | เหมาะกับ high-throughput system | schema เปลี่ยนอาจ break CDC pipeline |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 **ใช้ CDC กับ Database ที่ไม่รองรับดี** — เปิด binlog บน database ที่ไม่ได้ออกแบบมาสำหรับ replication
 อาการ:
@@ -115,7 +115,7 @@ resume → continue streaming WAL after lsn 24197848
 - consumer downstream ได้รับ event ที่ deserialize ไม่ได้
 - ใช้ schema registry (Confluent Schema Registry) เพื่อ manage compatibility
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Debezium (Red Hat):**
 > - open source CDC platform ที่ใช้แพร่หลายที่สุด
@@ -127,7 +127,7 @@ resume → continue streaming WAL after lsn 24197848
 > - ไม่ต้องใช้ third-party tool — subscribe change stream ได้โดยตรงจาก application
 
 <Callout title="Tailing log ไม่ใช่ table">
-การเปลี่ยนแปลงสำคัญคือ relay ไม่ถามฐานข้อมูลว่า "มีแถวใหม่ไหม?" อีกต่อไป มันฟัง change stream เดียวกันกับที่ฐานข้อมูลใช้ป้อนให้ replica ของตัวเอง สตรีมนั้นคงทนถาวร เรียงลำดับ และถูกผลิตอยู่แล้ว — log tailing แค่ยืมมันมาใช้ ราคาที่จ่ายคือ CDC infrastructure ที่คุณต้องทำงานและพึ่งพาในตอนนี้
+จุดเปลี่ยนสำคัญคือ relay เลิกถาม database ว่า "มีแถวใหม่ไหม" แล้วหันไปฟัง change stream ชุดเดียวกับที่ database ใช้ป้อน replica ของตัวเอง stream นั้นคงทน เรียงลำดับ และถูกผลิตขึ้นอยู่แล้ว log tailing แค่ขอยืมมาใช้เท่านั้น ราคาที่ต้องจ่ายคือ CDC infrastructure ที่คุณต้องดูแลและพึ่งพาตั้งแต่นี้ไป
 </Callout>
 
 export const quizLogTail = [
@@ -144,10 +144,10 @@ export const quizLogTail = [
   {
     q: 'ทำไม log tailing จึงแทบไม่เพิ่มภาระให้ primary database?',
     options: [
-      'เพราะมัน cache ผลลัพธ์ของทุก query',
-      'เพราะมันอ่าน replication stream ที่ฐานข้อมูลผลิตอยู่แล้ว แทนที่จะรัน query loop ที่ยุ่งวุ่นวาย',
-      'เพราะมันรันแค่วันละครั้ง',
-      'เพราะมันข้ามฐานข้อมูลไปเลย',
+      'เพราะ cache ผลลัพธ์ของทุก query ไว้',
+      'เพราะอ่าน replication stream ที่ database ผลิตอยู่แล้ว แทนที่จะรัน query loop วนถามตลอดเวลา',
+      'เพราะรันแค่วันละครั้ง',
+      'เพราะข้าม database ไปเลย',
     ],
     answer: 1,
   },
@@ -155,7 +155,7 @@ export const quizLogTail = [
     q: 'relay ติดตามอะไรเพื่อให้กลับมาทำงานต่อได้ถูกต้องหลัง restart?',
     options: [
       'จำนวนแถวในตาราง outbox',
-      'ตำแหน่งของมันใน log เช่น LSN หรือ offset',
+      'ตำแหน่งของตัวเองใน log เช่น LSN หรือ offset',
       'lock บน topic ของ broker',
       'ขนาดรวมของฐานข้อมูล',
     ],
