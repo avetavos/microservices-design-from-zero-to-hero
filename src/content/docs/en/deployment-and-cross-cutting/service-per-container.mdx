@@ -60,7 +60,7 @@ The recipe that builds the image is a `Dockerfile`. A multi-stage build compiles
 
 ```dockerfile
 # Stage 1: build
-FROM golang:1.22 AS build
+FROM golang:1.27 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
