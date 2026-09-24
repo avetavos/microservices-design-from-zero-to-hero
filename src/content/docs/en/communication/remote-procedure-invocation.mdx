@@ -194,6 +194,32 @@ Because of these failure modes, never make a raw synchronous call without protec
 - [Service Discovery](/microservices/en/communication/service-discovery/) — how the client finds the address it sends the request to.
 - [API Gateway](/microservices/en/communication/api-gateway/) — often the front door through which external RPI calls arrive.
 
+| Benefit | Trade-off |
+|---|---|
+| Easy to understand — like a function call over the network | Tightly couples caller and callee — both fail together |
+| Immediate response — you know right away whether it worked | Network latency and partial failure are hidden inside it |
+| Easy to test and debug | Cascading failure — one slow service slows every caller |
+| A good fit for queries that need an immediate answer | Availability depends on every dependency in the chain |
+
+## Common mistakes
+
+**A synchronous call chain** — service calls service calls service, several layers deep.
+Symptoms:
+- One request calls five services sequentially.
+- Total latency is the sum of every hop's latency.
+- One slow service slows the entire chain.
+
+**Tight coupling via RPC** — the caller knows implementation details of the callee.
+Symptoms:
+- Changing service B's response schema breaks service A.
+- Services A and B always have to be deployed together.
+
+> 💡 Real-world examples
+>
+> **Google (gRPC):** built gRPC for internal service communication, using Protocol Buffers as the contract and serialization format. It's now open source under the CNCF and widely used across the microservices industry ([grpc.io](https://grpc.io/about/)).
+>
+> **Netflix:** began migrating latency-sensitive internal paths from REST to gRPC starting in 2018, measuring roughly a 50% improvement in p99 latency on heavily fanned-out services, while public APIs and partner integrations remain REST ([Netflix TechBlog: Practical API Design at Netflix](https://netflixtechblog.com/practical-api-design-at-netflix-part-1-using-protobuf-fieldmask-35cfdc606518)).
+
 <Callout title="REST or gRPC?">
 Reach for REST at the system's edge and for public APIs, where human readability, broad tooling, and cacheable HTTP semantics matter most. Reach for gRPC for internal service-to-service traffic, where the strict schema, smaller payloads, and HTTP/2 streaming pay off — and where both ends are yours to regenerate when the contract changes.
 </Callout>

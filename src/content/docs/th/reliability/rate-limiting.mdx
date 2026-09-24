@@ -230,15 +230,9 @@ export const tokenBucket = `flowchart LR
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **GitHub API:**
-> - rate limit 5000 requests/hour สำหรับ authenticated user
-> - 60 requests/hour สำหรับ unauthenticated
-> - response header บอก remaining request และ reset time
+> **GitHub API:** จำกัด 5,000 request/ชั่วโมงสำหรับ authenticated user (personal token) และ 60 request/ชั่วโมงสำหรับ unauthenticated request ส่วน GitHub App ระดับ Enterprise Cloud ได้สูงถึง 15,000/ชั่วโมง — response header บอก quota ที่เหลือและเวลา reset เสมอ ([GitHub Docs: Rate limits for the REST API](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api))
 >
-> **Stripe:**
-> - rate limit ตาม API key
-> - exponential backoff แนะนำให้ client ใช้เมื่อถูก limit
-> - test mode และ live mode มี limit แยกกัน
+> **Stripe:** จำกัดอัตราตาม API key และแนะนำให้ client ใช้ exponential backoff เมื่อโดน limit; test mode และ live mode มี quota แยกกัน ([Stripe Docs: Rate limits](https://docs.stripe.com/rate-limits))
 
 <Callout title="การ shed load เป็นฟีเจอร์ ไม่ใช่ความล้มเหลว">
 การปฏิเสธ request รู้สึกเหมือนยอมแพ้ แต่เมื่อชนเพดานกำลังแล้ว นี่คือทางเลือกที่รับผิดชอบที่สุด service ที่รับทุกอย่างแล้ว timeout ทุกอย่าง สุดท้ายให้บริการ *ใครไม่ได้เลยสักคน* ส่วน service ที่ shed ส่วนล้นทิ้งและตอบ `429` อย่างชัดเจน ยังให้บริการคนส่วนใหญ่ได้ดี พร้อมบอกที่เหลือให้กลับมาใหม่อีกไม่นาน การตัดสินใจว่าจะ shed *อะไร* ก่อน เช่น traffic ที่สำคัญน้อย ผู้ใช้ที่ไม่ระบุตัวตน หรือ client ที่ส่งเสียงดังที่สุด คือสิ่งที่เปลี่ยนการ shed load จากเครื่องมือทื่อ ๆ ให้กลายเป็นกลยุทธ์ที่ตั้งใจออกแบบ

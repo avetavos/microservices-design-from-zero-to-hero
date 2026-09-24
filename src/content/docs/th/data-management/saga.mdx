@@ -215,20 +215,22 @@ export const orchestrationDiagram = `sequenceDiagram
         return nil
     }
 
-    orderSaga := []Step{
-        {"createOrder",
-            func(c Ctx) error { return orderSvc.Create(c.OrderID, c.CustomerID) },
-            func(c Ctx) error { return orderSvc.Reject(c.OrderID) }},
-        {"reserveCredit",
-            func(c Ctx) error { return customerSvc.ReserveCredit(c.CustomerID, c.Amount) },
-            func(c Ctx) error { return customerSvc.ReleaseCredit(c.CustomerID, c.Amount) }},
-        {"reserveStock",
-            func(c Ctx) error { return inventorySvc.Reserve(c.SKU) },
-            func(c Ctx) error { return inventorySvc.Release(c.SKU) }},
-    }
+    func placeOrder(ctx Ctx) {
+        orderSaga := []Step{
+            {"createOrder",
+                func(c Ctx) error { return orderSvc.Create(c.OrderID, c.CustomerID) },
+                func(c Ctx) error { return orderSvc.Reject(c.OrderID) }},
+            {"reserveCredit",
+                func(c Ctx) error { return customerSvc.ReserveCredit(c.CustomerID, c.Amount) },
+                func(c Ctx) error { return customerSvc.ReleaseCredit(c.CustomerID, c.Amount) }},
+            {"reserveStock",
+                func(c Ctx) error { return inventorySvc.Reserve(c.SKU) },
+                func(c Ctx) error { return inventorySvc.Release(c.SKU) }},
+        }
 
-    if err := RunSaga(ctx, orderSaga); err != nil {
-        log.Printf("order saga rolled back: %v", err)
+        if err := RunSaga(ctx, orderSaga); err != nil {
+            log.Printf("order saga rolled back: %v", err)
+        }
     }
     ```
   </TabItem>
@@ -315,13 +317,9 @@ export const orchestrationDiagram = `sequenceDiagram
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Uber Eats:**
-> - order placement เป็น saga: validate order → charge payment → notify restaurant → assign driver
-> - ถ้า driver หาไม่ได้ → refund payment → notify customer
+> **microservices.io (Chris Richardson):** เอกสาร pattern ต้นฉบับใช้ตัวอย่าง e-commerce order ที่ต้องตรวจสอบวงเงินเครดิตของลูกค้าข้าม database คนละตัว อธิบายทั้งแบบ choreography (service ยิง event ใส่กัน) และ orchestration (มี orchestrator สั่งการ) ([microservices.io: Saga pattern](https://microservices.io/patterns/data/saga.html))
 >
-> **Airbnb:**
-> - booking saga: reserve listing → charge card → send confirmation
-> - compensating: refund → release listing → send cancellation notification
+> **รูปแบบทั่วไปที่พบในระบบสั่งอาหาร/delivery และระบบจองที่พัก:** มักโมเดล flow เป็น saga ทำนอง validate order → charge payment → notify merchant → assign fulfillment พร้อม compensating step (refund, release reservation, send cancellation notice) เมื่อ step ใด step หนึ่งล้มเหลวกลางทาง — เป็นภาพประกอบหลักการทั่วไป ไม่ได้อ้างอิงระบบจริงของบริษัทใดบริษัทหนึ่งโดยเฉพาะ
 
 <Callout title="การ compensate ไม่ใช่การ rollback">
 compensating transaction เป็น business action ใหม่ ไม่ใช่ `ROLLBACK` ของฐานข้อมูล การปล่อยเครดิตที่จองไว้ การยกเลิก shipment หรือการคืนเงิน ทิ้งร่องรอยไว้ใน audit log — และบางครั้งคุณก็ไม่สามารถยกเลิก step หนึ่งได้อย่างสมบูรณ์จริง ๆ (อีเมลถูกส่งออกไปแล้ว) การออกแบบ compensation ที่ดี และการยอมรับว่าบางตัวเป็นเพียงค่าประมาณ คืองานจริงของการสร้าง saga

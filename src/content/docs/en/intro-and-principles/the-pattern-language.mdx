@@ -78,6 +78,32 @@ The natural place to start applying this is the first problem decomposition crea
 - [When to Use Microservices](/microservices/en/intro-and-principles/when-to-use-microservices/) — deciding to decompose, which sets this chain in motion.
 - [Data Management](/microservices/en/data-management/) — the first problem group decomposition creates, and the next module to read.
 
+| Benefit | Trade-off |
+|---|---|
+| Patterns give a team shared vocabulary — faster mutual understanding | A pattern is a template, not a recipe — you still have to adapt it to context |
+| Each pattern documents the context it fits | Knowing a pattern's name doesn't mean you'll implement it correctly |
+| You learn from the industry's collective experience | Over-engineering — reaching for a pattern you don't need yet |
+| The pattern language shows the big picture of how patterns relate | A pattern can be outdated for your current technology stack |
+
+## Common mistakes
+
+**Pattern shopping** — picking a pattern because it's trendy, not because the context fits.
+Symptoms:
+- Reaching for CQRS because you read an article, not because you have a read/write asymmetry problem.
+- Complexity goes up with no matching benefit.
+- Always start from the problem — a pattern is an answer, not a question.
+
+**Using a pattern without understanding its trade-offs** — implementing it from a tutorial without knowing what you're giving up.
+Symptoms:
+- Adopting Saga without understanding what a compensating transaction actually is.
+- Adopting Event Sourcing without realizing that querying current state gets harder.
+
+> 💡 Real-world examples
+>
+> **Chris Richardson (microservices.io):** built the microservices pattern-language catalog, where the patterns chain together — solving one problem tends to open the next problem that needs a new pattern ([microservices.io: Pattern language](https://microservices.io/patterns/index.html)).
+>
+> **Martin Fowler & James Lewis / Sam Newman:** Fowler and Lewis's 2014 article "Microservices" is the definition the industry converged on ([martinfowler.com: Microservices](https://martinfowler.com/articles/microservices.html)); Sam Newman's book "Building Microservices" is the industry's key practical reference.
+
 <Callout title="Learn the connections, not just the catalog">
 A pattern in isolation is trivia; a pattern in its place is a tool you know when to reach for. The scale cube tells you *why* to decompose, and the chain of problem groups tells you what decomposition will hand you next. Carry this map through the rest of the course and each new pattern will slot into a structure you already understand.
 </Callout>

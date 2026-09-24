@@ -128,14 +128,9 @@ routes:
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Netflix:**
-> - ใช้ Zuul (ต่อมาเป็น Zuul 2) เป็น API Gateway รับ request หลายพันล้านครั้งต่อวัน
-> - handle authentication, routing, และ A/B testing ที่ gateway layer
-> - ต่อมาย้ายไปใช้ GraphQL federation สำหรับ aggregation ที่ซับซ้อน
+> **Netflix:** ใช้ Zuul (ภายหลังคือ Zuul 2 ที่เป็น non-blocking บน Netty) เป็น API Gateway ที่รับ request ระดับพันล้านครั้งต่อวัน จัดการ authentication, routing, load balancing ที่ชั้น edge — ภายหลังเพิ่ม GraphQL Federation ไว้ด้านหลัง gateway เพื่อรวมผลลัพธ์จาก Domain Graph Service นับร้อยตัวเข้าเป็น API graph เดียว ([Netflix TechBlog: How Netflix Scales its API with GraphQL Federation](https://netflixtechblog.com/how-netflix-scales-its-api-with-graphql-federation-part-1-ae3557c187e2))
 >
-> **Amazon:**
-> - แต่ละ product team มี API Gateway ของตัวเอง
-> - ไม่มี central gateway เดียว — แบ่งตาม domain ownership
+> **แนวโน้มที่กว้างกว่านั้น:** หลายองค์กรเลือกให้แต่ละทีมเป็นเจ้าของ gateway instance ของตัวเอง (แทนที่จะมี central gateway ตัวเดียวที่ทุกทีมต้องเข้าคิว) โดยทีม platform ดูแลแค่ shared concern เช่น custom domain ส่วนแต่ละทีม deploy และดูแล route ของตัวเองอิสระ ([AWS Compute Blog: Architecting multiple microservices behind a single domain with Amazon API Gateway](https://aws.amazon.com/blogs/compute/architecting-multiple-microservices-behind-a-single-domain-with-amazon-api-gateway/))
 
 <Callout title="gateway มีไว้จัดเส้นทาง ไม่ใช่ถือ business logic">
 น่าเย้ายวนที่จะแอบยัด business logic "นิดเดียว" เข้าไปใน gateway คำนวณส่วนลดตรงนี้สักหน่อย ตรวจ order ตรงนั้นอีกนิด แต่อย่าทำ หน้าที่ของ gateway คือ routing การรวมผลลัพธ์ และ cross-cutting concerns เท่านั้น ส่วนกฎทางธุรกิจเป็นของ service ที่เป็นเจ้าของ พอกฎพวกนี้รั่วเข้าไปใน gateway คุณก็ได้ distributed monolith กลับมา โดยมี gateway เป็นแกนกลางที่ซ่อนอยู่

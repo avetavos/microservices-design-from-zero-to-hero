@@ -129,15 +129,9 @@ shipping-service  --X-->      orders DB     (blocked: no route, no credentials)
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Amazon:**
-> - หนึ่งในกฎดังของ Amazon คือ "no shared databases"
-> - แต่ละ service เลือก database ที่เหมาะกับ use case: DynamoDB, RDS, ElasticSearch
-> - payment service ใช้ RDBMS สำหรับ ACID, recommendation ใช้ graph database
+> **Amazon:** ส่วนหนึ่งของ Bezos API mandate (2002) คือห้าม direct database access ข้ามทีมโดยเด็ดขาด แต่ละทีมเลือกและดูแล datastore ของตัวเอง ([Nordic APIs: The Bezos API Mandate](https://nordicapis.com/the-bezos-api-mandate-amazons-manifesto-for-externalization/))
 >
-> **Netflix:**
-> - Cassandra สำหรับ viewing history (high write throughput)
-> - MySQL สำหรับ billing (ACID required)
-> - ElasticSearch สำหรับ search catalog
+> **Netflix:** ใช้ polyglot persistence ตามลักษณะงาน — Cassandra สำหรับข้อมูล viewing history ที่ต้องรับ write throughput สูงและกระจายหลายภูมิภาค, MySQL สำหรับข้อมูล billing/subscription ที่ต้องการ ACID, และ Elasticsearch สำหรับ search/analytics ซึ่งเป็นแนวทางที่บทความหลายชิ้นบน Netflix TechBlog บันทึกไว้ (เช่นบทความชุด viewing-history data platform) — ดู [netflixtechblog.com](https://netflixtechblog.com/) สำหรับรายละเอียดเชิงลึกของแต่ละระบบ
 
 <Callout title="กฎข้อเดียว">
 ถ้าจะจำอะไรได้แค่อย่างเดียว ให้จำว่า database ของ service เป็นของส่วนตัว วันไหนที่ service ตัวที่สองเปิด connection ตรงเข้าไป วันนั้นคุณจะไม่ได้มีสอง service อีกต่อไป แต่มี distributed monolith หนึ่งตัวที่ติดป้ายชื่อสองอัน

@@ -115,15 +115,9 @@ service อ่านสิ่งเหล่านี้ตอนเริ่ม
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Netflix:**
-> - ใช้ Archaius สำหรับ dynamic configuration
-> - เปลี่ยน config ได้ใน runtime โดยไม่ restart service
-> - ใช้สำหรับ feature flag และ A/B testing config
+> **Netflix:** สร้าง Archaius เป็น dynamic configuration library ที่เปลี่ยนค่าได้ใน runtime โดยไม่ต้อง restart service ใช้สำหรับ feature flag และ config ของ A/B testing เป็นส่วนหนึ่งของ Netflix OSS ([Netflix/archaius on GitHub](https://github.com/Netflix/archaius))
 >
-> **Kubernetes:**
-> - ConfigMap สำหรับ non-secret config
-> - Secret object สำหรับ sensitive data (โดย default เป็นแค่ base64-encoded ไม่ได้ encrypt — ต้องเปิด encryption at rest / ใช้ KMS เองถึงจะ encrypt จริง)
-> - environment เปลี่ยน config โดยการ swap ConfigMap — ไม่ต้อง rebuild image
+> **Kubernetes:** แยก ConfigMap สำหรับ non-secret config ออกจาก Secret object สำหรับข้อมูล sensitive — แต่ Secret เป็นเพียง base64-encoded โดย default ไม่ได้ encrypt จริง ต้องเปิด encryption at rest หรือใช้ external KMS provider เองถึงจะเข้ารหัสจริง เปลี่ยน config ได้ด้วยการ swap ConfigMap โดยไม่ต้อง rebuild image ([Kubernetes Docs: Secrets](https://kubernetes.io/docs/concepts/configuration/secret/))
 
 <Callout title="build artifact ครั้งเดียว แล้วตั้งค่าแยกตามที่">
 วินัยข้อนี้พูดง่ายมาก code กับค่าเริ่มต้นอยู่ใน image ส่วนทุกอย่างที่เปลี่ยนไปตาม environment มาจากภายนอก ทำได้ถูก artifact ที่ผ่านการทดสอบก้อนเดียวจะไหลจาก staging ไป production โดยไม่ถูกแตะเลย พร้อม secret ที่ส่งเข้ามาอย่างปลอดภัยตรงขอบ แต่ถ้าฝัง configuration เข้าไปในนั้นเมื่อไร คุณก็โยนคำมั่นสำคัญที่สุดของ immutable deploy ทิ้งทันที

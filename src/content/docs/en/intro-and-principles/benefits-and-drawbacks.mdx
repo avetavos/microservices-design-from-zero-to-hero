@@ -70,6 +70,33 @@ That trade is worth making when the benefits target a problem you actually have:
 - [When to Use Microservices](/microservices/en/intro-and-principles/when-to-use-microservices/) — turning this ledger into a decision.
 - [Data Management](/microservices/en/data-management/) — the module devoted to the consistency cost.
 
+| Benefit | Trade-off |
+|---|---|
+| Deploy each service independently — faster release cycles | Distributed-system complexity — network failure, partial failure |
+| Scale only the services that need it — save on cost | High operational complexity — needs DevOps maturity |
+| Technology diversity — pick the right stack per service | Consistency gets harder — eventual consistency instead of ACID |
+| Fault isolation — one service failing doesn't stop the whole system | Distributed tracing and debugging get much harder |
+
+## Common mistakes
+
+**Microservices as the answer to everything** — adopting microservices without evaluating the context.
+Symptoms:
+- A 3-person startup uses microservices from day one.
+- More time is spent configuring Kubernetes than building the product.
+- A good monolith would have delivered faster early on.
+
+**Distributed monolith** — services are split apart but still deployed together and share a database.
+Symptoms:
+- Service A calls service B synchronously on the critical path every time.
+- One shared database serves every service.
+- You get all the complexity of a distributed system and all the coupling of a monolith.
+
+> 💡 Real-world examples
+>
+> **Amazon (2002):** Jeff Bezos sent an internal mandate requiring every team to expose data and functionality only through service interfaces — no direct cross-team database access allowed. Those APIs later became the foundation of AWS itself, making this a service-oriented starting point years before Martin Fowler coined the term "microservices" ([Nordic APIs: The Bezos API Mandate](https://nordicapis.com/the-bezos-api-mandate-amazons-manifesto-for-externalization/)).
+>
+> **Netflix (2008):** a major database corruption in August 2008 took down Netflix's **DVD-shipping system** (its core business at the time — streaming was brand new and tiny) for three full days. The incident pushed Netflix to move to AWS and decompose into microservices, a migration that took seven years to complete, shutting down its last data center in January 2016 ([About Netflix: Completing the Netflix Cloud Migration](https://about.netflix.com/en/news/completing-the-netflix-cloud-migration)).
+
 <Callout title="Microservices move complexity, they don't delete it">
 The complexity does not vanish when you decompose; it relocates from inside your code to the network, the data, and your operations. Adopt microservices when that relocation buys you something concrete — independent scaling, fault isolation, team autonomy — and only after you have the automation to pay the operational bill. Otherwise you keep all the complexity and lose the debugger.
 </Callout>

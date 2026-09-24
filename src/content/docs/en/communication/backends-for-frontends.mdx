@@ -94,6 +94,32 @@ What it costs you:
 - [Service Discovery](/microservices/en/communication/service-discovery/) — how each BFF locates the internal services it calls.
 - [API Composition](/microservices/en/data-management/api-composition/) — the aggregation each BFF performs to compose a client-shaped response.
 
+| Benefit | Trade-off |
+|---|---|
+| Each client type gets an API optimized for it | More backends to maintain — N client types means N BFFs |
+| A mobile client never gets a payload shaped for the web | Logic can duplicate across BFFs if you're not careful |
+| Each frontend team can own its own BFF | A BFF can turn into fat middleware if business logic creeps in |
+| Changing one frontend doesn't affect another client's BFF | Adds a hop to the request chain — a small latency increase |
+
+## Common mistakes
+
+**A shared BFF** — one BFF for every client type, recreating the original problem.
+Symptoms:
+- The BFF is full of `if mobile` / `if web` branches.
+- The mobile and web teams argue over the API shape.
+- A BFF release affects every client at once.
+
+**A business-logic BFF** — business rules live in the BFF instead of a service.
+Symptoms:
+- Pricing logic and discount rules live in the BFF.
+- Changing a business rule means redeploying every BFF.
+
+> 💡 Real-world examples
+>
+> **SoundCloud:** Phil Calçado published the article that coined "Backend for Frontend" in September 2015, drawn from SoundCloud's own experience of building a backend per client experience instead of one general-purpose API ([Phil Calçado: The Back-end for Front-end Pattern (BFF)](https://philcalcado.com/2015/09/18/the_back_end_for_front_end_pattern_bff.html)).
+>
+> **Netflix:** was optimizing its API per device well before the term BFF existed — a 2013 Netflix TechBlog post describes tailoring responses to each device's constraints, whether Smart TV, mobile, or browser, the same idea BFF later gave a name to ([Netflix TechBlog: Optimizing the Netflix API](https://netflixtechblog.com/optimizing-the-netflix-api-5c9ac715cf19)).
+
 <Callout title="BFF is a team-shaping pattern as much as a technical one">
 The real win of BFF is not a smaller payload — it is removing a coordination bottleneck. When the mobile team owns its BFF, it ships at its own pace without queuing behind every other client team. If your organisation has one platform team that would own all the BFFs anyway, a single well-factored gateway may serve you better; BFF pays off when client teams are distinct and want autonomy.
 </Callout>

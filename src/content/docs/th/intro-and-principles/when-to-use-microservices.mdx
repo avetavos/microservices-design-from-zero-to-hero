@@ -87,14 +87,9 @@ export const decisionDiagram = `flowchart TB
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Basecamp / Hey:**
-> - ใช้ Rails monolith ตลอด — scale ได้ดีสำหรับ business ขนาดนั้น
-> - DHH (creator ของ Rails) active advocate ของ "Majestic Monolith"
+> **Basecamp / Hey:** ใช้ Rails monolith มาตลอดและ scale ได้ดีพอสำหรับขนาดธุรกิจของตัวเอง DHH (ผู้สร้าง Rails) เขียนบทความ "The Majestic Monolith" (2017) แย้งว่าเว็บแอปส่วนใหญ่ควรอยู่กับ monolith ที่มีโครงสร้างดีไปตลอดอายุของมัน แทนที่จะแตกเป็น microservices ([Signal v. Noise: The Majestic Monolith](https://signalvnoise.com/svn3/the-majestic-monolith/))
 >
-> **Shopify:**
-> - เริ่มจาก Rails monolith
-> - ย้ายไป Modular Monolith ก่อน (Storefront Renderer)
-> - extract microservice เฉพาะเมื่อ module พร้อมและ team พร้อม
+> **Shopify:** เริ่มจาก Rails monolith แล้ววิวัฒน์ไปเป็น **modular monolith** ที่มีขอบเขตชัดระหว่าง component — แยก Storefront Renderer ออกมาต่างหากเพราะเป็น read-only path ที่ throughput สูงมากและต้อง scale/deploy แยกจากส่วนจัดการร้านค้า ([Shopify Engineering: Under Deconstruction — The State of Shopify's Monolith](https://shopify.engineering/shopify-monolith))
 
 <Callout title="ทีมส่วนใหญ่ควรเริ่มแบบ monolith-first">
 นอกเสียจากคุณมีองค์กรขนาดใหญ่ domain ที่ซับซ้อนจริง ๆ และ component ที่มีความต้องการ scale แตกต่างกันอย่างชัดเจนอยู่แล้ว จงเริ่มด้วย modular monolith ทำให้ผลิตภัณฑ์ถูกต้อง ค้นพบว่าขอบเขตที่แท้จริงอยู่ตรงไหน และดึง service ออกมาทีละตัวเมื่อความเจ็บปวดเป็นรูปธรรม การ decompose ก่อนเวลาเป็นหนึ่งในความผิดพลาดที่แพงที่สุดในสาขานี้ — คุณจ่ายต้นทุนเต็มของการกระจายเพื่อแก้ปัญหาที่คุณยังไม่มี

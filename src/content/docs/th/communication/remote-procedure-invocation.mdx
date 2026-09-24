@@ -218,14 +218,9 @@ client แบบมี type สำหรับดึงที่อยู่จ�
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Google (gRPC):**
-> - สร้าง gRPC สำหรับ internal service communication
-> - ใช้ Protocol Buffers เพื่อ strong contract และ efficient serialization
-> - ปัจจุบัน open source และใช้แพร่หลายใน microservices
+> **Google (gRPC):** สร้าง gRPC สำหรับ internal service communication โดยใช้ Protocol Buffers เป็น contract และ serialization format ปัจจุบัน open source ภายใต้ CNCF และใช้แพร่หลายในระบบ microservices ทั่วอุตสาหกรรม ([grpc.io](https://grpc.io/about/))
 >
-> **Netflix:**
-> - ใช้ทั้ง REST และ gRPC ขึ้นกับ latency requirement
-> - internal high-frequency call ใช้ gRPC, external API ใช้ REST
+> **Netflix:** เริ่ม migrate เส้นทางภายในที่ latency สำคัญจาก REST ไป gRPC ตั้งแต่ปี 2018 — วัด p99 latency ดีขึ้นราว 50% บน service ที่ fan-out หนัก ส่วน public API และ partner integration ยังคงเป็น REST ([Netflix TechBlog: Practical API Design at Netflix](https://netflixtechblog.com/practical-api-design-at-netflix-part-1-using-protobuf-fieldmask-35cfdc606518))
 
 <Callout title="REST หรือ gRPC?">
 เลือก REST ที่ขอบของระบบและสำหรับ API สาธารณะ ที่ซึ่งการอ่านโดยมนุษย์ได้ เครื่องมือที่หลากหลาย และ HTTP semantics ที่ cache ได้สำคัญที่สุด เลือก gRPC สำหรับการสื่อสารระหว่างบริการภายใน ที่ซึ่ง schema ที่เคร่งครัด payload ที่เล็กกว่า และ HTTP/2 streaming ให้ผลคุ้มค่า — และที่ซึ่งทั้งสองฝั่งเป็นของคุณที่จะสร้างใหม่ได้เมื่อ contract เปลี่ยน

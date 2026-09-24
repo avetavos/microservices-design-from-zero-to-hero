@@ -84,6 +84,34 @@ None of this means the monolith is wrong. A well-structured monolith — a *modu
 - [Benefits and Drawbacks](/microservices/en/intro-and-principles/benefits-and-drawbacks/) — the trade-off, examined in detail.
 - [When to Use Microservices](/microservices/en/intro-and-principles/when-to-use-microservices/) — choosing which side of the diagram you belong on.
 
+| | Monolith | Microservices |
+|---|---|---|
+| Best fit | Small team, unclear domain, MVP | Large team, clear domain, high scale requirements |
+| Deploy | All together | Independent per service |
+| Scale | The whole system | Only the service that needs it |
+| Debug | Easy — one stack trace | Hard — needs distributed tracing |
+| Team | One team, access to everything | Ownership split per service |
+| Consistency | Strong (ACID transactions) | Eventual (you design for it) |
+
+## Common mistakes
+
+**Moving to microservices before the domain is clear** — decomposing along the wrong boundary, then having to refactor.
+Symptoms:
+- The split-out services call each other synchronously for 80% of operations.
+- Every new feature touches several services at once.
+- Start with a modular monolith instead, and extract once the boundaries are clear.
+
+**Scaling microservices before you need to** — provisioning for 1M users while you have 1,000.
+Symptoms:
+- The team spends 70% of its time on infrastructure, not the product.
+- The real problem isn't scale yet — it's feature velocity.
+
+> 💡 Real-world examples
+>
+> **Stack Overflow:** ran a monolithic .NET application throughout its growth — per statistics its former Architecture Lead Nick Craver published in 2016, the system served around 209 million HTTP requests per day (roughly 6 billion per month) from a small handful of web servers, showing how far a well-optimized monolith can go ([Nick Craver: Stack Overflow — The Architecture — 2016 Edition](https://nickcraver.com/blog/2016/02/17/stack-overflow-the-architecture-2016-edition/)).
+>
+> **Segment:** in 2018 published "Goodbye Microservices," describing how its per-destination architecture had grown to 140+ services, with 3 full-time engineers doing nothing but keeping the system alive — they consolidated back into a single monolithic service called Centrifuge. The lesson: microservices pay off when a team genuinely needs to scale, not because it's the architectural fashion ([Twilio/Segment Engineering: Goodbye Microservices](https://www.twilio.com/en-us/blog/developers/best-practices/goodbye-microservices)).
+
 <Callout title="Be fair to the monolith">
 The monolith is not a mistake you are escaping; it is a sensible default you may eventually outgrow. Most products never reach the scale where its costs outweigh its simplicity. Treat the move to microservices as a response to specific, observed pain — large teams blocked on one pipeline, components that must scale separately — not as a sign of architectural maturity.
 </Callout>

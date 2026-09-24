@@ -227,6 +227,32 @@ What it costs you:
 - [Bulkhead](/microservices/en/reliability/bulkhead/) — bounds the resources retries can consume while they wait.
 - [Saga](/microservices/en/data-management/saga/) — its compensating transactions must be idempotent precisely because they may be retried.
 
+| Benefit | Trade-off |
+|---|---|
+| Handles transient failures automatically — a network blip doesn't reach the user | Retries can add load to a dependency that is already overloaded |
+| Timeouts prevent thread leaks from a slow dependency | Too short a timeout fails an operation that would have succeeded |
+| Exponential backoff reduces thundering herd | Retry storms — many clients retrying at once can look like a DDoS on the dependency |
+| Jitter spreads retries out instead of bunching them | Non-idempotent operations need extra care against duplicate side effects |
+
+## Common mistakes
+
+**Retrying a non-idempotent operation** — retrying `POST /payment` without checking idempotency.
+Symptoms:
+- The user gets charged twice by the retry.
+- Any operation with a side effect needs an idempotency key.
+
+**Retrying without backoff** — retrying immediately, over and over.
+Symptoms:
+- 100 requests land on an already-overloaded service in one second.
+- This slows the service's recovery or pushes it further into failure.
+- Always use exponential backoff plus jitter.
+
+> 💡 Real-world examples
+>
+> **AWS SDK:** The standard retry mode makes at most 3 total attempts (the initial call plus 2 retries), using truncated exponential backoff with randomized jitter and a MAX_BACKOFF of roughly 20 seconds for most SDKs — there is no fixed millisecond sequence, because the formula itself is randomized ([AWS SDKs and Tools: Retry behavior](https://docs.aws.amazon.com/sdkref/latest/guide/feature-retry-behavior.html)).
+>
+> **Google Cloud:** its docs recommend truncated exponential backoff with jitter for all APIs, with a typical maximum backoff of 32–64 seconds to prevent retry storms ([Google Cloud: Retry strategy](https://docs.cloud.google.com/iam/docs/retry-strategy)).
+
 <Callout title="Only retry what is safe to repeat">
 A retry can cause the *same* request to be processed more than once — the first attempt may have actually succeeded on the server even though the response never reached you. For reads this is harmless. For writes it is not: a retried "charge card" can double-bill. Retry only idempotent operations, or give each write an idempotency key the server uses to recognize and discard duplicates. Without idempotency, a retry policy is a correctness bug waiting to happen.
 </Callout>

@@ -124,14 +124,9 @@ instances:
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Netflix (Eureka):**
-> - สร้าง Eureka เพื่อ Service Discovery บน AWS ที่ IP เปลี่ยนบ่อย
-> - แต่ละ service register ตัวเองเมื่อ start และ deregister เมื่อ stop
-> - ปัจจุบัน open source และเป็นส่วนหนึ่งของ Spring Cloud
+> **Netflix (Eureka):** สร้าง Eureka เพื่อทำ service discovery บน AWS ที่ instance IP เปลี่ยนตลอดเวลา — แต่ละ service self-register ตอน start และ deregister ตอน stop ปัจจุบัน open source และกลายเป็นส่วนหนึ่งของ Spring Cloud Netflix ([Spring Cloud Netflix Docs](https://docs.spring.io/spring-cloud-netflix/docs/current/reference/html/))
 >
-> **Kubernetes:**
-> - DNS-based Service Discovery built-in ผ่าน CoreDNS
-> - Service object ทำหน้าที่เป็น stable endpoint แม้ Pod จะ restart
+> **Kubernetes:** มี DNS-based service discovery ในตัวผ่าน CoreDNS — Service object ทำหน้าที่เป็น stable virtual IP/DNS name ที่ยังใช้งานได้แม้ Pod เบื้องหลังจะถูก restart หรือ reschedule ([Kubernetes Docs: DNS for Services and Pods](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/))
 
 <Callout title="คุณอาจมี discovery ฟรีอยู่แล้ว">
 ก่อนจะลงมือสร้าง registry เอง ลองดูก่อนว่าแพลตฟอร์มที่ใช้อยู่ให้อะไรมาแล้วบ้าง container orchestrator ส่วนใหญ่ลงทะเบียนและ health check pod ให้อยู่แล้ว พร้อมเปิดออกมาเป็นชื่อ DNS ที่นิ่งและมี load balancing ในตัว นั่นคือ third-party registration บวก server-side discovery ที่ได้มาฟรี ๆ ส่วน service mesh ก็ให้ของชุดเดียวกัน แถมมี routing และ retry ที่ครบกว่า เลือกใช้ registry library แยกต่างหากก็ต่อเมื่อ environment ของคุณยังไม่ได้แก้เรื่องนี้ไว้ให้เท่านั้น

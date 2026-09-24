@@ -313,14 +313,9 @@ export const breakerStates = `stateDiagram-v2
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Netflix (Hystrix):**
-> - ใช้ Circuit Breaker สำหรับทุก external call — รวมถึงระหว่าง internal service
-> - Hystrix dashboard แสดง circuit state ของทุก dependency แบบ real-time
-> - เมื่อ recommendation service ล้ม → fallback คือ popular content แทน personalized
+> **Netflix (Hystrix):** เปิดตัว Hystrix ปี 2012 เป็น library ที่ครอบทุก external call ด้วย circuit breaker และมี dashboard แสดง circuit state ของทุก dependency แบบ real-time เมื่อ dependency อย่าง recommendation ล้ม ทีมกำหนด fallback ไว้ล่วงหน้าได้ เช่นส่งลิสต์ "Top 10" แบบ cache ไว้แทนที่จะ personalize ([Netflix TechBlog: Introducing Hystrix](https://techblog.netflix.com/2012/11/hystrix.html))
 >
-> **Resilience4j:**
-> - มาแทน Hystrix ใน Netflix OSS
-> - lightweight, functional style, รองรับ reactive programming
+> **Resilience4j:** ปี 2018 Netflix ประกาศย้าย Hystrix เข้าสถานะ maintenance mode (ไม่พัฒนาฟีเจอร์ใหม่) และแนะนำให้โปรเจกต์ใหม่ใช้ไลบรารีที่ active กว่าอย่าง Resilience4j แทน — Resilience4j ไม่ใช่ Netflix OSS แต่เป็นโปรเจกต์อิสระที่ออกแบบสำหรับ Java 8 functional style และรองรับ reactive programming ([Netflix/Hystrix README](https://github.com/Netflix/Hystrix))
 
 <Callout title="breaker ต้องมี timeout จึงจะทำงานได้">
 circuit breaker ทำงานด้วยการนับความล้มเหลว และการเรียกที่ค้างอยู่ยังไม่นับเป็นความล้มเหลวจนกว่าจะมีอะไรมาตัดสินให้ ถ้าไม่ตั้ง timeout ต่อการเรียก dependency ที่ช้าจะทำให้ทุก probe ค้างรอไปเรื่อย ๆ ตัวนับความล้มเหลวไม่ขยับ breaker ก็ไม่มีวัน trip ดังนั้นจับคู่ breaker กับ timeout ที่เข้มงวดบนการเรียกที่ครอบอยู่เสมอ เพราะ timeout คือตัวที่สร้างความล้มเหลวให้ breaker นับ

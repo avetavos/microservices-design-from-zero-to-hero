@@ -215,20 +215,22 @@ Here is an orchestration saga for the order flow. The orchestrator runs the forw
         return nil
     }
 
-    orderSaga := []Step{
-        {"createOrder",
-            func(c Ctx) error { return orderSvc.Create(c.OrderID, c.CustomerID) },
-            func(c Ctx) error { return orderSvc.Reject(c.OrderID) }},
-        {"reserveCredit",
-            func(c Ctx) error { return customerSvc.ReserveCredit(c.CustomerID, c.Amount) },
-            func(c Ctx) error { return customerSvc.ReleaseCredit(c.CustomerID, c.Amount) }},
-        {"reserveStock",
-            func(c Ctx) error { return inventorySvc.Reserve(c.SKU) },
-            func(c Ctx) error { return inventorySvc.Release(c.SKU) }},
-    }
+    func placeOrder(ctx Ctx) {
+        orderSaga := []Step{
+            {"createOrder",
+                func(c Ctx) error { return orderSvc.Create(c.OrderID, c.CustomerID) },
+                func(c Ctx) error { return orderSvc.Reject(c.OrderID) }},
+            {"reserveCredit",
+                func(c Ctx) error { return customerSvc.ReserveCredit(c.CustomerID, c.Amount) },
+                func(c Ctx) error { return customerSvc.ReleaseCredit(c.CustomerID, c.Amount) }},
+            {"reserveStock",
+                func(c Ctx) error { return inventorySvc.Reserve(c.SKU) },
+                func(c Ctx) error { return inventorySvc.Release(c.SKU) }},
+        }
 
-    if err := RunSaga(ctx, orderSaga); err != nil {
-        log.Printf("order saga rolled back: %v", err)
+        if err := RunSaga(ctx, orderSaga); err != nil {
+            log.Printf("order saga rolled back: %v", err)
+        }
     }
     ```
   </TabItem>
@@ -293,6 +295,31 @@ A practical rule: prefer **choreography** for short, simple flows with few parti
 - [Database per Service](/microservices/en/data-management/database-per-service/) — the boundary that makes sagas necessary.
 - [Event Sourcing](/microservices/en/data-management/event-sourcing/) — a reliable way to publish the events a saga depends on.
 - [CQRS](/microservices/en/data-management/cqrs/) — often used to query the intermediate state a saga produces.
+
+| Benefit | Trade-off |
+|---|---|
+| Handles a distributed transaction without two-phase commit | Eventual consistency — state can be temporarily inconsistent |
+| Services stay autonomous — no global lock | Compensating transactions get complex, especially mid-failure |
+| Tolerates partial failure — rollback happens via compensating events | Debugging a failed saga is hard — you have to trace across services |
+| Scales well — no system-wide coordinator lock | Every step must be idempotent |
+
+## Common mistakes
+
+**A non-idempotent saga** — a step in the saga can't safely run twice.
+Symptoms:
+- A retry causes a double charge in payment.
+- A compensating transaction misbehaves because the state isn't predictable.
+
+**A saga that's too long** — more than 7-10 steps.
+Symptoms:
+- The compensating logic is so complex the team isn't confident the rollback is correct.
+- A mid-saga failure leaves the system in an inconsistent state for a long time.
+
+> 💡 Real-world examples
+>
+> **microservices.io (Chris Richardson):** the original pattern documentation uses an e-commerce order example that must check a customer's credit limit across separate databases, explaining both choreography (services fire events at each other) and orchestration (a coordinator directs the flow) ([microservices.io: Saga pattern](https://microservices.io/patterns/data/saga.html)).
+>
+> **A common shape seen in food-delivery and travel-booking systems:** the flow is often modeled as a saga like validate order → charge payment → notify merchant → assign fulfillment, with compensating steps (refund, release the reservation, send a cancellation notice) when a step fails partway through — a general illustration, not a claim about any specific company's real system.
 
 <Callout title="Compensation is not rollback">
 A compensating transaction is a new business action, not a database `ROLLBACK`. Releasing reserved credit, cancelling a shipment, or issuing a refund leaves a trail in the audit log — and sometimes you genuinely cannot fully undo a step (an email was already sent). Designing good compensations, and accepting that some are approximate, is the real work of building a saga.

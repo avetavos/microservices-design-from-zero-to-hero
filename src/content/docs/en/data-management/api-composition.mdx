@@ -172,6 +172,30 @@ When the in-memory join becomes the bottleneck — large data, complex filtering
 - [Database per Service](/microservices/en/data-management/database-per-service/) — the boundary that turns a join into a composition.
 - [CQRS](/microservices/en/data-management/cqrs/) — the heavier alternative for queries too expensive to compose at request time.
 
+| Benefit | Trade-off |
+|---|---|
+| No service changes needed — compose at the application layer | Eventual consistency — data from different services can be out of sync |
+| Cross-service queries without a database join | An error in one service can break the composite response |
+| Each service keeps full control of its own data | An in-memory join is slow if the dataset is large |
+| Can be implemented at an API Gateway or a BFF | Partial failure needs handling — some services answer, some don't |
+
+## Common mistakes
+
+**Unbounded composition** — composing too many services in one request.
+Symptoms:
+- One request fans out to 10+ services in parallel.
+- Total latency is high because the slowest service sets the pace.
+- Error rate climbs because the chance of failure grows with the service count.
+
+**Composition via a god orchestrator** — an orchestrator service that knows every service's business logic.
+Symptoms:
+- The orchestrator becomes a god service that knows too much.
+- Every new feature requires changing the orchestrator.
+
+> 💡 Real-world examples
+>
+> **microservices.io (Chris Richardson):** the canonical pattern documentation describes the API Composer as something that fans out to several services in parallel, then performs an in-memory join of the results ([microservices.io: API Composition](https://microservices.io/patterns/data/api-composition.html)). A common real-world instance is an e-commerce product detail page that composes data from pricing, inventory, reviews, and recommendation services at the BFF or gateway layer, falling back to a cached value when one of them answers slowly.
+
 <Callout title="Start here, escalate only when forced">
 API Composition is the cheapest cross-service query pattern, and most queries never outgrow it. Reach for CQRS only when you have measured that an in-memory join is genuinely too slow or too data-hungry — not before. Premature read models are a common source of accidental complexity.
 </Callout>

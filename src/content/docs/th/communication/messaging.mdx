@@ -191,14 +191,9 @@ export const messagingFlow = `flowchart LR
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Uber:**
-> - ใช้ Kafka สำหรับ real-time event streaming ระหว่าง service
-> - driver location update ส่งเป็น event — ไม่ใช่ synchronous API call
-> - ทำให้ scale แต่ละ consumer (pricing, ETA, map) แยกกันได้
+> **Uber:** เป็นหนึ่งใน deployment ของ Apache Kafka ที่ใหญ่ที่สุดในโลก — GPS location ของ driver ไหลเข้า Kafka เป็น event stream แล้วขับเคลื่อนทั้ง dynamic pricing และการคำนวณ ETA แบบเกือบ real-time ทำให้แต่ละ consumer (pricing, ETA, map) scale แยกจากกันได้ ([Uber Engineering Blog: Kafka](https://www.uber.com/en-US/blog/kafka/))
 >
-> **LinkedIn (ผู้สร้าง Kafka):**
-> - สร้าง Kafka เพื่อแก้ปัญหา messaging ภายใน
-> - ปัจจุบันประมวลผล trillions of messages ต่อวัน
+> **LinkedIn (ผู้สร้าง Kafka):** สร้าง Kafka เพื่อแก้ปัญหา messaging ภายในตัวเอง ปัจจุบันมี Kafka cluster กว่า 100 ตัวและ broker กว่า 4,000 เครื่อง ประมวลผลกว่า 7 ล้านล้าน (trillion) message ต่อวัน ([LinkedIn Engineering: How LinkedIn customizes Apache Kafka for 7 trillion messages per day](https://www.linkedin.com/blog/engineering/open-source/apache-kafka-trillion-messages))
 
 <Callout title="consumer ที่เป็น idempotent ไม่ใช่ทางเลือก">
 broker ส่วนใหญ่รับประกันการส่งแบบ at-least-once ซึ่งหมายความว่า consumer ของคุณจะได้เห็นข้อความเดิมซ้ำสองครั้งในที่สุด ถ้าการประมวลผล "ตัดเงินคำสั่งซื้อ 17" ไม่ idempotent การส่งซ้ำจะตัดเงินลูกค้าสองครั้ง ทำให้ consumer ปลอดภัยที่จะทำซ้ำได้ — ลบข้อมูลซ้ำโดยอ้างอิงจาก message id หรือออกแบบการทำงานให้การใช้สองครั้งมีผลเหมือนกับการใช้ครั้งเดียว

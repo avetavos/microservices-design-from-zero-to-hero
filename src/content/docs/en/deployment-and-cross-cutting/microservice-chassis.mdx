@@ -154,6 +154,32 @@ A practical note: a chassis handles *in-process* concerns (config, logging, metr
 - [Service Mesh](/microservices/en/deployment-and-cross-cutting/service-mesh/) — handles the networking cross-cutting concerns the chassis leaves to the sidecar.
 - [Service per Container](/microservices/en/deployment-and-cross-cutting/service-per-container/) — a chassis-built service is still packaged and run as one service per container.
 
+| Benefit | Trade-off |
+|---|---|
+| Cross-cutting concerns (logging, health checks, metrics) done once | The chassis becomes a dependency every service is coupled to |
+| Every service gets the same observability and security baseline | Upgrading the chassis means rebuilding and redeploying every service |
+| A new service starts fast — clone the chassis, add business logic | A chassis can bloat if too many features get piled in |
+| A clear standard — every team works the same way | Multiple language stacks mean multiple chassis to maintain |
+
+## Common mistakes
+
+**A fat chassis** — business logic ends up inside the chassis.
+Symptoms:
+- The chassis contains auth logic, pricing logic, or domain rules.
+- Every service inherits code most of them don't need.
+- The chassis turns into a shared monolith.
+
+**A chassis nobody updates** — new services still build on an old version.
+Symptoms:
+- A vulnerability in a logging library is fixed in the new chassis, but old services still run the old version.
+- There's no automated update mechanism.
+
+> 💡 Real-world examples
+>
+> **Netflix OSS:** Spring Cloud Netflix used to be a popular chassis for Java services, bundling Eureka (discovery), Hystrix (circuit breaker), and Ribbon (load balancing) so new teams got an observability baseline by cloning a starter project. **Current status (verified 2026): Netflix put both Hystrix and Ribbon into maintenance mode back in 2018, and Spring Cloud has since dropped Ribbon as a default dependency, now recommending Spring Cloud LoadBalancer and Resilience4j for new projects instead** ([Netflix/Hystrix README](https://github.com/Netflix/Hystrix), [Spring Cloud Netflix Docs](https://docs.spring.io/spring-cloud-netflix/docs/current/reference/html/)).
+>
+> **Uber:** open-sourced Fx, a dependency-injection framework for Go, as the base for new services to start from a template that already has logging, tracing, and metrics wired up ([Uber Open Source: Fx](https://github.com/uber-go/fx)).
+
 <Callout title="A chassis is a starting point, not a cage">
 The goal is to remove undifferentiated plumbing, not to dictate how every service is built. Keep the chassis focused on truly cross-cutting concerns — config, logging, metrics, health, discovery — and let services keep their freedom over domain design. The day the chassis starts mandating how you model orders, it has overreached.
 </Callout>

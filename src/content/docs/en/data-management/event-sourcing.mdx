@@ -201,6 +201,32 @@ What it costs you:
 - [Saga](/microservices/en/data-management/saga/) — sagas rely on the reliable events an event store emits.
 - [Database per Service](/microservices/en/data-management/database-per-service/) — each service may choose Event Sourcing as its private storage model.
 
+| Benefit | Trade-off |
+|---|---|
+| A complete audit log — you know how and when state changed | Querying current state means replaying events — slower than reading a stored value |
+| You can rebuild state at any time | Changing an event's schema is hard — old events must stay compatible |
+| Pairs very well with CQRS | A large event store needs snapshotting |
+| Time-travel debugging — inspect state at any past moment | High conceptual overhead — the team has to adopt a different mental model |
+
+## Common mistakes
+
+**Event Sourcing everywhere** — used without an audit or time-travel requirement.
+Symptoms:
+- A simple service with no need for history gets an event store anyway.
+- Complexity goes up with no matching benefit.
+- The team spends more time managing event schemas than building features.
+
+**Mutable events** — editing an event after the fact.
+Symptoms:
+- An event gets edited to "fix a bug" instead of appending a new compensating event.
+- The audit log is no longer trustworthy.
+
+> 💡 Real-world examples
+>
+> **LMAX Exchange:** the reference example Martin Fowler wrote about in "LMAX Architecture" — a low-latency financial trading system whose single-threaded Business Logic Processor runs entirely off an event log (Event Sourcing) plus an in-memory state model, processing millions of orders per second with a complete audit trail ([Martin Fowler: LMAX Architecture](https://martinfowler.com/articles/lmax.html)).
+>
+> **Financial systems in general:** regulatory requirements often mandate a complete audit trail of every transaction, which Event Sourcing satisfies naturally, since its change log is append-only and fully inspectable after the fact.
+
 <Callout title="Events are immutable facts">
 A stored event records something that already happened — it is in the past tense and it never changes. You correct a mistake by appending a new compensating event (a reversal), not by editing or deleting an old one. Treating the log as append-only is what gives Event Sourcing its audit trail and its reliable publishing in the first place.
 </Callout>

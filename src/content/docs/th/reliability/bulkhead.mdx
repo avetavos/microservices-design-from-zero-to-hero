@@ -151,8 +151,10 @@ export const bulkheadDiagram = `flowchart TB
         recs    = NewBulkhead(2)
     )
 
-    if err := recs.Run(func() error { return fetchRecs(productID) }); err != nil {
-        recommendations = nil // degrade, do not block catalog
+    func renderProductPage(productID string) {
+        if err := recs.Run(func() error { return fetchRecs(productID) }); err != nil {
+            recommendations = nil // degrade, do not block catalog
+        }
     }
     ```
   </TabItem>
@@ -185,14 +187,24 @@ export const bulkheadDiagram = `flowchart TB
     }
 
     // One compartment per dependency — sized independently.
-    let catalog = Bulkhead::new(8);
-    let reviews = Bulkhead::new(4);
-    let recs = Bulkhead::new(2);
+    struct Compartments {
+        catalog: Bulkhead,
+        reviews: Bulkhead,
+        recs: Bulkhead,
+    }
 
-    let recommendations = recs
-        .run(|| fetch_recs(product_id))
-        .await
-        .unwrap_or_default(); // degrade, do not block catalog
+    impl Compartments {
+        fn new() -> Self {
+            Self { catalog: Bulkhead::new(8), reviews: Bulkhead::new(4), recs: Bulkhead::new(2) }
+        }
+    }
+
+    async fn render_product_page(compartments: &Compartments, product_id: &str) -> Vec<Recommendation> {
+        compartments.recs
+            .run(|| fetch_recs(product_id))
+            .await
+            .unwrap_or_default() // degrade, do not block catalog
+    }
     ```
   </TabItem>
 </Tabs>
@@ -238,14 +250,9 @@ export const bulkheadDiagram = `flowchart TB
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Netflix:**
-> - ใช้ Hystrix (thread pool isolation) สำหรับทุก external call
-> - แต่ละ dependency มี thread pool ของตัวเอง
-> - recommendation service ล้ม → thread pool ของตัวเองเต็ม → ไม่กระทบ payment thread pool
+> **Netflix:** Hystrix ให้ thread-pool isolation เป็น bulkhead แบบหนึ่ง — แต่ละ dependency ได้ thread pool ของตัวเอง ถ้า recommendation service ล้ม thread pool ของมันจะเต็ม แต่ไม่แย่ง thread ของ payment ([Netflix TechBlog: Introducing Hystrix](https://techblog.netflix.com/2012/11/hystrix.html))
 >
-> **Resilience4j (successor ของ Hystrix):**
-> - semaphore-based bulkhead สำหรับ reactive systems
-> - ใช้แพร่หลายในระบบที่ใช้ Spring Boot + reactive programming
+> **Resilience4j:** มี bulkhead สองแบบ — `SemaphoreBulkhead` (จำกัดด้วย semaphore ทำงานใน thread เดิม เหมาะกับ reactive/non-blocking) และ `ThreadPoolBulkhead` (มี thread pool + bounded queue ของตัวเอง คล้าย Hystrix แต่ configuration ต่างกัน) ([resilience4j docs: Bulkhead](https://resilience4j.readme.io/docs/bulkhead))
 
 <Callout title="ขีดจำกัดความ concurrency ไม่ใช่ rate limit">
 bulkhead จำกัดจำนวนการเรียกที่รัน *พร้อมกัน* ไม่ใช่จำนวนต่อวินาที สองอย่างนี้คนมักสับสนกัน bulkhead ขนาดสองปล่อยให้การเรียกเร็ว ๆ หนึ่งพันครั้งผ่านได้ในหนึ่งวินาที ถ้าแต่ละครั้งเสร็จไว จะ block ก็ต่อเมื่อมีเกินสองครั้งกำลังทำงานพร้อมกันเท่านั้น เลือก bulkhead เมื่อต้องการคุมว่า dependency หนึ่งถือทรัพยากรที่แชร์กันได้มากแค่ไหนในคราวเดียว ส่วน rate limiting เลือกใช้เมื่อต้องการจำกัด throughput ต่อหน่วยเวลา

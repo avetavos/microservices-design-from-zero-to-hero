@@ -118,14 +118,9 @@ routes:
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **SoundCloud:**
-> - เป็นผู้บัญญัติคำว่า "Backend for Frontend" ในปี 2015
-> - มี BFF แยกสำหรับ web, mobile, และ public API
-> - แต่ละ BFF ดูแลโดย frontend team ของตัวเอง
+> **SoundCloud:** Phil Calçado เผยแพร่บทความบัญญัติคำว่า "Backend for Frontend" ในเดือนกันยายน 2015 จากประสบการณ์ตรงที่ SoundCloud ที่มี backend เฉพาะสำหรับแต่ละ client experience แทนที่จะใช้ general-purpose API เดียว ([Phil Calçado: The Back-end for Front-end Pattern (BFF)](https://philcalcado.com/2015/09/18/the_back_end_for_front_end_pattern_bff.html))
 >
-> **Netflix:**
-> - มี BFF แยกสำหรับ Smart TV, Mobile, Browser
-> - แต่ละ device type ได้ response format ที่ optimize สำหรับ screen size และ bandwidth
+> **Netflix:** ปรับ API ให้เหมาะกับแต่ละประเภทอุปกรณ์มาตั้งแต่ก่อนคำว่า BFF จะถูกบัญญัติ — บทความปี 2013 ของ Netflix TechBlog อธิบายการ optimize response ให้เข้ากับ constraint ของแต่ละ device เช่น Smart TV, มือถือ และเบราว์เซอร์ ซึ่งเป็นแนวคิดเดียวกับที่ BFF ให้ชื่ออย่างเป็นทางการในภายหลัง ([Netflix TechBlog: Optimizing the Netflix API](https://netflixtechblog.com/optimizing-the-netflix-api-5c9ac715cf19))
 
 <Callout title="BFF เป็น pattern ที่ปรับรูปทีมพอ ๆ กับที่เป็นเรื่องทางเทคนิค">
 ชัยชนะที่แท้จริงของ BFF ไม่ใช่ payload ที่เล็กลง แต่คือการทลายคอขวดเรื่องการประสานงาน พอทีม mobile เป็นเจ้าของ BFF ของตัวเอง ก็ปล่อยงานได้ตามจังหวะของตัวเอง ไม่ต้องเข้าคิวรอทีม client อื่น แต่ถ้าองค์กรของคุณมีทีม platform ทีมเดียวที่จะดูแล BFF ทั้งหมดอยู่แล้ว gateway ตัวเดียวที่แยกส่วนมาดี ๆ อาจตอบโจทย์กว่า BFF จะคุ้มก็ต่อเมื่อทีม client แยกกันชัดเจนและต้องการความเป็นอิสระจริง ๆ

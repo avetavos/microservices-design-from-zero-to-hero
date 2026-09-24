@@ -61,6 +61,34 @@ The reassuring truth is that this is rarely an irreversible, all-or-nothing deci
 - [Monolith vs Microservices](/microservices/en/intro-and-principles/monolith-vs-microservices/) — the two options the flow chooses between.
 - [The Pattern Language](/microservices/en/intro-and-principles/the-pattern-language/) — what to learn once you have decided to decompose.
 
+| Use microservices when | Don't when |
+|---|---|
+| The team is big enough (8+) to split into squads | The team is smaller than 5 |
+| The domain is clear — you know each service's boundary | The domain isn't well understood yet — boundaries keep shifting |
+| You have DevOps maturity — CI/CD, monitoring, Kubernetes | You don't have that infrastructure yet |
+| Scaling needs differ sharply between components | Traffic scales about the same across every part of the system |
+| Compliance requires isolating data | You need strong consistency across the whole system |
+
+## Common mistakes
+
+**Microservices as the default architecture** — starting every new project with microservices.
+Symptoms:
+- The first sprint is spent setting up Kubernetes, a service registry, and a CI/CD pipeline.
+- The first feature still isn't built.
+- Use a monolith or modular monolith, and extract when the time comes.
+
+**Migrating because a competitor did** — adopting microservices because Netflix or Amazon uses them.
+Symptoms:
+- Ignoring the very different context — Netflix has thousands of engineers.
+- The complexity isn't worth it at your actual scale.
+- "If Netflix can do it, so can we" — but Netflix's migration took 7 years.
+
+> 💡 Real-world examples
+>
+> **Basecamp / Hey:** has run on a Rails monolith throughout, scaling well enough for its size of business. DHH (Rails' creator) wrote "The Majestic Monolith" (2017), arguing that most web apps should stay a well-structured monolith for their entire lifespan rather than splitting into microservices ([Signal v. Noise: The Majestic Monolith](https://signalvnoise.com/svn3/the-majestic-monolith/)).
+>
+> **Shopify:** started as a Rails monolith and evolved into a **modular monolith** with clear boundaries between components — it split out the Storefront Renderer specifically because that read-only path has very high throughput and needed to scale and deploy separately from the merchant-facing admin ([Shopify Engineering: Under Deconstruction — The State of Shopify's Monolith](https://shopify.engineering/shopify-monolith)).
+
 <Callout title="Most teams should start monolith-first">
 Unless you already have a large organization, a genuinely complex domain, and components with clearly divergent scaling needs, begin with a modular monolith. Get the product right, discover where the real boundaries are, and extract services one at a time when the pain is concrete. Premature decomposition is one of the most expensive mistakes in this field — you pay the full cost of distribution to solve problems you do not yet have.
 </Callout>

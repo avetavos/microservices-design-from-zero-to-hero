@@ -155,6 +155,31 @@ What it costs you:
 - [Service per Team](/microservices/en/decomposition/service-per-team/) — because capabilities map onto teams, they make ownership natural.
 - [Decomposition overview](/microservices/en/decomposition/) — how this strategy fits with the others.
 
+| Benefit | Trade-off |
+|---|---|
+| Service boundaries line up with the org — less cross-team coordination | You need to understand business capabilities first — get it wrong and you pay for it later |
+| Each service changes with the business without affecting others | Business capabilities can overlap — the boundary isn't always clean |
+| Conway's Law works for you — team maps to service | Too coarse a capability makes a service too big; too fine makes it too small |
+| Easy to explain to stakeholders | Needs real business analysis, not just technical design |
+
+## Common mistakes
+
+**Copy-pasting the org chart** — turning the org chart directly into services without analyzing capabilities.
+Symptoms:
+- Services follow departments, but a business process that crosses departments needs several services to call each other.
+- Reorganizing the team forces a rearchitecture of the services.
+
+**A capability that changes too often** — using an unstable capability as the boundary.
+Symptoms:
+- The service boundary shifts every quarter with business priorities.
+- The team refactors services so often there's no time left to build features.
+
+> 💡 Real-world examples
+>
+> **Amazon:** part of the 2002 Bezos API mandate was making each team own its capability end-to-end through a service interface — organized around what the business does (catalog, ordering, payment, fulfillment), not around technical layers, letting teams and services scale together ([Nordic APIs: The Bezos API Mandate](https://nordicapis.com/the-bezos-api-mandate-amazons-manifesto-for-externalization/)).
+>
+> **A common pattern at ride-hailing and delivery companies:** services are often organized around core business capabilities such as rider matching, pricing, payment, and driver management, each deployed and scaled independently — a general illustration of the principle, not a claim about any specific company's internal system.
+
 <Callout title="What, not how">
 The whole trick of this pattern is to ask "what does the business do?" and stubbornly refuse to answer with "how it is currently built". The moment a service name describes a technology or a layer — a `gateway-service`, a `database-service` — you have probably sliced along the wrong axis. Capability names read like the chapters of the company's own story: Order Management, Billing, Shipping.
 </Callout>

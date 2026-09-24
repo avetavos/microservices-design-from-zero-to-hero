@@ -120,13 +120,9 @@ control plane แปลสิ่งนี้เป็น configuration สำห
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Google (Istio):**
-> - สร้าง Istio จาก internal service mesh ที่ใช้ใน Google production
-> - ใช้ Envoy proxy เป็น sidecar — battle-tested ที่ Lyft และ Airbnb
+> **Istio (Google, IBM, Lyft):** ก่อตั้งร่วมกันโดย Google, IBM และ Lyft ในปี 2016 ปัจจุบันเป็น CNCF graduated project ใช้ Envoy proxy (ที่ Lyft สร้างขึ้นเพื่อความต้องการภายในของตัวเอง) เป็น sidecar มาตรฐาน ([istio.io: About Istio](https://istio.io/latest/about/service-mesh/))
 >
-> **Lyft:**
-> - ผู้สร้าง Envoy proxy — เริ่มจาก internal need
-> - ใช้ mesh สำหรับ observability ก่อน — ได้ tracing ทั้งระบบโดยไม่ต้องแก้ service
+> **สถานะปัจจุบัน — sidecar vs sidecar-less (ตรวจปี 2026):** Istio เปิดตัว **ambient mode** ซึ่งเป็นสถาปัตยกรรมแบบไม่มี sidecar (ใช้ per-node `ztunnel` แทน) และ ambient mode ได้สถานะ General Availability ตั้งแต่ v1.24 (พฤศจิกายน 2024) ช่วยลด resource overhead ที่บทเรียนนี้พูดถึงได้มาก — Linkerd และ Cilium ก็มีแนวทาง service mesh ของตัวเองที่ควรเทียบเคียงก่อนเลือกใช้งานจริง ([istio.io: Ambient Mode Reaches GA](https://istio.io/latest/blog/2024/ambient-reaches-ga/))
 
 <Callout title="Mesh ย้าย logic ออกจาก code ไม่ได้ทำให้ logic หายไป">
 service mesh ไม่ได้ทำให้ retry, timeout และ mTLS หายไปไหน แค่ย้ายออกจาก application code ของคุณไปไว้ใน sidecar ที่จัดการจากส่วนกลาง สิ่งที่ได้คือความสม่ำเสมอและการควบคุมจากจุดเดียว สิ่งที่ต้องจ่ายคือ proxy เพิ่มบนทุก hop และระบบใหม่ที่ทรงพลังแต่ต้องดูแลเอง นี่คือการแลกที่คุ้มเมื่อความสอดคล้องข้ามหลาย service สำคัญกว่า latency และความซับซ้อนที่เพิ่มขึ้น

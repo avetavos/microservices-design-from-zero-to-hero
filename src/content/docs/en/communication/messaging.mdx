@@ -167,6 +167,32 @@ What it costs you:
 - [Saga](/microservices/en/data-management/saga/) — uses messaging to coordinate a multi-service transaction.
 - [Event Sourcing](/microservices/en/data-management/event-sourcing/) — a reliable way to produce the events you publish.
 
+| Benefit | Trade-off |
+|---|---|
+| Producer and consumer are decoupled — neither has to know the other | Eventual consistency — data isn't in sync instantly |
+| Absorbs traffic spikes — the queue soaks up a backlog | Message ordering gets tricky, especially with parallel consumers |
+| A consumer can go down without affecting the producer | Debugging is harder than a synchronous call |
+| Consumers scale independently based on backlog | Changing a message schema needs care around backward compatibility |
+
+## Common mistakes
+
+**Chatty messaging** — sending many tiny messages instead of batching.
+Symptoms:
+- The broker receives thousands of events per second for one logical operation.
+- Consumers can't keep up and a backlog builds.
+- Network overhead is far higher than it needs to be.
+
+**A shared schema with no versioning** — changing a message schema without managing versions.
+Symptoms:
+- Old consumers can't deserialize messages from a new producer.
+- Deploying a new producer crashes consumers all at once.
+
+> 💡 Real-world examples
+>
+> **Uber:** runs one of the largest Apache Kafka deployments in the world — driver GPS locations flow into Kafka as an event stream, powering dynamic pricing and near-real-time ETA calculations, letting each consumer (pricing, ETA, maps) scale independently ([Uber Engineering Blog: Kafka](https://www.uber.com/en-US/blog/kafka/)).
+>
+> **LinkedIn (Kafka's creator):** built Kafka to solve its own internal messaging problems; today it runs over 100 Kafka clusters and more than 4,000 brokers, processing over 7 trillion messages a day ([LinkedIn Engineering: How LinkedIn customizes Apache Kafka for 7 trillion messages per day](https://www.linkedin.com/blog/engineering/open-source/apache-kafka-trillion-messages)).
+
 <Callout title="Idempotent consumers are not optional">
 Most brokers guarantee at-least-once delivery, which means your consumer will eventually see the same message twice. If processing "charge order 17" is not idempotent, a redelivery double-charges the customer. Make consumers safe to repeat — deduplicate on a message id, or design the operation so applying it twice has the same effect as applying it once.
 </Callout>

@@ -199,14 +199,9 @@ export const metricsDiagram = `flowchart LR
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Netflix:**
-> - ใช้ Atlas เป็น in-house time-series metric system
-> - track ล้าน metric series ต่อวินาที
-> - RED method: Rate, Errors, Duration สำหรับทุก service
+> **Netflix:** สร้าง Atlas เป็น in-house time-series metric system — ปี 2014 เก็บอยู่ที่ราว 1.2 พันล้าน metric และยังโตต่อเนื่อง ระบบ fetch/graph ข้อมูลได้หลายพันล้าน datapoint ต่อวินาที ([Netflix TechBlog: Introducing Atlas](https://techblog.netflix.com/2014/12/introducing-atlas-netflixs-primary.html))
 >
-> **Airbnb:**
-> - ใช้ Prometheus + Grafana
-> - SLO-based alerting — alert เมื่อ error budget หมด ไม่ใช่เมื่อ metric เกิน threshold เดี่ยว ๆ
+> **Airbnb:** ใช้แนวทาง SLO-based alerting ตามแบบ Google SRE — ตั้ง alert เมื่อ error budget กำลังจะหมด แทนที่จะ alert ทุกครั้งที่ metric ตัวใดตัวหนึ่งข้าม threshold เดี่ยว ๆ ([Google SRE Workbook: Alerting on SLOs](https://sre.google/workbook/alerting-on-slos/))
 
 <Callout title="เลือกสัญญาณที่ถูกต้องสำหรับคำถาม">
 ใช้ metric ตอบคำถามว่า "ระบบโดยรวมเป็นอย่างไรเมื่อเทียบตามเวลา" และใช้ขับเคลื่อน alert ส่วน trace กับ log เอาไว้ตอบว่า "เกิดอะไรขึ้นกับ request ตัวนี้" anti-pattern ที่เจอบ่อยคือพยายามดึงรายละเอียดราย request ออกมาจาก metric ด้วยการยัด label ที่ cardinality สูงเข้าไป วิธีนี้ทำให้ metrics store ของคุณพังงบ แล้วยังได้ข้อมูลไม่เท่าที่ log และ trace ให้อยู่แล้ว ปล่อยให้แต่ละสัญญาณทำหน้าที่ของตัวเองดีกว่า

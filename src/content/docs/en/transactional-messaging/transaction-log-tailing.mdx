@@ -94,6 +94,33 @@ What it costs you:
 - [Polling Publisher](/microservices/en/transactional-messaging/polling-publisher/) — the simpler relay alternative when CDC is too much to operate.
 - [Idempotent Consumer](/microservices/en/transactional-messaging/idempotent-consumer/) — needed because log tailing also delivers at least once.
 
+| Benefit | Trade-off |
+|---|---|
+| Very low latency — changes are detected almost in real time | Tied to a database-specific mechanism (binlog, WAL, change stream) |
+| Adds no polling load to the database | Needs expertise to configure the CDC tool (e.g. Debezium) |
+| Reliable — events come straight from the database log | The log format can change across database version upgrades |
+| A good fit for high-throughput systems | Schema changes can break the CDC pipeline |
+
+## Common mistakes
+
+**Using CDC on a database that doesn't support it well** — turning on binlog-style replication on a database that wasn't built for it.
+Symptoms:
+- Database performance drops from the replication overhead.
+- The CDC pipeline is unstable — it disconnects often.
+- Check compatibility before adopting CDC.
+
+**Changing schema without a plan** — renaming or retyping a column without telling consumers.
+Symptoms:
+- The CDC pipeline breaks after the migration.
+- Downstream consumers get events they can't deserialize.
+- Use a schema registry (e.g. Confluent Schema Registry) to manage compatibility.
+
+> 💡 Real-world examples
+>
+> **Debezium (Red Hat):** the most widely used open-source CDC platform, supporting MySQL, PostgreSQL, MongoDB, SQL Server, and more — Shopify and Zalando are among its confirmed production users ([Debezium: Who's Using Debezium?](https://debezium.io/community/users/), [Shopify Engineering: Capturing Every Change From Shopify's Sharded Monolith](https://shopify.engineering/capturing-every-change-shopify-sharded-monolith)). Netflix, by contrast, built its own CDC system (DBLog), whose snapshotting approach Debezium later borrowed — Netflix does not run Debezium itself.
+>
+> **MongoDB Change Streams:** built-in CDC for MongoDB — an application can subscribe to a change stream directly, with no third-party tool required ([MongoDB Docs: Change Streams](https://www.mongodb.com/docs/manual/changeStreams/)).
+
 <Callout title="Tailing the log, not the table">
 The key shift is that the relay no longer asks the database "any new rows?" It listens to the same change stream the database uses to feed its own replicas. That stream is durable, ordered, and already being produced — log tailing just borrows it. The price is the CDC infrastructure you now operate and depend on.
 </Callout>

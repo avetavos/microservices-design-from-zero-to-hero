@@ -98,6 +98,32 @@ A practical rule: a mesh earns its keep once you have many polyglot services and
 - [Microservice Chassis](/microservices/en/deployment-and-cross-cutting/microservice-chassis/) — an in-process alternative for some of the same concerns; mesh and chassis are often combined.
 - [Externalized Configuration](/microservices/en/deployment-and-cross-cutting/externalized-configuration/) — mesh policy is itself externalized configuration, pushed by the control plane.
 
+| Benefit | Trade-off |
+|---|---|
+| Traffic management, retries, circuit breaking done at the infrastructure layer — no code changes | A lot of added infrastructure complexity — a sidecar per pod |
+| Automatic mTLS between services — zero-trust security by default | A small added latency from the sidecar proxy |
+| Full observability: metrics, tracing, logs for every service call | Needs real expertise to configure and debug (Istio/Linkerd) |
+| Change policy without redeploying a single service | Resource overhead — every sidecar uses memory and CPU |
+
+## Common mistakes
+
+**A service mesh from day one** — adopting a mesh before you actually have many services.
+Symptoms:
+- 3 services, but Istio is running across the whole cluster.
+- The team spends 80% of its time on mesh configuration instead of building features.
+- The complexity outweighs the actual need.
+
+**Misconfigured mTLS** — a bad mTLS config breaks service-to-service communication.
+Symptoms:
+- A new service joins the cluster and can't talk to existing services.
+- An expired certificate takes down production.
+
+> 💡 Real-world examples
+>
+> **Istio (Google, IBM, Lyft):** founded jointly by Google, IBM, and Lyft in 2016, now a CNCF graduated project. It uses Envoy (a proxy Lyft originally built for its own internal needs) as its standard sidecar ([istio.io: About Istio](https://istio.io/latest/about/service-mesh/)).
+>
+> **Current status — sidecar vs. sidecar-less (verified 2026):** Istio has introduced **ambient mode**, a sidecar-less architecture that uses a per-node `ztunnel` instead, which reached General Availability in v1.24 (November 2024) — substantially reducing the resource overhead this lesson describes. Linkerd and Cilium each take their own approach to service meshing and are worth comparing before committing to one ([istio.io: Ambient Mode Reaches GA](https://istio.io/latest/blog/2024/ambient-reaches-ga/)).
+
 <Callout title="Mesh moves the logic out of your code, not out of existence">
 A service mesh does not make retries, timeouts, and mTLS disappear — it relocates them from your application code into a sidecar managed centrally. The benefit is uniformity and central control; the price is a proxy on every hop and a powerful new system to operate. It is a trade you make when consistency across many services matters more than the added latency and complexity.
 </Callout>

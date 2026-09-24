@@ -107,6 +107,32 @@ The key insight: Database per Service does not solve consistency and querying �
 - [API Composition](/microservices/en/data-management/api-composition/) — answering queries that used to be a join.
 - [CQRS](/microservices/en/data-management/cqrs/) — a read model that spans services efficiently.
 
+| Benefit | Trade-off |
+|---|---|
+| A service can change database technology on its own | Cross-service queries need API Composition or events |
+| Schema changes don't affect other services | Distributed transactions get complex — you need a Saga |
+| A database outage affects only one service | Data duplication across services becomes normal |
+| Each database can be scaled to its own load pattern | Higher operational cost — more databases to run |
+
+## Common mistakes
+
+**A shared database** — several services read and write the same database.
+Symptoms:
+- Service A changes the schema and breaks service B.
+- No service clearly "owns" a given table.
+- Deployments have to be coordinated across every service touching that database.
+
+**Database per table** — splitting databases so finely it isn't worth it.
+Symptoms:
+- A tiny service gets its own database holding a single table.
+- The operational overhead outweighs the benefit.
+
+> 💡 Real-world examples
+>
+> **Amazon:** part of the 2002 Bezos API mandate was an outright ban on direct cross-team database access — each team chooses and owns its own datastore ([Nordic APIs: The Bezos API Mandate](https://nordicapis.com/the-bezos-api-mandate-amazons-manifesto-for-externalization/)).
+>
+> **Netflix:** practices polyglot persistence by workload — Cassandra for viewing-history data that needs high write throughput spread across regions, MySQL for billing and subscription data that needs ACID guarantees, and Elasticsearch for search and analytics, an approach documented across several Netflix TechBlog posts (see [netflixtechblog.com](https://netflixtechblog.com/) for the deep dives on each system).
+
 <Callout title="The one rule">
 If you remember nothing else: a service's database is private. The day a second service opens a direct connection to it, you no longer have two services — you have one distributed monolith wearing two name tags.
 </Callout>

@@ -100,15 +100,9 @@ export const contextDiagram = `flowchart TB
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Zalando:**
-> - ใช้ DDD + subdomain decomposition สำหรับ e-commerce platform
-> - subdomain: catalog, checkout, fulfillment, returns, customer
-> - แต่ละ subdomain มี Ubiquitous Language ของตัวเอง — "article" ใน catalog ≠ "item" ใน fulfillment
+> **Zalando:** engineering blog ของ Zalando เผยแพร่บทความหลายชิ้นเกี่ยวกับการใช้ Domain-Driven Design ร่วมกับ microservices เพื่อแบ่งแพลตฟอร์ม e-commerce ขนาดใหญ่ออกเป็น bounded context ที่มี Ubiquitous Language ของตัวเอง ([Zalando Engineering Blog: Microservices](https://engineering.zalando.com/tags/microservices.html))
 >
-> **Shopify:**
-> - core domain: commerce (checkout, payment)
-> - supporting domain: inventory, shipping
-> - generic domain: authentication, notification
+> **หลักการทั่วไปที่แพลตฟอร์ม e-commerce มักใช้:** แบ่ง subdomain ตามบทบาทใน DDD ได้แก่ core domain (จุดที่สร้างความได้เปรียบทางธุรกิจ เช่น checkout, pricing), supporting domain (เช่น inventory, shipping) และ generic domain (เช่น authentication, notification ที่มักซื้อสำเร็จรูปได้) — เป็นกรอบคิดทั่วไปจากตำรา DDD ไม่ได้อ้างอิงการแบ่งงานจริงของบริษัทใดบริษัทหนึ่งโดยเฉพาะ
 
 <Callout title="ปล่อยให้คำเดียวกันมีความหมายต่างกัน">
 แนวคิดที่ปลดล็อกที่สุดของ pattern นี้คือการยอมให้คำหนึ่งมีความหมายต่างกันในแต่ละ context การไล่หาคำนิยาม "ที่ถูกต้อง" ของ `Customer` ที่ใช้ร่วมกันทั้งบริษัทไม่ใช่เป้าหมายที่ควรไล่ตาม เพราะนั่นแหละคือต้นตอของโมเดล monolithic bounded context ปล่อยให้ billing, ordering และ delivery ต่างถือความหมายที่ตัวเองต้องใช้จริง แล้วเปลี่ยนรอยต่อระหว่างกันให้กลายเป็น contract ที่ออกแบบมาอย่างตั้งใจ

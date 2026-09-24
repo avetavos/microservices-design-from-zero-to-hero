@@ -111,14 +111,9 @@ export const pipelineDiagram = `flowchart LR
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Elastic (ELK Stack):**
-> - Elasticsearch + Logstash + Kibana เป็น stack ที่ใช้แพร่หลายที่สุด
-> - Netflix, LinkedIn, Goldman Sachs ล้วนใช้ Elasticsearch สำหรับ log aggregation
+> **Elastic (ELK Stack):** Elasticsearch + Logstash + Kibana เป็น stack log aggregation ที่ใช้แพร่หลายที่สุดตัวหนึ่ง — Netflix ใช้ ELK สำหรับ monitor และวิเคราะห์ log ปฏิบัติการและความปลอดภัยในสเกลหลายร้อย node ส่วน Goldman Sachs ใช้ Elasticsearch ทั้งช่วย client ติดตาม trade และทีม engineering ไล่ bug ([Elastic: How the Elastic Stack Changed Goldman Sachs](https://www.elastic.co/elasticon/conf/2016/sf/how-the-elastic-stack-changed-goldman-sachs))
 >
-> **Grafana Loki:**
-> - log aggregation ที่ integrate กับ Prometheus และ Grafana
-> - ไม่ index content — ถูกกว่า Elasticsearch สำหรับ high-volume log
-> - Grafana, GitLab ใช้ Loki ใน production
+> **Grafana Loki:** log aggregation ที่ integrate กับ Prometheus/Grafana โดยไม่ index เนื้อหา log ทำให้ถูกกว่า Elasticsearch สำหรับ log ปริมาณสูง — ตามรายชื่อ adopter อย่างเป็นทางการ ผู้ใช้งานจริงมี Grafana Labs เอง และ Dropbox ([grafana/loki ADOPTERS.md](https://github.com/grafana/loki/blob/main/ADOPTERS.md))
 
 <Callout title="Logs คือ interface ไม่ใช่ของที่นึกถึงทีหลัง">
 นาทีที่ log กลายเป็น record มีโครงสร้างที่ระบบอื่น parse, query และตั้ง alert ได้ ชื่อ field ก็กลายเป็น contract ไปแล้ว การเปลี่ยนชื่อ `correlationId` หรือเปลี่ยนความหมายของ level ทำให้ dashboard และ alert ที่อ้างอิงอยู่พังแบบเงียบ ๆ ได้เลย ดังนั้นดูแล log schema ให้ดีเท่ากับที่คุณดูแล API ตกลงชื่อ field ร่วมกันข้ามทีม ทำ version เวลาเปลี่ยน และอย่าเผลอ log ความลับหรือ payload เต็ม ๆ ลงใน store ที่คนอ่านได้เยอะ

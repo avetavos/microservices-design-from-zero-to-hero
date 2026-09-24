@@ -176,14 +176,9 @@ export const chassisDiagram = `flowchart TB
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Netflix OSS:**
-> - สร้าง Spring Cloud Netflix เป็น chassis สำหรับ Java service
-> - รวม Eureka (discovery), Hystrix (circuit breaker), Ribbon (load balancing) ไว้ใน chassis
-> - ทีมใหม่ใช้ starter project แล้วได้ baseline observability ทันที
+> **Netflix OSS:** Spring Cloud Netflix เคยเป็น chassis ยอดนิยมสำหรับ Java service โดยรวม Eureka (discovery), Hystrix (circuit breaker) และ Ribbon (load balancing) ไว้ให้ทีมใหม่ clone แล้วได้ baseline observability ทันที — **สถานะปัจจุบัน (ตรวจปี 2026): Hystrix และ Ribbon ถูก Netflix ประกาศเข้า maintenance mode ตั้งแต่ปี 2018 และ Spring Cloud ก็ถอด Ribbon ออกจาก dependency มาตรฐานแล้ว หันไปแนะนำ Spring Cloud LoadBalancer และ Resilience4j แทนสำหรับ project ใหม่** ([Netflix/Hystrix README](https://github.com/Netflix/Hystrix), [Spring Cloud Netflix Docs](https://docs.spring.io/spring-cloud-netflix/docs/current/reference/html/))
 >
-> **Uber:**
-> - ใช้ Fx (DI framework ของ Uber) เป็นฐานของ chassis สำหรับ Go service
-> - ทุก service ใหม่เริ่มจาก template ที่มี logging, tracing, metrics พร้อม
+> **Uber:** open source Fx ซึ่งเป็น dependency-injection framework สำหรับ Go เป็นฐานให้ service ใหม่เริ่มจาก template ที่มี logging, tracing, metrics ติดตั้งไว้แล้ว ([Uber Open Source: Fx](https://github.com/uber-go/fx))
 
 <Callout title="chassis เป็นจุดเริ่มต้น ไม่ใช่กรงขัง">
 เป้าหมายคือกำจัด plumbing ที่ไม่สร้างความแตกต่าง ไม่ใช่กำหนดว่าทุก service ต้อง build แบบไหน ให้ chassis โฟกัสที่ cross-cutting concerns จริง ๆ ได้แก่ config, logging, metric, health, discovery แล้วปล่อยให้แต่ละ service มีอิสระเต็มที่ในการออกแบบ domain วันไหนที่ chassis เริ่มสั่งว่าคุณต้อง model order อย่างไร วันนั้นคือวันที่ล้ำเส้นแล้ว

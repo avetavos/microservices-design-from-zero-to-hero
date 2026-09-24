@@ -110,14 +110,9 @@ export const compareDiagram = `flowchart TB
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Stack Overflow:**
-> - รัน monolith มาตลอดและ serve request 1.3B ครั้งต่อเดือน
-> - ทีมเพียง ~10 คน
-> - พิสูจน์ว่า monolith ที่ optimize ดีเอาชนะ microservices ที่ implement ไม่ดีได้
+> **Stack Overflow:** รัน monolithic .NET application มาตลอด — ตามสถิติที่ Nick Craver (อดีต Architecture Lead) เผยแพร่ปี 2016 ระบบรับ HTTP request ราว 209 ล้านครั้งต่อวัน (ประมาณ 6 พันล้านครั้งต่อเดือน) จาก web server เพียงไม่กี่เครื่อง แสดงให้เห็นว่า monolith ที่ optimize ดีพาไปได้ไกลกว่าที่คิด ([Nick Craver: Stack Overflow — The Architecture — 2016 Edition](https://nickcraver.com/blog/2016/02/17/stack-overflow-the-architecture-2016-edition/))
 >
-> **Segment:**
-> - migrate ไป microservices → complexity ระเบิด → migrate กลับ monolith (2020)
-> - บทเรียน: microservices คุ้มเมื่อ team scale ไม่ใช่เพราะ architecture fashion
+> **Segment:** ปี 2018 Segment ตีพิมพ์ "Goodbye Microservices" เล่าว่าระบบ per-destination ของตัวเองโตจนมี service มากกว่า 140 ตัว และวิศวกร full-time 3 คนต้องคอยประคองระบบให้รอดอย่างเดียว จึงรวมกลับมาเป็น monolithic service ชื่อ Centrifuge — บทเรียนคือ microservices คุ้มเมื่อ team ต้อง scale จริง ไม่ใช่เพราะเทรนด์สถาปัตยกรรม ([Twilio/Segment Engineering: Goodbye Microservices](https://www.twilio.com/en-us/blog/developers/best-practices/goodbye-microservices))
 
 <Callout title="จงเป็นธรรมกับ monolith">
 monolith ไม่ใช่ความผิดพลาดที่คุณต้องหนีออกมา แต่เป็นค่าเริ่มต้นที่สมเหตุสมผล ซึ่งวันหนึ่งคุณอาจโตจนเกิน monolith ไป ผลิตภัณฑ์ส่วนใหญ่ไม่เคยไปถึง scale ที่ต้นทุนของ monolith มากกว่าความเรียบง่ายที่ได้ ให้มองการย้ายไป microservices เป็นการตอบสนองต่อความเจ็บปวดที่เจาะจงและมองเห็นได้จริง เช่น ทีมใหญ่ที่ติดอยู่กับ pipeline เดียว หรือ component ที่ต้อง scale แยก ไม่ใช่เป็นเครื่องหมายแสดงวุฒิภาวะทางสถาปัตยกรรม

@@ -154,14 +154,9 @@ spec:
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Google:**
-> - รัน container มาตั้งแต่ปี 2003 — ก่อน Docker จะเกิด
-> - Borg (internal container orchestration) เป็นต้นแบบของ Kubernetes
-> - production ทุก service ที่ Google รันใน container
+> **Google:** รัน workload ภายในด้วย container (ผ่านระบบภายในชื่อ Borg) มานานกว่าทศวรรษก่อนที่ Docker จะถือกำเนิด (2013) — Borg เป็นต้นแบบทางแนวคิดโดยตรงของ Kubernetes ที่ Google เปิดเป็น open source ในปี 2014 ปัจจุบัน production workload เกือบทั้งหมดของ Google รันผ่าน container ([Google Research: Large-scale cluster management at Google with Borg (2015)](https://research.google/pubs/large-scale-cluster-management-at-google-with-borg/))
 >
-> **Spotify:**
-> - ย้ายจาก bare metal servers มาใช้ Docker + Kubernetes
-> - deploy velocity เพิ่มขึ้นมากเพราะ environment consistency
+> **Spotify:** เผยแพร่กรณีศึกษาการย้ายจาก infrastructure แบบเดิมมาใช้ Docker บน Kubernetes อธิบายว่า environment ที่สอดคล้องกันตั้งแต่ dev ถึง production ช่วยเพิ่ม deploy velocity ได้มาก ([Spotify Engineering Blog](https://engineering.atspotify.com/))
 
 <Callout title="หนึ่ง service ต่อหนึ่ง container คือหัวใจ">
 น่าเย้ายวนที่จะประหยัดสักหน่อยด้วยการยัดหลาย service ลงใน image เดียว แต่อย่าทำ คุณค่าทั้งหมดของ pattern นี้ ทั้งการ deploy แยก scale แยก roll back แยก และ resource limit ที่ชัดเจน มาจากการ map แบบหนึ่งต่อหนึ่งระหว่าง service กับ container พอรวมเข้าด้วยกันเมื่อไร คุณก็สร้าง monolith ก้อนเล็กขึ้นมาใหม่ในนั้นทันที

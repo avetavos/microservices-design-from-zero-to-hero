@@ -224,14 +224,9 @@ export const pollDiagram = `flowchart LR
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Kubernetes:**
-> - livenessProbe: restart pod ถ้า fail
-> - readinessProbe: หยุด route traffic ถ้า fail แต่ไม่ restart
-> - startupProbe: ให้เวลา startup นาน ก่อนที่ liveness จะเริ่ม check
+> **Kubernetes:** มี probe สามแบบ — `livenessProbe` restart container เมื่อ fail, `readinessProbe` หยุด route traffic เมื่อ fail แต่ไม่ restart, และ `startupProbe` ให้เวลา startup ที่นานพอก่อนที่ probe อื่นจะเริ่มทำงาน ([Kubernetes Docs: Configure Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/))
 >
-> **Netflix:**
-> - health endpoint แสดง status ของ service พร้อม dependency tree
-> - Eureka ใช้ health check สำหรับ Service Discovery — instance ที่ไม่ healthy ถูก deregister
+> **Netflix Eureka:** ใช้ health check ของแต่ละ instance เป็นสัญญาณให้ Service Discovery — instance ที่ report ไม่ healthy จะถูก deregister ออกจาก registry ([Spring Cloud Netflix Docs: Eureka health checks](https://docs.spring.io/spring-cloud-netflix/docs/current/reference/html/))
 
 <Callout title="Readiness เป็นการตัดสินใจเรื่อง routing ไม่ใช่คำตัดสินต่อทั้งโลก">
 ความผิดพลาดที่เจอบ่อยคือให้ readiness ล้มเหลวทันทีที่ downstream *ตัวใดก็ตาม* เข้าถึงไม่ได้ ถ้าทุก replica ตรวจ dependency ที่ไม่นิ่งตัวเดียวกัน ก็จะรายงาน `DOWN` พร้อมกันทั้งหมด แล้ว load balancer ก็ไม่เหลือที่ให้ route เลย ให้ตรวจเฉพาะ dependency ที่ถ้าขาดไปแล้ว instance นี้ไร้ประโยชน์จริง ๆ และเลือก graceful degradation คือคืน response แบบลดทอน ดีกว่าถอนตัวออกจาก rotation ทั้งหมด

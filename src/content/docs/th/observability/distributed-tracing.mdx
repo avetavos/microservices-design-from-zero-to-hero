@@ -200,13 +200,9 @@ export const traceDiagram = `sequenceDiagram
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Google (Dapper):**
-> - เป็น paper ที่เป็นต้นแบบของ distributed tracing ทั้งอุตสาหกรรม (2010)
-> - Zipkin (Twitter) และ Jaeger (Uber) ได้รับแรงบันดาลใจจาก Dapper
+> **Google (Dapper):** paper "Dapper, a Large-Scale Distributed Systems Tracing Infrastructure" (2010) เป็นต้นแบบแนวคิดที่อุตสาหกรรมใช้ต่อ — ทั้ง Zipkin (Twitter) และ Jaeger (Uber) ยอมรับว่าได้แรงบันดาลใจมาจาก Dapper โดยตรง ([Google Research: Dapper](https://research.google/pubs/dapper-a-large-scale-distributed-systems-tracing-infrastructure/))
 >
-> **Uber (Jaeger):**
-> - สร้าง Jaeger เพื่อ trace request ข้าม 1000+ service
-> - ปัจจุบัน CNCF graduated project — ใช้แพร่หลายที่สุดในอุตสาหกรรม
+> **Uber (Jaeger):** สร้าง Jaeger ปี 2015 เพื่อ trace request ข้าม microservice นับพันตัว บริจาคให้ CNCF และ graduate เป็น top-level project ในปี 2019 ([CNCF: Jaeger graduation announcement](https://www.cncf.io/announcements/2019/10/31/cloud-native-computing-foundation-announces-jaeger-graduation/))
 
 <Callout title="Logs, traces และ metrics คือชุดเครื่องมือเดียวกัน">
 สัญญาณทั้งสามตอบคนละคำถามและทรงพลังที่สุดเมื่อใช้ร่วมกัน metric เตือนคุณว่า p99 latency พุ่ง trace ของ request ที่ช้าชี้ให้เห็น hop ที่เป็นต้นเหตุ ส่วน log ที่รวบรวมไว้แล้ว filter ด้วย trace id เดียวกันจะเผยข้อความ error ภายใน hop นั้น แค่ประทับ trace id เดียวกันลงในทั้งสามสัญญาณ คุณก็สลับไปมาระหว่างกันได้ลื่นไหลตอนเกิดเหตุ แทนที่จะต้องเริ่มสืบสวนใหม่จากศูนย์ทุกครั้ง

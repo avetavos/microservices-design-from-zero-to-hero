@@ -99,6 +99,33 @@ Many platforms — for example a container orchestrator with built-in DNS and a 
 - [API Gateway](/microservices/en/communication/api-gateway/) — relies on discovery to route to live instances of internal services.
 - [Backends for Frontends](/microservices/en/communication/backends-for-frontends/) — each BFF discovers the internal services it composes.
 
+| Benefit | Trade-off |
+|---|---|
+| Services find each other without hardcoded IPs | Adds an infrastructure component (the registry) to run |
+| Scale a service up or down and the registry updates itself | If the registry goes down, no service can find another |
+| Deploy a new instance without touching any caller's config | A bad health check can send traffic to a dead service |
+| Works across environments (dev, staging, prod) | Adds a little latency from the registry lookup |
+
+## Common mistakes
+
+**Static IP discovery** — hardcoding a service's IP address in config.
+Symptoms:
+- Adding a replica means editing every caller's config.
+- A restart gets a new IP and callers can no longer reach it.
+- This simply doesn't work in Kubernetes, where Pod IPs change on every restart.
+
+**A stale registry** — the registry still lists dead instances.
+Symptoms:
+- A service fails to deregister and the registry keeps its old entry.
+- Callers send requests to instances that no longer exist.
+- Error rates rise and client-side retries increase.
+
+> 💡 Real-world examples
+>
+> **Netflix (Eureka):** built Eureka to do service discovery on AWS, where instance IPs change constantly — each service self-registers on start and deregisters on stop; Eureka is now open source and part of Spring Cloud Netflix ([Spring Cloud Netflix Docs](https://docs.spring.io/spring-cloud-netflix/docs/current/reference/html/)).
+>
+> **Kubernetes:** ships built-in DNS-based service discovery via CoreDNS — a Service object acts as a stable virtual IP/DNS name that keeps working even as the Pods behind it are restarted or rescheduled ([Kubernetes Docs: DNS for Services and Pods](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/)).
+
 <Callout title="You may already have discovery for free">
 Before building a registry, check what your platform gives you. A container orchestrator typically registers and health-checks pods and exposes them under a stable DNS name with built-in load balancing — that is third-party registration plus server-side discovery, handed to you. A service mesh adds the same with richer routing and retries. Reach for an explicit registry library only when your environment does not already solve this.
 </Callout>

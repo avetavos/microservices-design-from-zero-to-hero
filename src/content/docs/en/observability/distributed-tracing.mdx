@@ -178,6 +178,32 @@ What it costs you:
 - [Log Aggregation](/microservices/en/observability/log-aggregation/) — put the trace id into every log line and traces and logs cross-reference each other.
 - [Application Metrics](/microservices/en/observability/application-metrics/) — metrics tell you latency rose; traces tell you *where* it rose.
 
+| Benefit | Trade-off |
+|---|---|
+| See a request's whole journey across services in one place | Poor sampling means missing important traces |
+| Find bottlenecks in a distributed system | Overhead from trace collection and storage |
+| Correlate logs and metrics to a specific request | Requires instrumenting every service — one gap breaks the trace |
+| See a service dependency map derived from trace data | The team has to learn new tooling (Jaeger, Zipkin, Tempo) |
+
+## Common mistakes
+
+**Tracing every request (100% sampling)** — no sampling, so storage costs explode.
+Symptoms:
+- Trace storage cost is very high in a high-traffic system.
+- Use head-based or tail-based sampling instead.
+
+**Traces with gaps** — some services don't propagate trace context.
+Symptoms:
+- Opening a trace shows missing hops.
+- You can't tell how long a given service actually took.
+- Every service and every async call needs to be instrumented.
+
+> 💡 Real-world examples
+>
+> **Google (Dapper):** the 2010 paper "Dapper, a Large-Scale Distributed Systems Tracing Infrastructure" is the model the industry built on — both Zipkin (Twitter) and Jaeger (Uber) credit Dapper as their direct inspiration ([Google Research: Dapper](https://research.google/pubs/dapper-a-large-scale-distributed-systems-tracing-infrastructure/)).
+>
+> **Uber (Jaeger):** built Jaeger in 2015 to trace requests across thousands of microservices, then donated it to the CNCF, where it graduated as a top-level project in 2019 ([CNCF: Jaeger graduation announcement](https://www.cncf.io/announcements/2019/10/31/cloud-native-computing-foundation-announces-jaeger-graduation/)).
+
 <Callout title="Logs, traces, and metrics are one toolkit">
 These three signals answer different questions and are strongest together. Metrics alert you that p99 latency jumped. A trace from a slow request shows you the hop that caused it. Aggregated logs, filtered by that trace's id, show you the error message inside that hop. Stamp the same trace id across all three and you can move fluidly between them during an incident instead of starting each investigation from scratch.
 </Callout>

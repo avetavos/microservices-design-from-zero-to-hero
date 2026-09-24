@@ -177,6 +177,32 @@ What it costs you:
 - [Distributed Tracing](/microservices/en/observability/distributed-tracing/) — when a latency metric spikes, a trace shows you which hop caused it.
 - [Health Check API](/microservices/en/observability/health-check-api/) — health is a binary check; metrics reveal the gradual decline that precedes it.
 
+| Benefit | Trade-off |
+|---|---|
+| Real-time system health without tailing logs | Picking the right metrics matters — too many creates noise |
+| Automatic alerts when a metric crosses a threshold | High cardinality (e.g. tagging by `user_id`) makes storage explode |
+| Trends over time — you see degradation before it breaks | Metrics don't say "why" — you still need logs and traces |
+| Drives capacity planning and scaling decisions | Instrumenting code adds a little complexity |
+
+## Common mistakes
+
+**Metric explosion (high cardinality)** — using a dynamic value as a label or tag.
+Symptoms:
+- Labeling with raw `user_id`, `request_id`, or `url_path`.
+- Memory use on Prometheus or the metrics store spikes.
+- Queries get very slow as the series count explodes.
+
+**Vanity metrics** — tracking metrics that say nothing about real health.
+Symptoms:
+- Counting requests but not error rate or latency percentiles.
+- A pretty dashboard that doesn't help debug an incident.
+
+> 💡 Real-world examples
+>
+> **Netflix:** built Atlas, an in-house time-series metrics system — by 2014 it held around 1.2 billion metrics and kept growing, and it can fetch and graph billions of datapoints per second ([Netflix TechBlog: Introducing Atlas](https://techblog.netflix.com/2014/12/introducing-atlas-netflixs-primary.html)).
+>
+> **Airbnb:** follows Google SRE-style SLO-based alerting — alerting when an error budget is running out, rather than every time a single metric crosses a threshold ([Google SRE Workbook: Alerting on SLOs](https://sre.google/workbook/alerting-on-slos/)).
+
 <Callout title="Pick the right signal for the question">
 Reach for metrics to answer "how is the system as a whole, over time?" and to drive alerts. Reach for traces and logs to answer "what happened to this one request?" A common anti-pattern is trying to recover per-request detail from metrics by adding high-cardinality labels — it bankrupts your metrics store without giving you what logs and traces already provide. Let each signal do its job.
 </Callout>

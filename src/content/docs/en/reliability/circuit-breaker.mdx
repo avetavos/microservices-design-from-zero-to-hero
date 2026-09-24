@@ -291,6 +291,32 @@ What it costs you:
 - [Bulkhead](/microservices/en/reliability/bulkhead/) — contains the resources a dependency can consume even before the breaker trips.
 - [Rate Limiting](/microservices/en/reliability/rate-limiting/) — protects the dependency on the receiving end of the calls a breaker controls.
 
+| Benefit | Trade-off |
+|---|---|
+| Prevents cascading failure — stops sending requests to a dependency that is already down | A bad fallback can make the user experience worse than a plain error |
+| Fails fast — no request waits out a full timeout | A wrong threshold opens the circuit unnecessarily |
+| Gives a struggling dependency room to recover — no pile-on while it heals | A misconfigured Half-Open probe slows recovery |
+| The metrics a breaker collects feed observability | Adds test complexity — you must simulate failure |
+
+## Common mistakes
+
+**Threshold set too low** — the circuit opens on a 1% error rate.
+Symptoms:
+- The circuit opens constantly from ordinary transient errors.
+- The service rejects requests it didn't need to reject.
+- Set the threshold against your normal error baseline, not an arbitrarily low absolute value.
+
+**No fallback** — the circuit opens and the code just throws.
+Symptoms:
+- Users see a raw 500 error instead of a degraded experience.
+- Always pair Open with a fallback: cached data, a default response, or a clear "try again later" message.
+
+> 💡 Real-world examples
+>
+> **Netflix (Hystrix):** Netflix released Hystrix in 2012 as a library that wraps every external call with a circuit breaker, plus a dashboard showing the circuit state of every dependency in real time. When a dependency like recommendations fails, a team can pre-define a fallback — for example, a cached "Top 10" list instead of a personalized one ([Netflix TechBlog: Introducing Hystrix](https://techblog.netflix.com/2012/11/hystrix.html)).
+>
+> **Resilience4j:** In 2018, Netflix moved Hystrix into maintenance mode (no new feature work) and began recommending more actively maintained libraries — including Resilience4j — for new projects. Resilience4j is not Netflix OSS; it is an independent project designed for Java 8's functional style with reactive-programming support ([Netflix/Hystrix README](https://github.com/Netflix/Hystrix)).
+
 <Callout title="A breaker needs a timeout to work">
 A circuit breaker counts failures, and a hung call is not a failure until something declares it one. Without a per-call timeout, a slow dependency keeps every probe waiting indefinitely, the failure count never rises, and the breaker never trips. Always pair a breaker with a hard timeout on the call it wraps — the timeout produces the failures the breaker is designed to count.
 </Callout>

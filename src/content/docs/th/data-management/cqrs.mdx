@@ -207,13 +207,9 @@ export const cqrsDiagram = `flowchart LR
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Microsoft (Azure Cosmos DB):**
-> - CQRS built-in ผ่าน change feed — write ไปที่ primary, read จาก replica
-> - change feed trigger sync read model อัตโนมัติ
+> **Microsoft (Azure Cosmos DB):** change feed คือ log ของการเปลี่ยนแปลงที่เรียงตามลำดับ เปิดใช้งานอยู่แล้ว default บนทุก account — Microsoft เอกสารแนะนำให้ใช้ change feed เป็นตัวขับเคลื่อน read model แยกต่างหาก (เช่น sync เข้า cache หรือ search index) ตามแนวทาง CQRS โดยตรง ([Microsoft Learn: Change feed design patterns](https://learn.microsoft.com/en-us/azure/cosmos-db/change-feed-design-patterns))
 >
-> **Grab:**
-> - order service ใช้ CQRS: driver app (write-heavy) แยก model จาก passenger tracking (read-heavy)
-> - read model optimize สำหรับ geospatial query
+> **Grab:** บทความ engineering blog เรื่อง "Democratising Fare Storage at Scale" อธิบายว่า Grab ใช้ Event Sourcing ร่วมกับ CQRS ในระบบ Fare Storage เพื่อแยกความรับผิดชอบฝั่งเขียนกับฝั่งอ่านของข้อมูลค่าโดยสาร ทำให้แต่ละฝั่ง scale และ optimize แยกกันได้ ([Grab Engineering: Democratising Fare Storage at Scale Using Event Sourcing](https://engineering.grab.com/democratising-fare-storage-at-scale-using-event-sourcing))
 
 <Callout title="CQRS ไม่ต้องการ Event Sourcing (และในทางกลับกัน)">
 สอง pattern นี้เข้ากันได้ดีแต่เป็นอิสระจากกัน คุณทำ CQRS โดย publish event จากการเขียนแบบ CRUD ธรรมดาก็ได้ และทำ Event Sourcing โดยไม่แยกฝั่งอ่านออกจากฝั่งเขียนเลยก็ได้เช่นกัน ให้หยิบแต่ละตัวมาใช้ด้วยเหตุผลของตัวเอง แล้วผสมสองอย่างเข้าด้วยกันเฉพาะตอนที่เหตุผลทั้งสองข้อเข้าเงื่อนไขพร้อมกัน

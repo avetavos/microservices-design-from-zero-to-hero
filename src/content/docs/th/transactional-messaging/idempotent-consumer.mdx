@@ -210,14 +210,9 @@ handler insert message id และนำ side effect ไปใช้ใน tran
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Stripe:**
-> - idempotency key บน payment API เป็น best practice ที่ document ชัดเจน
-> - client ส่ง `Idempotency-Key` header ใน POST request
-> - Stripe เก็บ result 24 ชั่วโมง — retry ด้วย key เดิมได้รับ result เดิม
+> **Stripe:** payment API รับ `Idempotency-Key` header บน POST request แล้วเก็บผลลัพธ์ไว้อย่างน้อย 24 ชั่วโมง — ส่ง request ซ้ำด้วย key เดิมภายในช่วงนั้นได้ผลลัพธ์เดิมกลับมาโดยไม่ยิงซ้ำ ([Stripe Docs: Idempotent requests](https://docs.stripe.com/api/idempotent_requests))
 >
-> **AWS SQS:**
-> - at-least-once delivery โดย design — consumer ต้องเป็น idempotent เอง
-> - FIFO queue มี message deduplication built-in (5 นาที window)
+> **AWS SQS:** ออกแบบให้เป็น at-least-once delivery โดยธรรมชาติ — consumer ต้อง idempotent เอง ส่วน FIFO queue มี content-based/explicit message deduplication ในตัว โดยมี deduplication window 5 นาที ([AWS Docs: Using the MessageDeduplicationId property](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagededuplicationid-property.html))
 
 <Callout title="มุ่งสู่การประมวลผลแบบ idempotent ไม่ใช่การส่งแบบ exactly-once">
 การส่งแบบ exactly-once ข้าม network แทบเป็นไปไม่ได้ *การประมวลผล* แบบ exactly-once ทำได้และเป็นสิ่งที่คุณต้องการจริง ๆ บันทึก message id และนำ effect ไปใช้ใน transaction เดียว หรือทำให้ effect เป็น idempotent โดยธรรมชาติ แล้ว duplicate ก็หยุดมีความสำคัญ วินัยฝั่ง consumer นี้คือสิ่งที่ทำให้ทุกแพตเทิร์นอื่นในโมดูลนี้ยังคงเรียบง่าย

@@ -88,6 +88,33 @@ What it costs you:
 - [Distributed Tracing](/microservices/en/observability/distributed-tracing/) — a trace id is the same idea taken further, adding causal spans and timing on top of correlation.
 - [Audit Logging](/microservices/en/observability/audit-logging/) — a separate, durable record for compliance, distinct from these operational debug logs.
 
+| Benefit | Trade-off |
+|---|---|
+| Every service's logs live in one searchable place | Log volume in production gets very high — storage cost |
+| Correlate logs across services with a trace ID | Log-shipping latency means logs aren't 100% real-time |
+| Find error patterns across deployments | Sensitive data in logs must be handled before aggregation |
+| Audit and compliance from one central location | Setting up an ELK/Loki stack is non-trivial |
+
+## Common mistakes
+
+**Logging everything at DEBUG level in production.**
+Symptoms:
+- Log volume runs 100x higher than necessary.
+- Searches in Kibana are slow because the index is huge.
+- Unnecessarily high cost — use INFO in production, DEBUG only when actively debugging.
+
+**Logging with no correlation ID.**
+Symptoms:
+- Tracing one request across 5 services means guessing which log lines belong together.
+- Incident investigation takes hours instead of minutes.
+- Inject a trace/request ID into every log line.
+
+> 💡 Real-world examples
+>
+> **Elastic (ELK Stack):** Elasticsearch + Logstash + Kibana is one of the most widely used log-aggregation stacks — Netflix uses ELK to monitor and analyze operational and security logs across hundreds of nodes, and Goldman Sachs uses Elasticsearch both to help clients track trades and to let engineering teams hunt bugs ([Elastic: How the Elastic Stack Changed Goldman Sachs](https://www.elastic.co/elasticon/conf/2016/sf/how-the-elastic-stack-changed-goldman-sachs)).
+>
+> **Grafana Loki:** integrates with Prometheus/Grafana and doesn't index log content, making it cheaper than Elasticsearch for high-volume logs — its official adopters list includes Grafana Labs itself and Dropbox ([grafana/loki ADOPTERS.md](https://github.com/grafana/loki/blob/main/ADOPTERS.md)).
+
 <Callout title="Logs are an interface, not an afterthought">
 The moment logs become structured records that other systems parse, query, and alert on, their field names become a contract. Renaming `correlationId` or changing a level's meaning can silently break dashboards and alerts that depend on it. Treat your log schema with the same care you give an API: agree on field names across teams, version changes, and resist logging secrets or full payloads into a store many people can read.
 </Callout>

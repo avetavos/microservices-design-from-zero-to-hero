@@ -78,6 +78,32 @@ What it costs you:
 - [Self-Contained Service](/microservices/en/decomposition/self-contained-service/) — bounded contexts give each service the local model it needs to answer requests on its own.
 - [Decomposition overview](/microservices/en/decomposition/) — where this strategy sits in the wider picture.
 
+| Benefit | Trade-off |
+|---|---|
+| Service boundaries come from the domain model — they reflect business reality | Requires Domain-Driven Design expertise |
+| A clear Ubiquitous Language inside each service | Bounded-context analysis takes time |
+| Reduces the impedance mismatch between business and code | Subdomains can overlap — you have to decide which capability belongs where |
+| A good fit for complex domains with heavy business rules | Not a fit if the team has no DDD background |
+
+## Common mistakes
+
+**Subdomain equals table** — mapping one database table to one service.
+Symptoms:
+- Separate UserService, AddressService, PhoneService.
+- A simple operation now has to call three services.
+- This is database decomposition, not subdomain decomposition.
+
+**Ignoring the anti-corruption layer** — accepting another subdomain's model as-is, with no transformation.
+Symptoms:
+- A change in the Order subdomain directly affects the Inventory subdomain.
+- The boundary exists on paper, but concepts leak straight across it.
+
+> 💡 Real-world examples
+>
+> **Zalando:** its engineering blog has published multiple posts on using Domain-Driven Design together with microservices to split a large e-commerce platform into bounded contexts, each with its own Ubiquitous Language ([Zalando Engineering Blog: Microservices](https://engineering.zalando.com/tags/microservices.html)).
+>
+> **A common pattern at e-commerce platforms generally:** subdomains are often classified by their DDD role — core domain (where the business's competitive advantage lives, e.g. checkout, pricing), supporting domain (e.g. inventory, shipping), and generic domain (e.g. authentication, notifications, which are often bought rather than built) — a general DDD framework, not a claim about any specific company's actual domain split.
+
 <Callout title="Let the same word mean different things">
 The single most freeing idea in this pattern is permission for a word to mean different things in different contexts. A shared, "correct" definition of `Customer` across the whole company is not a goal worth chasing — it is the very thing that creates the monolithic model. Bounded contexts let billing, ordering, and delivery each keep the precise meaning they actually need, and turn the seams between them into deliberate, well-defined contracts.
 </Callout>

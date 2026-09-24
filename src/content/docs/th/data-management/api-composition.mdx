@@ -194,10 +194,7 @@ composer ด้านล่างดึง order, customer และ shipment �
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Amazon:**
-> - หน้า product detail page รวมข้อมูลจากหลาย service: pricing, inventory, review, recommendation
-> - ใช้ parallel fan-out แล้ว compose ที่ BFF layer
-> - service ไหนตอบช้า → ใช้ cached version แทน
+> **microservices.io (Chris Richardson):** เอกสาร pattern อย่างเป็นทางการอธิบาย API Composer ว่าเป็นตัวที่เรียกหลาย service แบบ parallel fan-out แล้วทำ in-memory join ผลลัพธ์ ([microservices.io: API Composition](https://microservices.io/patterns/data/api-composition.html)) — ตัวอย่างที่พบได้ทั่วไปในระบบ e-commerce จริงคือหน้า product detail page ที่ประกอบข้อมูลจาก pricing, inventory, review และ recommendation service เข้าด้วยกันที่ BFF หรือ API gateway layer โดยใช้ cached fallback เมื่อ service ใด service หนึ่งตอบช้า
 
 <Callout title="เริ่มที่นี่ ยกระดับเมื่อจำเป็นเท่านั้น">
 API Composition คือ pattern สำหรับ query ข้าม service ที่ถูกที่สุด และ query ส่วนใหญ่ก็ไม่เคยโตเกินจนใช้ไม่ได้ ให้หยิบ CQRS มาใช้ต่อเมื่อวัดแล้วว่า in-memory join ช้าจริงหรือดูดข้อมูลมากจริง ไม่ใช่ก่อนหน้านั้น read model ที่สร้างเร็วเกินไปคือแหล่งความซับซ้อนโดยไม่ตั้งใจที่เจอบ่อยที่สุด

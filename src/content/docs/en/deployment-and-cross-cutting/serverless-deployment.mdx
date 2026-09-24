@@ -89,6 +89,32 @@ A practical rule: reach for serverless when the work is event-driven, spiky, or 
 - [Externalized Configuration](/microservices/en/deployment-and-cross-cutting/externalized-configuration/) — functions still take their settings from injected environment values, not baked-in constants.
 - [Microservice Chassis](/microservices/en/deployment-and-cross-cutting/microservice-chassis/) — even functions benefit from a shared baseline of logging, metrics, and config.
 
+| Benefit | Trade-off |
+|---|---|
+| No server to manage — the cloud provider owns the infrastructure | Cold-start latency — a function that's been idle is slow on its first call |
+| Scales to zero — no requests, no cost | Execution time limits — a poor fit for long-running processes |
+| Pay per invocation — cheap for intermittent workloads | Higher vendor lock-in than a container deployment |
+| Fast to deploy — just upload the code | Debugging and local development are harder |
+
+## Common mistakes
+
+**A serverless monolith** — all the business logic crammed into one function.
+Symptoms:
+- The function package is huge (>50MB).
+- The function does many unrelated things — no different from a monolith deployed on Lambda.
+- It can't scale independently — the whole function scales together.
+
+**State inside the function** — keeping state in memory between invocations.
+Symptoms:
+- Data in a global variable disappears when a new function instance starts.
+- Behavior differs between a warm and a cold invocation.
+
+> 💡 Real-world examples
+>
+> **Netflix:** uses AWS Lambda in the event-driven pipeline that prepares video files — for example, splitting an uploaded file in S3 into chunks for parallel processing — letting it scale to bursty workloads without pre-provisioned capacity ([AWS: Netflix & AWS Lambda Case Study](https://aws.amazon.com/solutions/case-studies/netflix-and-aws-lambda)).
+>
+> **Coca-Cola:** moved its vending-machine backend to AWS Lambda, as described by Michael Connor at AWS re:Invent 2016 — cutting costs by roughly 65% because each machine's traffic is intermittent, and paying per invocation beats reserving a server around the clock ([Dashbird: Serverless Case Study — Coca-Cola](https://dashbird.io/blog/serverless-case-study-coca-cola/)).
+
 <Callout title="Serverless is a runtime choice, not an architecture">
 "Serverless" does not mean there are no servers — it means you do not manage them. It is one way to run a service, sitting alongside containers, not a replacement for sound service boundaries. Choose it per workload: a thumbnailer or webhook handler is a great fit; a low-latency request path that must always be warm usually is not.
 </Callout>

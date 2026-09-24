@@ -86,6 +86,33 @@ What it costs you:
 - [Log Aggregation](/microservices/en/observability/log-aggregation/) — operational logs are the diagnostic counterpart; audit logs deliberately do not share their pipeline or guarantees.
 - [Distributed Tracing](/microservices/en/observability/distributed-tracing/) — share a correlation or trace id so an audit record can be tied back to the request that produced it.
 
+| Benefit | Trade-off |
+|---|---|
+| Meets compliance and regulatory requirements (GDPR, HIPAA, SOC2) | Storage cost is high if you log every action of every user |
+| A forensic trail for security incidents | Sensitive data in an audit log must be handled carefully |
+| Shows who did what, and when | Performance overhead if writes are synchronous |
+| Detects anomalies — unusual user access patterns | A tamper-proof audit log is more work than a plain log |
+
+## Common mistakes
+
+**Logging everything with no structure** — the audit log is free-form text.
+Symptoms:
+- Finding one user's audit trail means grepping through text.
+- Correlating events across services is hard.
+- Use a structured format (JSON) with consistent fields.
+
+**An audit log that can be tampered with** — writing it to the same database as the data it audits.
+Symptoms:
+- An admin can edit the audit log and the data at the same time.
+- The audit log is no longer trustworthy for compliance.
+- Use an append-only store or an immutable log (Kafka, AWS CloudTrail).
+
+> 💡 Real-world examples
+>
+> **Stripe:** records account events and API activity that customers can review in the Dashboard, used for dispute resolution and compliance ([Stripe Docs: Events](https://docs.stripe.com/api/events)).
+>
+> **AWS CloudTrail:** logs nearly every API call in an AWS account as an event, can be delivered to S3 for long-term retention, and supports log file integrity validation to detect tampering ([AWS Docs: AWS CloudTrail concepts](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-concepts.html)).
+
 <Callout title="An audit log is evidence, not a debug log with a fancy name">
 The temptation is to add an `AUDIT` level to your existing logger and call it done. That fails the moment integrity matters: anyone who can write debug logs can forge or erase your "evidence," and your short retention deletes it before the audit arrives. Audit logging earns its name only through *separation and guarantees* — its own append-only store, its own retention, its own access controls. If a record can be quietly changed, it is not an audit record.
 </Callout>

@@ -176,14 +176,9 @@ capability เป็นเรื่องเชิงแนวคิด แต�
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Amazon:**
-> - แบ่ง service ตาม business capability: catalog, ordering, payment, fulfillment, recommendation
-> - แต่ละ capability มีทีมเป็นเจ้าของ — "two-pizza team" rule
-> - capability-based decomposition ช่วยให้ scale team และ service พร้อมกัน
+> **Amazon:** ส่วนหนึ่งของ Bezos API mandate (2002) คือให้แต่ละทีมเป็นเจ้าของ capability ของตัวเองแบบ end-to-end ผ่าน service interface — เป็นการแบ่งงานที่ยึดตามสิ่งที่ธุรกิจทำ (catalog, ordering, payment, fulfillment) ไม่ใช่ตามชั้นทางเทคนิค ทำให้ scale ทีมและ service ไปพร้อมกันได้ ([Nordic APIs: The Bezos API Mandate](https://nordicapis.com/the-bezos-api-mandate-amazons-manifesto-for-externalization/))
 >
-> **Uber:**
-> - capability หลัก: rider matching, pricing, payment, driver management, notification
-> - แต่ละ capability deploy และ scale อิสระ
+> **แนวปฏิบัติทั่วไปในบริษัท ride-hailing/delivery:** มักแบ่ง service ตาม capability หลักของธุรกิจ เช่น rider matching, pricing, payment, driver management โดยแต่ละ capability deploy และ scale อิสระจากกัน — รูปแบบทั่วไปที่สอดคล้องกับหลักการ decompose-by-capability ไม่ได้อ้างอิงระบบภายในของบริษัทใดบริษัทหนึ่งโดยเฉพาะ
 
 <Callout title="อะไร ไม่ใช่ อย่างไร">
 เคล็ดลับทั้งหมดของ pattern นี้คือถามว่า "ธุรกิจทำอะไร" แล้วดื้อไม่ยอมตอบว่า "ตอนนี้ระบบสร้างมาแบบไหน" ทันทีที่ชื่อ service เริ่มบอกชื่อเทคโนโลยีหรือชื่อชั้น เช่น `gateway-service` หรือ `database-service` แปลว่าคุณหั่นผิดแกนไปแล้ว ชื่อ capability ควรอ่านเหมือนบทต่าง ๆ ในเรื่องราวของบริษัท เช่น Order Management, Billing, Shipping

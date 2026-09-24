@@ -187,6 +187,33 @@ What it costs you:
 - [Transaction Log Tailing](/microservices/en/transactional-messaging/transaction-log-tailing/) — a relay whose at-least-once delivery this pattern absorbs.
 - [Polling Publisher](/microservices/en/transactional-messaging/polling-publisher/) — the other at-least-once relay this pattern protects against.
 
+| Benefit | Trade-off |
+|---|---|
+| A redelivered message doesn't change the outcome | Needs an idempotency store — extra storage |
+| The system tolerates at-least-once delivery guarantees | Looking up the idempotency key adds a little latency |
+| Safe to retry without fearing a duplicate effect | The idempotency key must expire carefully |
+| Easy to reason about correctness | The idempotency key must be designed to be unique and stable |
+
+## Common mistakes
+
+**An idempotency key that isn't stable** — the key changes on every retry.
+Symptoms:
+- A timestamp or random UUID is used as the idempotency key.
+- Every retry looks like a new operation — duplicate effects keep happening.
+- Use the broker's message ID or a business key instead.
+
+**An idempotency key that never expires** — keys are kept forever.
+Symptoms:
+- The idempotency store grows without bound.
+- Queries slow down as the store gets huge.
+- Set a TTL sized to the broker's message retention.
+
+> 💡 Real-world examples
+>
+> **Stripe:** its payment API accepts an `Idempotency-Key` header on POST requests and keeps the result for at least 24 hours — a repeated request with the same key inside that window gets the same result back without re-executing ([Stripe Docs: Idempotent requests](https://docs.stripe.com/api/idempotent_requests)).
+>
+> **AWS SQS:** is at-least-once by design — the consumer must be idempotent itself. FIFO queues add built-in content-based or explicit message deduplication with a 5-minute deduplication window ([AWS Docs: Using the MessageDeduplicationId property](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagededuplicationid-property.html)).
+
 <Callout title="Aim for idempotent processing, not exactly-once delivery">
 Exactly-once delivery across a network is effectively impossible; exactly-once *processing* is achievable and is what you actually want. Record the message id and apply the effect in one transaction, or make the effect naturally idempotent, and duplicates stop mattering. This consumer-side discipline is what lets every other pattern in this module stay simple.
 </Callout>

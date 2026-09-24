@@ -93,14 +93,9 @@ export const teamDiagram = `flowchart TB
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Spotify:**
-> - "Squad" model — แต่ละ squad เป็นเจ้าของ service ของตัวเอง
-> - squad มี full-stack capability — frontend, backend, data, ops
-> - deploy อิสระ ไม่ต้องรอ squad อื่น
+> **Spotify:** เผยแพร่ "Spotify Engineering Culture" ที่อธิบาย "Squad" model — squad แต่ละทีมเป็นเจ้าของส่วนหนึ่งของผลิตภัณฑ์แบบ full-stack และ deploy ได้อิสระ แต่ Spotify เองก็เขียนกำกับไว้ชัดเจนว่า "this is a journey in progress, not a journey completed" และภาพที่เล่าอาจไม่ตรงกับทุก squad ทุกช่วงเวลา ([Spotify Engineering: Spotify Engineering Culture](https://engineering.atspotify.com/2014/03/spotify-engineering-culture-part-1/))
 >
-> **Amazon:**
-> - "You build it, you run it" — ทีมที่ build service คือทีมที่ on-call
-> - ownership ชัดเจนทำให้ทีมใส่ใจ reliability มากขึ้น
+> **Amazon:** Werner Vogels (CTO) พูดไว้ใน ACM Queue ปี 2006 ว่า "You build it, you run it" — ทีมที่สร้าง service คือทีมที่ดูแล operation ของมันเอง ทำให้ทีมได้รับ feedback จากลูกค้าโดยตรงและใส่ใจ reliability มากขึ้น ([ACM Queue: A Conversation with Werner Vogels](https://queue.acm.org/detail.cfm?id=1142065))
 
 <Callout title="inverse Conway manoeuvre">
 คนมักยก Conway's law มาเป็นคำเตือน แต่จริง ๆ แล้วใช้เป็นคันโยกได้ด้วย ในเมื่อสถาปัตยกรรมของคุณจะลงเอยหน้าตาเหมือนผังองค์กรอยู่ดี งั้นก็ *เลือกสถาปัตยกรรมที่ต้องการก่อน แล้วค่อยปั้นทีมให้เข้ารูป* การวาดเส้นแบ่งของทีมอย่างตั้งใจให้สะท้อนเส้นแบ่ง service ที่วางไว้ แทนที่จะดัดแปลง service มาใส่ทีมที่มีอยู่เดิม คือวิธีทำให้องค์กรช่วยผลักการออกแบบไปในทิศทางที่คุณต้องการ แทนที่จะฉุดออก

@@ -95,15 +95,9 @@ export const tradeoffDiagram = `flowchart LR
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Amazon (2002):**
-> - Jeff Bezos ออก mandate: ทุกทีมต้อง expose data และ functionality ผ่าน service interface
-> - ไม่อนุญาต direct database access ข้าม team
-> - นี่คือจุดเริ่มต้นของ microservices ที่ Amazon ก่อน Martin Fowler บัญญัติคำ
+> **Amazon (2002):** Jeff Bezos ส่ง mandate ภายในให้ทุกทีมต้อง expose data และ functionality ผ่าน service interface เท่านั้น ห้าม direct database access ข้ามทีมโดยเด็ดขาด — API เหล่านี้ภายหลังกลายเป็นฐานของ AWS เอง นับเป็นจุดเริ่มต้นของสถาปัตยกรรมแบบ service-oriented ที่ Amazon ก่อนที่ Martin Fowler จะบัญญัติคำว่า "microservices" อีกหลายปี ([Nordic APIs: The Bezos API Mandate](https://nordicapis.com/the-bezos-api-mandate-amazons-manifesto-for-externalization/))
 >
-> **Netflix (2008):**
-> - database corruption ครั้งใหญ่ทำให้ streaming หยุด 3 วัน
-> - ตัดสินใจ migrate จาก monolith ไป microservices บน AWS
-> - ใช้เวลา 7 ปีจึง complete migration
+> **Netflix (2008):** database corruption ครั้งใหญ่ในเดือนสิงหาคม 2008 ทำให้ระบบ **จัดส่ง DVD ทางไปรษณีย์** (ธุรกิจหลักของ Netflix ตอนนั้น สตรีมมิ่งเพิ่งเริ่มต้นและยังเล็กมาก) หยุดทำงานไป 3 วันเต็ม เหตุการณ์นี้ผลักดันให้ Netflix ตัดสินใจย้ายไป AWS cloud และ decompose เป็น microservices ซึ่งใช้เวลา 7 ปีจึงย้าย data center สุดท้ายออกได้สำเร็จ (มกราคม 2016) ([About Netflix: Completing the Netflix Cloud Migration](https://about.netflix.com/en/news/completing-the-netflix-cloud-migration))
 
 <Callout title="microservices ย้ายความซับซ้อน ไม่ได้ลบทิ้ง">
 ความซับซ้อนไม่ได้หายไปตอนที่คุณ decompose แต่ย้ายที่จากใน code ออกไปอยู่ที่เครือข่าย ข้อมูล และงานปฏิบัติการแทน ให้หยิบ microservices มาใช้เมื่อการย้ายที่ครั้งนี้ซื้ออะไรที่จับต้องได้กลับมา เช่น การ scale แยกอิสระ fault isolation หรือความเป็นอิสระของทีม และใช้ก็ต่อเมื่อมี automation พอจะแบกค่าใช้จ่ายด้านปฏิบัติการแล้วเท่านั้น ไม่อย่างนั้นคุณจะเก็บความซับซ้อนไว้ครบ แต่เสีย debugger ไปฟรี ๆ

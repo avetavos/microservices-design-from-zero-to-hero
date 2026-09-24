@@ -206,6 +206,33 @@ A practical rule: start with a **polling publisher** because it is simple and de
 - [Transaction Log Tailing](/microservices/en/transactional-messaging/transaction-log-tailing/) — the lower-latency, higher-complexity relay.
 - [Idempotent Consumer](/microservices/en/transactional-messaging/idempotent-consumer/) — required because polling delivers at least once.
 
+| Benefit | Trade-off |
+|---|---|
+| No special database feature required — works with any database | Polling adds continuous load to the database |
+| Reliable event publishing — tied to the database transaction | Higher latency than transaction log tailing, bounded by the polling interval |
+| Simpler than transaction log tailing — no DB-internals access needed | The growing outbox table needs cleanup |
+| A good fit for low-to-medium throughput | A wrong polling interval — too short means high load, too long means high latency |
+
+## Common mistakes
+
+**An outbox that is never cleaned up** — published events stay in the outbox table.
+Symptoms:
+- The outbox table keeps growing and starts hurting performance.
+- Queries slow down scanning for unpublished events.
+- Add a cleanup job that deletes published events after a retention period.
+
+**Polling too aggressively** — polling every 100ms against a write-heavy database.
+Symptoms:
+- Database CPU spikes from the polling itself.
+- It adds unnecessary load to a production database.
+- Tune the interval to your latency tolerance — 1–5 seconds is usually enough.
+
+> 💡 Real-world examples
+>
+> **Legacy banking systems:** often use a polling publisher because their infrastructure doesn't support CDC (Change Data Capture) — polling the outbox table every 30 seconds is an acceptable latency for batch settlement.
+>
+> **Migrating to Debezium:** a polling publisher is a common simpler starting point before adopting a CDC tool such as Debezium; a typical migration path is polling publisher → transaction log tailing once throughput grows.
+
 <Callout title="Mark sent in the same transaction that publishes">
 The dangerous version of this pattern publishes a row and then marks it sent in a separate step. Do the claim and the mark in one transaction with `FOR UPDATE SKIP LOCKED`, and accept that a crash mid-loop will re-publish a row. Trying to make polling exactly-once usually just moves the race somewhere subtler — lean on idempotent consumers instead.
 </Callout>

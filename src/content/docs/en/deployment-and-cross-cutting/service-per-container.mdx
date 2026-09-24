@@ -132,6 +132,32 @@ What it costs you:
 - [Service Mesh](/microservices/en/deployment-and-cross-cutting/service-mesh/) — adds a sidecar container alongside each service container for consistent networking.
 - [Serverless Deployment](/microservices/en/deployment-and-cross-cutting/serverless-deployment/) — an alternative runtime model when you would rather not run the containers yourself.
 
+| Benefit | Trade-off |
+|---|---|
+| Isolates dependencies — service A and B can use different library versions | Needs container orchestration (Kubernetes) to manage |
+| Deploy and scale each service independently | Container images need upkeep — security patches, base-image updates |
+| The same environment from dev through to production | Networking between containers is more complex than processes on one server |
+| Easy rollback — revert to the previous image tag | Resource overhead from the container runtime |
+
+## Common mistakes
+
+**Container as virtual machine** — cramming multiple processes into one container.
+Symptoms:
+- A container runs a web server, a worker, and a cron job all at once.
+- It can't scale independently — every process scales together.
+- None of the benefit of container isolation is realized.
+
+**Running as root** — the container runs as the root user.
+Symptoms:
+- Security scans fail.
+- If the container is compromised, the attacker gets root on the host immediately.
+
+> 💡 Real-world examples
+>
+> **Google:** ran its internal workloads in containers (via its internal system, Borg) for more than a decade before Docker existed (2013) — Borg was the direct conceptual predecessor to Kubernetes, which Google open-sourced in 2014. Nearly all of Google's production workload now runs in containers ([Google Research: Large-scale cluster management at Google with Borg (2015)](https://research.google/pubs/large-scale-cluster-management-at-google-with-borg/)).
+>
+> **Spotify:** has published case studies on moving from traditional infrastructure to Docker on Kubernetes, describing how a consistent environment from dev to production significantly increased deploy velocity ([Spotify Engineering Blog](https://engineering.atspotify.com/)).
+
 <Callout title="One service per container is the point">
 It is tempting to save a few cents by cramming several services into one image. Resist it. The whole value of the pattern — independent deploys, independent scaling, independent rollback, and clean resource limits — comes from the one-to-one mapping between a service and its container. Bundle them, and you have rebuilt a small monolith inside a container.
 </Callout>

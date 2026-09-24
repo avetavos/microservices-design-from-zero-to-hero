@@ -117,14 +117,9 @@ resume → continue streaming WAL after lsn 24197848
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Debezium (Red Hat):**
-> - open source CDC platform ที่ใช้แพร่หลายที่สุด
-> - รองรับ MySQL, PostgreSQL, MongoDB, SQL Server
-> - Netflix, Shopify, Zalando ใช้ Debezium ใน production
+> **Debezium (Red Hat):** open-source CDC platform ที่ใช้แพร่หลายที่สุด รองรับ MySQL, PostgreSQL, MongoDB, SQL Server และอื่น ๆ — Shopify และ Zalando อยู่ในรายชื่อผู้ใช้งานจริงที่ยืนยันแล้ว ([Debezium: Who's Using Debezium?](https://debezium.io/community/users/), [Shopify Engineering: Capturing Every Change From Shopify's Sharded Monolith](https://shopify.engineering/capturing-every-change-shopify-sharded-monolith)) — ส่วน Netflix ใช้ระบบ CDC ที่สร้างเอง (DBLog) ซึ่ง Debezium ยืมแนวคิด snapshotting มาใช้ต่อ ไม่ใช่ Netflix ที่ใช้ Debezium โดยตรง
 >
-> **MongoDB Change Streams:**
-> - built-in CDC สำหรับ MongoDB
-> - ไม่ต้องใช้ third-party tool — subscribe change stream ได้โดยตรงจาก application
+> **MongoDB Change Streams:** built-in CDC สำหรับ MongoDB — subscribe change stream ได้โดยตรงจาก application โดยไม่ต้องใช้ third-party tool ([MongoDB Docs: Change Streams](https://www.mongodb.com/docs/manual/changeStreams/))
 
 <Callout title="Tailing log ไม่ใช่ table">
 จุดเปลี่ยนสำคัญคือ relay เลิกถาม database ว่า "มีแถวใหม่ไหม" แล้วหันไปฟัง change stream ชุดเดียวกับที่ database ใช้ป้อน replica ของตัวเอง stream นั้นคงทน เรียงลำดับ และถูกผลิตขึ้นอยู่แล้ว log tailing แค่ขอยืมมาใช้เท่านั้น ราคาที่ต้องจ่ายคือ CDC infrastructure ที่คุณต้องดูแลและพึ่งพาตั้งแต่นี้ไป

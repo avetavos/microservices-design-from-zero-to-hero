@@ -218,14 +218,9 @@ export const outboxDiagram = `flowchart LR
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Eventuate (Chris Richardson):**
-> - framework สำหรับ Transactional Outbox pattern
-> - ผู้บัญญัติ pattern นี้เป็นส่วนหนึ่งของ microservices pattern language
+> **Eventuate (Chris Richardson):** Chris Richardson ผู้เขียน "Microservices Patterns" และผู้บัญญัติ Transactional Outbox ไว้ใน microservices pattern language สร้าง Eventuate เป็น framework ที่ implement pattern นี้โดยตรง ([microservices.io: Transactional outbox](https://microservices.io/patterns/data/transactional-outbox.html))
 >
-> **Shopify:**
-> - ใช้ Transactional Outbox สำหรับ order event
-> - เมื่อ order สำเร็จ → outbox record สร้างใน transaction เดียว → publisher ส่งต่อ
-> - ทำให้ payment, inventory, notification sync กันได้อย่างน่าเชื่อถือ
+> **AWS Prescriptive Guidance:** จัดทำ Transactional Outbox เป็นหนึ่งใน cloud design pattern ที่แนะนำอย่างเป็นทางการสำหรับแก้ปัญหา dual-write ระหว่าง database และ message broker ([AWS Prescriptive Guidance: Transactional outbox pattern](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html))
 
 <Callout title="แถว outbox คือเจตนา ไม่ใช่การส่ง">
 การ commit แถว outbox ไม่ได้แปลว่าข้อความถูกส่งแล้ว แต่แปลว่า service ได้ *ให้คำมั่น* ไว้ว่าจะส่ง ส่วนการส่งจริงเป็นงานแยกที่ retry ได้ การแยกสองส่วนนี้คือเหตุผลที่ pattern นี้ใช้ได้ผล เพราะส่วน atomic ที่ยากเกิดขึ้นภายใน database เดียว ส่วนงานที่ต้องพึ่งเครือข่ายซึ่งไม่น่าเชื่อถือถูกผลักไปเป็นขั้นตอนที่ retry ซ้ำได้จนกว่าจะสำเร็จ

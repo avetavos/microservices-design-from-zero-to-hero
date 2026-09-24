@@ -223,13 +223,9 @@ export const eventSourcingDiagram = `flowchart LR
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Eventbrite:**
-> - ใช้ Event Sourcing สำหรับ ticketing system
-> - ทุก ticket transaction เก็บเป็น event — ทำให้ audit และ refund ง่าย
+> **LMAX Exchange:** เป็นตัวอย่างอ้างอิงที่ Martin Fowler เขียนถึงในบทความ "LMAX Architecture" — ระบบเทรดการเงินที่ต้องการ latency ต่ำมากใช้ Business Logic Processor แบบ single-threaded ที่ประมวลผลจาก event log ล้วน ๆ (Event Sourcing) รวมกับ in-memory state ทำให้จัดการ order ได้หลายล้านรายการต่อวินาทีพร้อม audit trail ที่สมบูรณ์ ([Martin Fowler: LMAX Architecture](https://martinfowler.com/articles/lmax.html))
 >
-> **Financial Systems (Goldman Sachs, etc.):**
-> - regulatory requirement บังคับให้ต้องมี complete audit trail
-> - Event Sourcing ตอบโจทย์นี้โดยธรรมชาติ
+> **ระบบการเงินโดยทั่วไป:** ข้อกำหนดด้าน regulatory มักบังคับให้ต้องมี complete audit trail ของทุกธุรกรรม ซึ่ง Event Sourcing ตอบโจทย์นี้โดยธรรมชาติ เพราะ log การเปลี่ยนแปลงเป็น append-only และตรวจสอบย้อนหลังได้ครบ
 
 <Callout title="event เป็นข้อเท็จจริงที่ไม่เปลี่ยนแปลง">
 event ที่เก็บไว้คือบันทึกของสิ่งที่เกิดขึ้นไปแล้ว เขียนในรูปอดีตกาลและไม่มีวันเปลี่ยน เวลาจะแก้ข้อผิดพลาด คุณ append event ชดเชยเข้าไปใหม่เพื่อกลับรายการ ไม่ใช่ไปแก้หรือลบ event เก่า การยึดมั่นว่า log เป็น append-only เท่านั้นคือสิ่งที่ทำให้ Event Sourcing มี audit trail และ publish ได้อย่างน่าเชื่อถือตั้งแต่แรก

@@ -249,14 +249,9 @@ export const retryFlow = `sequenceDiagram
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **AWS SDK:**
-> - built-in retry ด้วย exponential backoff สำหรับทุก API call
-> - default: 3 retry, backoff 100ms → 200ms → 400ms + jitter
-> - configurable per-operation timeout
+> **AWS SDK:** โหมด retry มาตรฐาน (`standard`) พยายามรวมสูงสุด 3 ครั้ง (ครั้งแรก + retry 2 ครั้ง) ด้วย truncated exponential backoff แบบสุ่ม (jitter) และ MAX_BACKOFF ประมาณ 20 วินาทีสำหรับ SDK ส่วนใหญ่ — ไม่ใช่ตัวเลข ms ตายตัว เพราะสูตรมีค่าสุ่มอยู่ในตัว ([AWS SDKs and Tools: Retry behavior](https://docs.aws.amazon.com/sdkref/latest/guide/feature-retry-behavior.html))
 >
-> **Google Cloud:**
-> - แนะนำ truncated exponential backoff สำหรับ all API
-> - max retry delay 32 วินาที ป้องกัน retry storm
+> **Google Cloud:** เอกสารแนะนำ truncated exponential backoff พร้อม jitter สำหรับทุก API โดย max backoff ทั่วไปอยู่ที่ 32–64 วินาที เพื่อกัน retry storm ([Google Cloud: Retry strategy](https://docs.cloud.google.com/iam/docs/retry-strategy))
 
 <Callout title="retry เฉพาะสิ่งที่ทำซ้ำได้อย่างปลอดภัย">
 การ retry ทำให้ request *เดียวกัน* ถูกประมวลผลได้มากกว่าหนึ่งครั้ง เพราะความพยายามครั้งแรกอาจสำเร็จบน server ไปแล้ว เพียงแต่ response ไม่กลับมาถึงคุณ ถ้าเป็นการอ่านก็ไม่มีอันตราย แต่ถ้าเป็นการเขียนคนละเรื่อง การ retry คำสั่ง "หักเงินจากบัตร" อาจเก็บเงินซ้ำสองรอบ ดังนั้น retry เฉพาะ idempotent operation เท่านั้น หรือแนบ idempotency key ไปกับทุกการเขียน เพื่อให้ server จำได้และทิ้งรายการซ้ำ ถ้าไม่มี idempotency นโยบาย retry ก็คือบั๊กด้านความถูกต้องที่รอวันปะทุ

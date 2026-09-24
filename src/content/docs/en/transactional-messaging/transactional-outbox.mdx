@@ -196,6 +196,32 @@ What it costs you:
 - [Polling Publisher](/microservices/en/transactional-messaging/polling-publisher/) — the simpler way to implement the relay.
 - [Idempotent Consumer](/microservices/en/transactional-messaging/idempotent-consumer/) — required because the outbox guarantees only at-least-once delivery.
 
+| Benefit | Trade-off |
+|---|---|
+| Guarantees an event is sent if the transaction succeeds — no lost events | Adds an outbox table and a publisher component |
+| No distributed transaction between the database and the message broker | Adds a little latency — the event isn't sent synchronously |
+| Works with any message broker | The outbox table needs regular cleanup |
+| A reliable foundation for event-driven architecture | You still have to choose a mechanism — polling publisher or transaction log tailing |
+
+## Common mistakes
+
+**An outbox that mixes concerns** — many event types in one outbox with no routing.
+Symptoms:
+- The publisher has to know which topic each event type goes to.
+- The outbox becomes a god table where everything is mixed together.
+- Split the outbox by aggregate root or by topic.
+
+**No reliable publisher** — the publisher crashes with no retry mechanism.
+Symptoms:
+- Events sit in the outbox for a long time — consumers never get them.
+- The publisher needs a retry mechanism and dead-letter handling.
+
+> 💡 Real-world examples
+>
+> **Eventuate (Chris Richardson):** Chris Richardson, author of "Microservices Patterns" and the person who cataloged Transactional Outbox as part of the microservices pattern language, built Eventuate as a framework that implements the pattern directly ([microservices.io: Transactional outbox](https://microservices.io/patterns/data/transactional-outbox.html)).
+>
+> **AWS Prescriptive Guidance:** documents Transactional Outbox as one of its officially recommended cloud design patterns for solving the dual-write problem between a database and a message broker ([AWS Prescriptive Guidance: Transactional outbox pattern](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html)).
+
 <Callout title="The outbox row is intent, not delivery">
 Committing the outbox row does not mean the message has been sent — it means the service has *promised* to send it. Delivery is a separate, retryable job. This separation is exactly why the pattern works: the hard atomic part happens inside one database, and the unreliable network part is pushed to a step that can be retried until it succeeds.
 </Callout>

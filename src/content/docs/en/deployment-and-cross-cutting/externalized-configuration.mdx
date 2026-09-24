@@ -93,6 +93,32 @@ What it costs you:
 - [Microservice Chassis](/microservices/en/deployment-and-cross-cutting/microservice-chassis/) — the chassis is typically the component that reads and validates the injected configuration.
 - [Serverless Deployment](/microservices/en/deployment-and-cross-cutting/serverless-deployment/) — functions take their settings the same way, from injected values rather than baked-in constants.
 
+| Benefit | Trade-off |
+|---|---|
+| Change config without rebuilding or redeploying | Adds a config store to maintain — another component that can fail |
+| Config differs per environment without touching code | Secret management gets harder — secrets in the store need protecting |
+| Roll back config without rolling back code | A bad config value can break every service at once |
+| An audit trail of what changed, when, and by whom | Needs a fallback for when the config store isn't available at startup |
+
+## Common mistakes
+
+**A secret in a plain environment variable** — passing a secret via an env var with no encryption.
+Symptoms:
+- The secret sits in a `docker-compose.yml` that's committed to git.
+- The server's process list shows the secret as a command-line argument.
+- Use a real secret manager instead (AWS Secrets Manager, Vault).
+
+**Config drift** — configuration differs between environments unintentionally.
+Symptoms:
+- It works in staging but breaks in production.
+- A different timeout in dev than in production makes load tests unrepresentative.
+
+> 💡 Real-world examples
+>
+> **Netflix:** built Archaius, a dynamic configuration library that changes values at runtime with no service restart, used for feature flags and A/B test configuration — part of Netflix OSS ([Netflix/archaius on GitHub](https://github.com/Netflix/archaius)).
+>
+> **Kubernetes:** separates ConfigMaps for non-secret config from Secret objects for sensitive data — but a Secret is only base64-encoded by default, not actually encrypted; you need encryption at rest or an external KMS provider for real encryption. Config changes by swapping a ConfigMap, with no image rebuild required ([Kubernetes Docs: Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)).
+
 <Callout title="Build the artifact once, configure it per place">
 The discipline is simple to state: code and defaults go in the image; everything that changes between environments comes from outside it. Get this right and a single tested artifact flows from staging to production untouched, with secrets supplied safely at the edge. Bake configuration in, and you give up the central promise of immutable deploys.
 </Callout>

@@ -111,13 +111,9 @@ platform อ่านสิ่งนี้และในแต่ละ event `
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Netflix:**
-> - ใช้ AWS Lambda สำหรับ event-driven pipeline: encode video, resize image
-> - scale ได้ไม่จำกัดระหว่าง peak traffic
+> **Netflix:** ใช้ AWS Lambda ในส่วน event-driven pipeline ของขั้นตอนเตรียมไฟล์วิดีโอ เช่น การแบ่งไฟล์ที่อัปโหลดเข้า S3 ออกเป็น chunk เพื่อประมวลผลแบบขนาน ทำให้ scale รับ workload ที่มาเป็นช่วง ๆ ได้โดยไม่ต้องจอง capacity ล่วงหน้า ([AWS: Netflix & AWS Lambda Case Study](https://aws.amazon.com/solutions/case-studies/netflix-and-aws-lambda))
 >
-> **Coca-Cola:**
-> - ย้าย vending machine backend มาใช้ AWS Lambda
-> - ประหยัด cost ได้ 65% เนื่องจาก intermittent traffic pattern
+> **Coca-Cola:** ย้าย backend ของตู้ขายเครื่องดื่มอัตโนมัติมาใช้ AWS Lambda ตามที่ Michael Connor เล่าใน AWS re:Invent 2016 — ลดต้นทุนได้ราว 65% เพราะ traffic ของตู้แต่ละเครื่องเป็นแบบไม่สม่ำเสมอ (intermittent) ซึ่งจ่ายตามการใช้งานคุ้มกว่าจองเซิร์ฟเวอร์ตลอดเวลา ([Dashbird: Serverless Case Study — Coca-Cola](https://dashbird.io/blog/serverless-case-study-coca-cola/))
 
 <Callout title="Serverless เป็นทางเลือก runtime ไม่ใช่ architecture">
 คำว่า serverless ไม่ได้แปลว่าไม่มี server แต่แปลว่าคุณไม่ต้องดูแล server เอง นี่เป็นอีกวิธีหนึ่งในการรัน service ที่วางเคียงข้าง container ไม่ใช่ตัวแทนของเส้นแบ่ง service ที่ดี ให้เลือกตามลักษณะ workload งานอย่าง thumbnailer หรือ webhook handler เข้ากันได้ดีมาก ส่วน request path ที่ latency ต่ำและต้องอุ่นอยู่ตลอดมักไม่เหมาะ

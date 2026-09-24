@@ -71,6 +71,32 @@ What it costs you:
 - [Decompose by Subdomain](/microservices/en/decomposition/decompose-by-subdomain/) — bounded contexts give each team a self-contained slice to own.
 - [Self-Contained Service](/microservices/en/decomposition/self-contained-service/) — runtime autonomy and team autonomy reinforce each other; a team that depends on no one at deploy time also wants services that depend on no one at runtime.
 
+| Benefit | Trade-off |
+|---|---|
+| Clear service ownership — no two teams fighting over the same service | Team topology has to be designed before service boundaries |
+| High team autonomy — deploy without waiting on another team | A service can outgrow a team that's too big for it |
+| Clear accountability — if a service breaks, you know who owns it | Conway's Law cuts both ways — reorganizing the org forces you to reshape services |
+| Less governance overhead | A new team can inherit a legacy service that's hard to work with |
+
+## Common mistakes
+
+**A service nobody owns** — a service "owned by everyone" means owned by no one.
+Symptoms:
+- A bug in the service has no team that picks it up.
+- No team is on call for it.
+- Technical debt piles up because nobody feels ownership.
+
+**Team silos** — teams work separately while their services are still tightly coupled.
+Symptoms:
+- Deploying service A requires team B's approval.
+- There's no contract between the services' interfaces — things break often.
+
+> 💡 Real-world examples
+>
+> **Spotify:** its "Spotify Engineering Culture" post describes the "Squad" model — each squad owns a full-stack slice of the product and can deploy independently. Spotify itself is careful to add: "this is a journey in progress, not a journey completed," and the picture it paints doesn't necessarily hold for every squad at every point in time ([Spotify Engineering: Spotify Engineering Culture](https://engineering.atspotify.com/2014/03/spotify-engineering-culture-part-1/)).
+>
+> **Amazon:** CTO Werner Vogels said in a 2006 ACM Queue interview, "You build it, you run it" — the team that builds a service also operates it, which puts them in direct contact with customer feedback and makes them care more about reliability ([ACM Queue: A Conversation with Werner Vogels](https://queue.acm.org/detail.cfm?id=1142065)).
+
 <Callout title="The inverse Conway manoeuvre">
 Conway's law is usually quoted as a warning, but it is also a lever. If your architecture will end up looking like your org chart anyway, then *choose the architecture you want first and shape the teams to match it*. Deliberately drawing team boundaries to mirror your intended service boundaries — rather than retrofitting services onto whatever teams already exist — is how you make the organization push the design in the direction you want instead of away from it.
 </Callout>

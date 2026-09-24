@@ -203,6 +203,31 @@ What it costs you:
 - [Application Metrics](/microservices/en/observability/application-metrics/) — health is a yes/no signal; metrics show the gradual degradation that precedes a failed check.
 - [Log Aggregation](/microservices/en/observability/log-aggregation/) — when a readiness check starts failing, aggregated logs tell you *why*.
 
+| Benefit | Trade-off |
+|---|---|
+| The orchestrator (Kubernetes) knows whether an instance is ready for traffic | A wrong health check routes traffic to an instance that isn't ready |
+| Unhealthy instances get restarted automatically | An expensive health check adds load to the service |
+| Liveness and readiness are separate — restart vs. traffic routing | A failing dependency checked inside the health endpoint can get the whole service restarted |
+| Easy to integrate with load balancers and service meshes | The health endpoint has to stay accurate over time |
+
+## Common mistakes
+
+**A health check that checks everything** — every external dependency rolled into one health check.
+Symptoms:
+- A slow database fails the health check, Kubernetes restarts the pod, and the restart doesn't help.
+- One downstream failure gets every instance restarted at once.
+
+**Liveness equals readiness** — one endpoint used for both.
+Symptoms:
+- Slow startup fails liveness, so the instance is restarted before it finishes starting — a restart loop.
+- Split them: liveness means "I'm still alive"; readiness means "I'm ready for requests."
+
+> 💡 Real-world examples
+>
+> **Kubernetes:** offers three probe types — `livenessProbe` restarts the container on failure, `readinessProbe` stops routing traffic on failure without restarting, and `startupProbe` gives a slow-starting container enough time before the other probes kick in ([Kubernetes Docs: Configure Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)).
+>
+> **Netflix Eureka:** uses each instance's health check as the signal for service discovery — an instance reporting unhealthy gets deregistered from the registry ([Spring Cloud Netflix Docs: Eureka health checks](https://docs.spring.io/spring-cloud-netflix/docs/current/reference/html/)).
+
 <Callout title="Readiness is a routing decision, not a verdict on the world">
 A common mistake is to fail readiness when *any* downstream is unreachable. If every replica checks the same flaky dependency, they all report `DOWN` at once and the load balancer has nowhere left to route. Check only the dependencies without which this instance is genuinely useless, and prefer graceful degradation — returning a reduced response — over removing yourself from rotation entirely.
 </Callout>

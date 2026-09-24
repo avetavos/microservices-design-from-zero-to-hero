@@ -109,15 +109,9 @@ export const auditDiagram = `flowchart LR
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Stripe:**
-> - audit log ทุก API call ที่เกี่ยวกับ payment
-> - ลูกค้าเข้าถึง audit log ผ่าน dashboard
-> - ใช้สำหรับ dispute resolution และ compliance
+> **Stripe:** บันทึก event และ API call ที่เกี่ยวกับบัญชีไว้ให้ดูผ่าน Dashboard เพื่อใช้ตรวจสอบ dispute resolution และ compliance ([Stripe Docs: Events](https://docs.stripe.com/api/events))
 >
-> **AWS CloudTrail:**
-> - audit log ทุก API call ใน AWS account
-> - immutable — ไม่สามารถแก้หรือลบได้
-> - integrate กับ S3 สำหรับ long-term retention
+> **AWS CloudTrail:** บันทึก API call เกือบทั้งหมดใน AWS account เป็น event log ที่ integrate กับ S3 สำหรับ long-term retention ได้ และเปิด log file integrity validation เพื่อตรวจจับการดัดแปลงได้ ([AWS Docs: AWS CloudTrail concepts](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-concepts.html))
 
 <Callout title="audit log คือหลักฐาน ไม่ใช่ debug log ที่มีชื่อหรู">
 สิ่งที่ยั่วใจที่สุดคือเพิ่ม level `AUDIT` เข้าไปใน logger ที่มีอยู่แล้วถือว่าจบ วิธีนี้พังทันทีที่ความสมบูรณ์ของข้อมูลกลายเป็นเรื่องสำคัญ เพราะใครก็ตามที่เขียน debug log ได้ ย่อมปลอมหรือลบ "หลักฐาน" ของคุณได้เช่นกัน แถม retention สั้น ๆ ก็ลบทิ้งไปก่อนผู้ตรวจสอบจะมาถึงด้วยซ้ำ audit logging จะสมชื่อได้ก็ต่อเมื่อมี *การแยกออกจากกันและการรับประกัน* ครบ ทั้ง store แบบ append-only ของตัวเอง retention ของตัวเอง และการควบคุม access ของตัวเอง ถ้า record ยังถูกแก้แบบเงียบ ๆ ได้ นั่นก็ไม่ใช่ audit record

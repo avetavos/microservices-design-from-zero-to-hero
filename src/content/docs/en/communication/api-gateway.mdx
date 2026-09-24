@@ -104,6 +104,32 @@ That last cost is the motivation for the next pattern: instead of one gateway fo
 - [Service Discovery](/microservices/en/communication/service-discovery/) — how the gateway finds live instances of the services it routes to.
 - [API Composition](/microservices/en/data-management/api-composition/) — the aggregation technique a gateway uses to join data from several services.
 
+| Benefit | Trade-off |
+|---|---|
+| Clients talk to one place — easy to manage | Single point of failure — if the gateway is down, the whole system is down |
+| Cross-cutting concerns (auth, rate limiting) done once | Adds latency — every request has to pass through the gateway |
+| Internal services can change without clients noticing | The gateway can become a bottleneck under high load |
+| Supports aggregation — one client call can span several services | The gateway itself needs care and feeding, adding operational complexity |
+
+## Common mistakes
+
+**God gateway** — business logic embedded in the gateway instead of just routing and auth.
+Symptoms:
+- The gateway has if/else branches encoding business rules.
+- Changing a business rule means changing the gateway.
+- The gateway knows more about a domain than the service that owns it.
+
+**Gateway coupling** — every service can only ship once the gateway is ready.
+Symptoms:
+- The gateway's release schedule blocks every other service's release.
+- Multiple teams are constantly waiting on the gateway team.
+
+> 💡 Real-world examples
+>
+> **Netflix:** used Zuul (later Zuul 2, a non-blocking gateway built on Netty) as its API gateway, handling billions of requests a day — authentication, routing, and load balancing all happen at the edge. It later added GraphQL Federation behind the gateway to merge hundreds of Domain Graph Services into one unified API graph ([Netflix TechBlog: How Netflix Scales its API with GraphQL Federation](https://netflixtechblog.com/how-netflix-scales-its-api-with-graphql-federation-part-1-ae3557c187e2)).
+>
+> **A broader trend:** many organizations give each team its own gateway instance (instead of one central gateway everyone has to queue behind), with a platform team owning only shared concerns like the custom domain while each team deploys and manages its own routes independently ([AWS Compute Blog: Architecting multiple microservices behind a single domain with Amazon API Gateway](https://aws.amazon.com/blogs/compute/architecting-multiple-microservices-behind-a-single-domain-with-amazon-api-gateway/)).
+
 <Callout title="The gateway routes; it does not own business logic">
 It is tempting to push "just a little" business logic into the gateway — a discount calculation here, an order validation there. Resist it. The gateway's job is routing, aggregation, and cross-cutting concerns. Business rules belong in the owning service; once they leak into the gateway, you have rebuilt a distributed monolith with the gateway as its hidden core.
 </Callout>

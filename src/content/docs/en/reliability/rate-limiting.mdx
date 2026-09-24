@@ -209,6 +209,31 @@ What it costs you:
 - [Bulkhead](/microservices/en/reliability/bulkhead/) — caps concurrency where rate limiting caps throughput; the two compose well.
 - [Retry and Timeout](/microservices/en/reliability/retry-and-timeout/) — a `429` with `Retry-After` tells a client's retry logic exactly how long to back off.
 
+| Benefit | Trade-off |
+|---|---|
+| Prevents overload from traffic spikes or abusive clients | A legitimate user can get limited by accident |
+| Protects upstream services from cascading load | Distributed rate limiting is complex — it needs coordination across instances |
+| Enforces fair usage across tenants or API tiers | A limit set too strict hurts the user experience |
+| Reduces cost from excessive API usage | Setting the right limit is hard without knowing the traffic pattern |
+
+## Common mistakes
+
+**A global limit instead of per-client** — one combined limit, not split by client.
+Symptoms:
+- One client sending heavy traffic gets everyone else limited too.
+- Use a per-API-key or per-user-ID counter instead of a single global one.
+
+**A rate limit with no `Retry-After` header** — requests get rejected without telling the client how long to wait.
+Symptoms:
+- The client retries immediately, making the rate-limiting situation worse.
+- Send a `Retry-After` header so the client knows how long to back off.
+
+> 💡 Real-world examples
+>
+> **GitHub API:** limits authenticated users (personal tokens) to 5,000 requests/hour and unauthenticated requests to 60/hour; a GitHub App on GitHub Enterprise Cloud can get up to 15,000/hour. Response headers always report the remaining quota and reset time ([GitHub Docs: Rate limits for the REST API](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api)).
+>
+> **Stripe:** rate-limits per API key and recommends clients use exponential backoff when they hit a limit; test mode and live mode carry separate quotas ([Stripe Docs: Rate limits](https://docs.stripe.com/rate-limits)).
+
 <Callout title="Shedding load is a feature, not a failure">
 Rejecting a request feels like giving up, but at the edge of capacity it is the responsible choice. A service that admits everything and then times out on everything serves *no one*; a service that sheds the overflow and returns a clear `429` keeps serving the majority well and tells the rest to come back shortly. Deciding *what* to shed first — low-priority traffic, anonymous users, the noisiest client — turns load shedding from a blunt instrument into a deliberate degradation strategy.
 </Callout>

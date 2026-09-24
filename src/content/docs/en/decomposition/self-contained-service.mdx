@@ -67,6 +67,31 @@ What it costs you:
 - [Saga](/microservices/en/data-management/saga/) — the asynchronous, event-driven style that self-contained services rely on for cross-service writes.
 - [CQRS](/microservices/en/data-management/cqrs/) — building a local read model from events is the same mechanism that keeps a self-contained replica fresh.
 
+| Benefit | Trade-off |
+|---|---|
+| Answers a request on its own, without blocking on another service | Has to replicate data from other services — eventual consistency |
+| Resilient — another service failing doesn't affect this request | Data-sync complexity goes up |
+| Lower latency — no synchronous hop | The replicated data can go stale |
+| Scales independently of the services it depends on | Uses more storage because of data replication |
+
+## Common mistakes
+
+**Premature self-containment** — replicating everything for no real reason.
+Symptoms:
+- A service replicates data from 10 services because it "wants to be self-contained."
+- The sync overhead ends up worse than the synchronous call it was avoiding.
+
+**Self-contained but stale** — no good mechanism to keep the data in sync.
+Symptoms:
+- A service shows an old price because of replication lag.
+- A user sees stock available, then it's gone at checkout.
+
+> 💡 Real-world examples
+>
+> **A common pattern in large streaming systems:** a recommendation service often keeps a local copy of catalog metadata rather than calling the catalog service synchronously on every request — if the catalog service fails or slows down, recommendations can still answer using the data synced earlier (possibly a bit stale). This is a general illustration of the pattern, not a claim about any specific company's internal system.
+>
+> **A common pattern in ride-hailing systems:** a pricing service often caches infrequently-changing data (such as zone boundaries or base rates) locally, so it can compute a fare without calling another service on every request.
+
 <Callout title="Self-contained is about the request path">
 A self-contained service does not forbid all communication with other services — it forbids synchronous calls *on the path of serving a request*. Data still flows in, but asynchronously and ahead of time, via events. The test to apply is simple: when this service handles a request, does it have to wait on anyone else to respond? If the answer is no, it is self-contained, and its availability is its own to keep.
 </Callout>

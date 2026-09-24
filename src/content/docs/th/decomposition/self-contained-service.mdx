@@ -88,13 +88,9 @@ export const selfContainedDiagram = `flowchart TB
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Netflix:**
-> - recommendation service เป็น self-contained — มี local copy ของ catalog metadata
-> - ถ้า catalog service ล้ม recommendation ยังทำงานได้ด้วยข้อมูลเก่า
+> **รูปแบบทั่วไปในระบบ streaming ขนาดใหญ่:** service ที่ทำ recommendation มักเก็บ local copy ของ catalog metadata ไว้เอง แทนที่จะเรียก catalog service แบบ synchronous ทุก request — ถ้า catalog service ล้มหรือช้า recommendation ยังตอบได้ด้วยข้อมูลที่ sync ไว้ก่อนหน้า (อาจเก่าไปบ้าง) นี่คือภาพประกอบหลักการทั่วไปของ pattern นี้ ไม่ได้อ้างอิงระบบภายในของบริษัทใดบริษัทหนึ่งโดยเฉพาะ
 >
-> **Grab:**
-> - pricing service cache rider data ไว้ local
-> - ทำให้คำนวณ fare ได้เองโดยไม่ต้องเรียก rider service ทุก request
+> **รูปแบบทั่วไปในระบบ ride-hailing:** service คำนวณราคามักเก็บ cache ของข้อมูลที่เปลี่ยนไม่บ่อย (เช่น โซนพื้นที่ หรือ base rate) ไว้ในเครื่องตัวเอง เพื่อคำนวณราคาได้โดยไม่ต้องเรียก service อื่นทุกครั้งที่มี request เข้ามา
 
 <Callout title="self-contained เป็นเรื่องของเส้นทาง request">
 self-contained service ไม่ได้ห้ามสื่อสารกับ service อื่นทั้งหมด แต่ห้ามการเรียกแบบ synchronous *บนเส้นทางที่ให้บริการ request* ข้อมูลยังไหลเข้ามาอยู่ เพียงแต่มาแบบ asynchronous และมาล่วงหน้าผ่าน event วิธีตรวจสอบง่ายมาก ถามตัวเองว่าเวลา service นี้จัดการ request หนึ่ง ต้องรอใครตอบกลับหรือเปล่า ถ้าไม่ต้องรอ ก็เป็น self-contained แล้ว และ availability ก็เป็นเรื่องที่ service นี้ดูแลได้เอง
